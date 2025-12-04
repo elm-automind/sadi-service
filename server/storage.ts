@@ -21,6 +21,7 @@ export interface IStorage {
 
   createFallbackContact(contact: InsertFallbackContact): Promise<FallbackContact>;
   getFallbackContactsByAddressId(addressId: number): Promise<FallbackContact[]>;
+  getFallbackContactById(id: number): Promise<FallbackContact | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -93,6 +94,11 @@ export class DatabaseStorage implements IStorage {
 
   async getFallbackContactsByAddressId(addressId: number): Promise<FallbackContact[]> {
     return await db.select().from(fallbackContacts).where(eq(fallbackContacts.addressId, addressId));
+  }
+
+  async getFallbackContactById(id: number): Promise<FallbackContact | undefined> {
+    const [contact] = await db.select().from(fallbackContacts).where(eq(fallbackContacts.id, id));
+    return contact || undefined;
   }
 }
 

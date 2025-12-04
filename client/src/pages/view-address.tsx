@@ -139,12 +139,11 @@ export default function ViewAddress() {
                     </p>
                     <div className="aspect-video bg-muted rounded-lg flex items-center justify-center border border-border overflow-hidden">
                       {img.src ? (
-                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/5 to-primary/10">
-                          <div className="text-center p-4">
-                            <Image className="w-8 h-8 text-primary/50 mx-auto mb-2" />
-                            <p className="text-xs text-muted-foreground">{img.src}</p>
-                          </div>
-                        </div>
+                        <img 
+                          src={img.src} 
+                          alt={img.label}
+                          className="w-full h-full object-cover"
+                        />
                       ) : (
                         <div className="text-center text-muted-foreground">
                           <Image className="w-8 h-8 mx-auto mb-1 opacity-30" />

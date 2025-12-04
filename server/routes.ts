@@ -207,6 +207,18 @@ export async function registerRoutes(httpServer: Server, app: Express) {
     res.json(contacts);
   });
 
+  app.get("/api/fallback-contact/:id", requireAuth, async (req, res) => {
+    const contactId = parseInt(req.params.id);
+    if (isNaN(contactId)) {
+      return res.status(400).json({ message: "Invalid contact ID" });
+    }
+    const contact = await storage.getFallbackContactById(contactId);
+    if (!contact) {
+      return res.status(404).json({ message: "Fallback contact not found" });
+    }
+    res.json(contact);
+  });
+
   // --- Public Address View Route (no auth required) ---
   app.get("/api/address/:digitalId", async (req, res) => {
     try {

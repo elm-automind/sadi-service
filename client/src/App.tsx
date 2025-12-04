@@ -13,6 +13,7 @@ import DeliveryPreferences from "@/pages/delivery-preferences";
 import ViewAddress from "@/pages/view-address";
 import Dashboard from "@/pages/dashboard";
 import FallbackContact from "@/pages/fallback-contact";
+import ViewFallback from "@/pages/view-fallback";
 
 function Router() {
   return (
@@ -26,6 +27,7 @@ function Router() {
       <Route path="/preferences" component={DeliveryPreferences} />
       <Route path="/fallback-contact" component={FallbackContact} />
       <Route path="/view/:digitalId" component={ViewAddress} />
+      <Route path="/view-fallback/:id" component={ViewFallback} />
       <Route component={NotFound} />
     </Switch>
   );
