@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowRight, ShieldCheck, Truck, MapPin } from "lucide-react";
+import { ArrowRight, ShieldCheck, Truck, MapPin, LogIn } from "lucide-react";
 
 export default function Home() {
   return (
@@ -10,6 +10,14 @@ export default function Home() {
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10">
         <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl" />
         <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-blue-200/20 rounded-full blur-3xl" />
+      </div>
+      
+      <div className="absolute top-4 right-4">
+        <Link href="/login">
+          <Button variant="ghost" className="gap-2">
+            <LogIn className="w-4 h-4" /> Login
+          </Button>
+        </Link>
       </div>
 
       <div className="max-w-md w-full space-y-8 text-center">

@@ -6,7 +6,7 @@ import * as z from "zod";
 import { useDropzone } from "react-dropzone";
 import { 
   User, MapPin, Camera, Clock, CheckCircle2, 
-  ChevronRight, ChevronLeft, Upload, FileText 
+  ChevronRight, ChevronLeft, Upload, FileText, Lock
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { AddressMap } from "@/components/address-map";
 import { VoiceInput } from "@/components/voice-input";
 import { useToast } from "@/hooks/use-toast";
@@ -31,12 +32,22 @@ const registrationSchema = z.object({
     .regex(/^\+?[\d\s]+$/, "Invalid phone number format"),
   email: z.string().email("Valid email is required"),
   name: z.string().min(2, "Full name is required"),
-  // Address
-  latitude: z.number({ required_error: "Location is required" }).optional(),
-  longitude: z.number({ required_error: "Location is required" }).optional(),
-  textAddress: z.string().min(10, "Please provide a more detailed address (at least 10 chars)"),
+  // Optional for quick reg
+  password: z.string().optional(),
+  
+  // Address (optional if quick reg)
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
+  textAddress: z.string().optional(),
   preferredTime: z.string().optional(),
   specialNote: z.string().optional(),
+}).refine((data) => {
+  // If password is provided (quick reg), ensure it meets criteria
+  if (data.password && data.password.length < 6) return false;
+  return true;
+}, {
+  message: "Password must be at least 6 characters",
+  path: ["password"]
 });
 
 type FormData = z.infer<typeof registrationSchema>;
@@ -44,9 +55,7 @@ type FormData = z.infer<typeof registrationSchema>;
 // --- Utilities ---
 
 const generateDigitalId = () => {
-  // Generate 8-10 char unique ID (alphanumeric uppercase)
-  // e.g., 'A7X29B1C'
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Exclude confusing chars like I, 1, O, 0
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let result = '';
   for (let i = 0; i < 8; i++) {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -99,6 +108,7 @@ const FileUploadBox = ({ label, icon: Icon, onDrop, file }: { label: string, ico
 
 export default function Register() {
   const [step, setStep] = useState(1);
+  const [regType, setRegType] = useState<"quick" | "full">("full"); // Default to full
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [files, setFiles] = useState<{
@@ -116,7 +126,8 @@ export default function Register() {
       iqamaId: "",
       phone: "",
       email: "",
-      specialNote: ""
+      specialNote: "",
+      password: ""
     }
   });
 
@@ -127,115 +138,108 @@ export default function Register() {
       try {
         const parsed = JSON.parse(savedDraft);
         form.reset(parsed);
-        toast({
-           title: "Draft Restored",
-           description: "We found an unfinished registration and restored it.",
-        });
+        // Simple heuristic: if password was drafted, maybe it was quick reg
+        if (parsed.password) setRegType("quick");
       } catch (e) {
         console.error("Failed to parse draft", e);
       }
     }
   }, []);
 
-  // Save draft on change (debounced slightly by nature of react state updates or just save on unmount/next step)
-  // For simplicity, we'll save on step change or can use a watch effect
-  const formValues = form.watch();
-  useEffect(() => {
-    if (formValues.name || formValues.iqamaId) { // Only save if started
-       localStorage.setItem("registrationDraft", JSON.stringify(formValues));
-    }
-  }, [formValues]);
-
   const onSubmit = (data: FormData) => {
-    // Generate ID
+    // Common save logic
     const digitalId = generateDigitalId();
-    
-    // --- Simulated Backend Logic for Multiple Addresses ---
     const usersDb = JSON.parse(localStorage.getItem("usersDb") || "{}");
-    const existingUser = usersDb[data.iqamaId];
     
-    const newAddressEntry = {
-      id: digitalId,
-      textAddress: data.textAddress,
-      location: { lat: data.latitude, lng: data.longitude },
-      photos: {
-        building: files.building ? files.building.name : null,
-        mainGate: files.gate ? files.gate.name : null,
-        flatDoor: files.door ? files.door.name : null,
+    // If quick reg, we create user with password but maybe no address yet
+    // If full reg, we add address + update user
+    
+    let userData = usersDb[data.iqamaId] || {
+      iqamaId: data.iqamaId,
+      personalInfo: {
+        name: data.name,
+        phone: data.phone,
+        email: data.email
       },
-      instructions: {
-        preferredTime: data.preferredTime,
-        note: data.specialNote
-      },
-      timestamp: new Date().toISOString()
+      addresses: [],
+      password: data.password // Only relevant for quick reg primarily
     };
-
-    let finalUserData;
-
-    if (existingUser) {
-       // Add address to existing user
-       existingUser.addresses.push(newAddressEntry);
-       // Update personal info in case it changed (optional decision)
-       existingUser.personalInfo = {
-         name: data.name,
-         phone: data.phone,
-         email: data.email
-       };
-       finalUserData = existingUser;
-       usersDb[data.iqamaId] = existingUser;
-    } else {
-       // Create new user
-       finalUserData = {
-         iqamaId: data.iqamaId,
-         personalInfo: {
-           name: data.name,
-           phone: data.phone,
-           email: data.email
-         },
-         addresses: [newAddressEntry]
-       };
-       usersDb[data.iqamaId] = finalUserData;
+    
+    // If this is a full reg, add the address
+    let newAddressEntry = null;
+    if (regType === "full" || (data.textAddress && data.textAddress.length > 0)) {
+       newAddressEntry = {
+        id: digitalId,
+        textAddress: data.textAddress || "Quick Addr",
+        location: { lat: data.latitude || 0, lng: data.longitude || 0 },
+        photos: {
+          building: files.building ? files.building.name : null,
+          mainGate: files.gate ? files.gate.name : null,
+          flatDoor: files.door ? files.door.name : null,
+        },
+        instructions: {
+          preferredTime: data.preferredTime,
+          note: data.specialNote
+        },
+        timestamp: new Date().toISOString()
+      };
+      userData.addresses.push(newAddressEntry);
     }
 
-    // Save DB
+    // Save User
+    usersDb[data.iqamaId] = userData;
     localStorage.setItem("usersDb", JSON.stringify(usersDb));
-    
-    // Clear Draft
     localStorage.removeItem("registrationDraft");
 
-    // Save Current Session Data for Success Page
-    // Mock URLs for images
-    const fileData = {
-      building: files.building ? URL.createObjectURL(files.building) : null,
-      gate: files.gate ? URL.createObjectURL(files.gate) : null,
-      door: files.door ? URL.createObjectURL(files.door) : null,
-    };
+    if (regType === "quick") {
+      toast({
+        title: "Account Created!",
+        description: "You can now login with your ID/Email and Password.",
+      });
+      setLocation("/login");
+    } else {
+      // Full flow -> Success page
+      const fileData = {
+        building: files.building ? URL.createObjectURL(files.building) : null,
+        gate: files.gate ? URL.createObjectURL(files.gate) : null,
+        door: files.door ? URL.createObjectURL(files.door) : null,
+      };
 
-    localStorage.setItem("currentSessionData", JSON.stringify({
-      digitalId,
-      user: finalUserData,
-      currentAddress: newAddressEntry,
-      previews: fileData
-    }));
+      localStorage.setItem("currentSessionData", JSON.stringify({
+        digitalId,
+        user: userData,
+        currentAddress: newAddressEntry,
+        previews: fileData
+      }));
 
-    toast({
-      title: "Address Registered!",
-      description: `Digital ID ${digitalId} created successfully.`,
-    });
-
-    setLocation("/success");
+      toast({
+        title: "Address Registered!",
+        description: `Digital ID ${digitalId} created successfully.`,
+      });
+      setLocation("/success");
+    }
   };
 
   const nextStep = async () => {
     let valid = false;
+    
     if (step === 1) {
+      // Validate personal info first
       valid = await form.trigger(["iqamaId", "phone", "email", "name"]);
+      
+      if (valid) {
+        if (regType === "quick") {
+          // If quick, we need to validate password before "submitting" (which is effectively what Next does here)
+          // Actually, for Quick Reg, step 1 IS the only step. So the button should be "Submit" not "Next".
+          // We'll handle that in the render logic.
+        } else {
+          // Full flow -> Go to address step
+          setStep(2);
+        }
+      }
     } else if (step === 2) {
       valid = await form.trigger(["textAddress"]); 
-    }
-    
-    if (valid || step === 2) { 
-      setStep(s => s + 1);
+      if (valid) setStep(3);
     }
   };
 
@@ -250,26 +254,49 @@ export default function Register() {
               <CardTitle className="text-xl md:text-2xl font-bold text-primary">Registration</CardTitle>
               <CardDescription className="text-xs md:text-sm">Complete your profile for secure delivery services.</CardDescription>
             </div>
-            <div className="text-xs md:text-sm font-medium text-muted-foreground bg-muted px-3 py-1 rounded-full w-fit">
-              Step {step} of 3
-            </div>
+            {regType === "full" && (
+              <div className="text-xs md:text-sm font-medium text-muted-foreground bg-muted px-3 py-1 rounded-full w-fit">
+                Step {step} of 3
+              </div>
+            )}
           </div>
           
-          {/* Progress Bar */}
-          <div className="w-full h-1.5 bg-muted mt-4 md:mt-6 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-primary transition-all duration-500 ease-out" 
-              style={{ width: `${(step / 3) * 100}%` }}
-            />
-          </div>
+          {/* Progress Bar for Full Flow */}
+          {regType === "full" && (
+            <div className="w-full h-1.5 bg-muted mt-4 md:mt-6 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-primary transition-all duration-500 ease-out" 
+                style={{ width: `${(step / 3) * 100}%` }}
+              />
+            </div>
+          )}
         </CardHeader>
 
         <CardContent className="p-4 md:p-6">
           <form onSubmit={form.handleSubmit(onSubmit)}>
             
-            {/* STEP 1: Personal Information */}
+            {/* STEP 1: Personal Information & Reg Type Selection */}
             {step === 1 && (
               <div className="space-y-6 animate-in slide-in-from-right-4 duration-300 fade-in">
+                
+                {/* Registration Type Toggle */}
+                <div className="bg-muted/50 p-1 rounded-lg flex mb-6">
+                  <button
+                    type="button"
+                    className={`flex-1 text-sm font-medium py-2 rounded-md transition-all ${regType === "full" ? "bg-background shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"}`}
+                    onClick={() => setRegType("full")}
+                  >
+                    Full Registration (Address)
+                  </button>
+                  <button
+                    type="button"
+                    className={`flex-1 text-sm font-medium py-2 rounded-md transition-all ${regType === "quick" ? "bg-background shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"}`}
+                    onClick={() => setRegType("quick")}
+                  >
+                    Quick Registration (Account)
+                  </button>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="name">Full Name</Label>
@@ -325,14 +352,32 @@ export default function Register() {
                      />
                     {form.formState.errors.email && <p className="text-destructive text-xs">{form.formState.errors.email.message}</p>}
                   </div>
+
+                  {/* Password Field - Only for Quick Reg */}
+                  {regType === "quick" && (
+                    <div className="space-y-2 md:col-span-2 animate-in fade-in slide-in-from-top-2">
+                      <Label htmlFor="password">Create Password</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input 
+                          id="password" 
+                          type="password" 
+                          placeholder="Create a secure password" 
+                          className="pl-9" 
+                          {...form.register("password")} 
+                        />
+                      </div>
+                      {form.formState.errors.password && <p className="text-destructive text-xs">{form.formState.errors.password.message}</p>}
+                      <p className="text-xs text-muted-foreground">Required for logging in later.</p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
 
             {/* STEP 2: Address & Passport Entity */}
-            {step === 2 && (
+            {step === 2 && regType === "full" && (
               <div className="space-y-6 md:space-y-8 animate-in slide-in-from-right-4 duration-300 fade-in">
-                
                 {/* Map Section */}
                 <div className="space-y-3">
                   <Label className="flex items-center gap-2">
@@ -406,7 +451,7 @@ export default function Register() {
             )}
 
             {/* STEP 3: Preferences & Summary */}
-            {step === 3 && (
+            {step === 3 && regType === "full" && (
               <div className="space-y-6 animate-in slide-in-from-right-4 duration-300 fade-in">
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold text-foreground">Delivery Instructions</h3>
@@ -473,23 +518,26 @@ export default function Register() {
 
             {/* Navigation Buttons */}
             <div className="flex justify-between mt-8 pt-4 border-t border-border/50">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={prevStep}
-                disabled={step === 1}
-                className="w-24 md:w-28"
-              >
-                <ChevronLeft className="w-4 h-4 mr-2" /> Back
-              </Button>
+              {step > 1 && regType === "full" ? (
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={prevStep}
+                  className="w-24 md:w-28"
+                >
+                  <ChevronLeft className="w-4 h-4 mr-2" /> Back
+                </Button>
+              ) : (
+                <div /> // Spacer
+              )}
               
-              {step < 3 ? (
+              {regType === "full" && step < 3 ? (
                 <Button type="button" onClick={nextStep} className="w-24 md:w-28">
                   Next <ChevronRight className="w-4 h-4 ml-2" />
                 </Button>
               ) : (
-                <Button type="submit" className="flex-1 ml-4 md:ml-0 md:w-32 bg-primary hover:bg-primary/90">
-                  Submit <CheckCircle2 className="w-4 h-4 ml-2" />
+                <Button type="submit" className="w-32 md:w-40 bg-primary hover:bg-primary/90">
+                  {regType === "quick" ? "Create Account" : "Submit"} <CheckCircle2 className="w-4 h-4 ml-2" />
                 </Button>
               )}
             </div>
