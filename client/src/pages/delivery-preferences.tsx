@@ -186,7 +186,7 @@ export default function DeliveryPreferences() {
             </div>
           </div>
 
-          {user.addresses.length > 1 && (
+          {user.addresses.length > 0 && (
             <div className="mt-4">
               <Label className="text-sm">Select Address</Label>
               <Select 
@@ -205,14 +205,17 @@ export default function DeliveryPreferences() {
                   }
                 }}
               >
-                <SelectTrigger className="mt-2">
-                  <SelectValue />
+                <SelectTrigger className="mt-2" data-testid="select-address">
+                  <SelectValue placeholder="Choose an address" />
                 </SelectTrigger>
                 <SelectContent>
                   {user.addresses.map((addr) => (
-                    <SelectItem key={addr.id} value={addr.id.toString()}>
-                      <span className="font-mono text-xs mr-2">{addr.digitalId}</span>
-                      {addr.textAddress.substring(0, 30)}...
+                    <SelectItem key={addr.id} value={addr.id.toString()} data-testid={`address-option-${addr.id}`}>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">{addr.digitalId}</span>
+                        <span className="truncate max-w-[200px]">{addr.textAddress.substring(0, 30)}{addr.textAddress.length > 30 ? '...' : ''}</span>
+                        {addr.isPrimary && <span className="text-xs text-primary font-medium">(Primary)</span>}
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>

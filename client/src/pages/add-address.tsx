@@ -8,7 +8,7 @@ import {
   MapPin, Camera, CheckCircle2, 
   Upload, Home, X
 } from "lucide-react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -107,6 +107,7 @@ const FileUploadBox = ({ label, icon: Icon, onDrop, processedImage, onRemove, is
 export default function AddAddress() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   const [images, setImages] = useState<{
     building?: ProcessedImage;
@@ -207,8 +208,10 @@ export default function AddAddress() {
         title: "Address Added!",
         description: `Digital ID ${data.digitalId} created successfully.`,
       });
-      // Navigate back to dashboard
-      setLocation("/dashboard");
+      // Invalidate user query to refresh dashboard list
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      // Navigate to view the new address
+      setLocation(`/view/${data.digitalId}`);
     },
     onError: (error: any) => {
       toast({
