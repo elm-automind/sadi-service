@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useLocation, Link } from "wouter";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -8,6 +8,7 @@ import {
   User, MapPin, Camera, Clock, CheckCircle2, 
   ChevronRight, ChevronLeft, Upload, FileText, Lock, Home, LogIn
 } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +18,7 @@ import { Separator } from "@/components/ui/separator";
 import { AddressMap } from "@/components/address-map";
 import { VoiceInput } from "@/components/voice-input";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 // --- Schemas ---
 
@@ -42,19 +44,6 @@ const registrationSchema = z.object({
 });
 
 type FormData = z.infer<typeof registrationSchema>;
-
-// --- Utilities ---
-
-const generateDigitalId = () => {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let result = '';
-  for (let i = 0; i < 8; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
-};
-
-// --- Components ---
 
 const FileUploadBox = ({ label, icon: Icon, onDrop, file }: { label: string, icon: any, onDrop: (files: File[]) => void, file: File | null }) => {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
@@ -122,126 +111,60 @@ export default function Register() {
     }
   });
 
-  // Load draft from memory
-  useEffect(() => {
-    const savedDraft = localStorage.getItem("registrationDraft");
-    if (savedDraft) {
-      try {
-        const parsed = JSON.parse(savedDraft);
-        form.reset(parsed);
-      } catch (e) {
-        console.error("Failed to parse draft", e);
+  const registerMutation = useMutation({
+    mutationFn: async (data: FormData) => {
+      // Upload images first if needed (Mocking image upload by just using names/urls for now)
+      // In a real app, we'd upload files to an endpoint and get URLs back.
+      // For now we just send the filenames in the register request.
+      
+      const payload = {
+        ...data,
+        lat: data.latitude,
+        lng: data.longitude,
+        photoBuilding: files.building?.name,
+        photoGate: files.gate?.name,
+        photoDoor: files.door?.name,
+      };
+
+      const res = await apiRequest("POST", "/api/register", payload);
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      // Store session data for success page display (temporary, in real app we fetch from API)
+      // We'll just use the response data
+      localStorage.setItem("lastRegisteredUser", JSON.stringify(data));
+      
+      if (data.address) {
+        toast({
+          title: "Address Registered!",
+          description: "Your account and address have been created.",
+        });
+        setLocation("/success");
+      } else {
+        toast({
+          title: "Account Created!",
+          description: "You can now login.",
+        });
+        setLocation("/login");
       }
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Registration Failed",
+        description: error.message || "Something went wrong"
+      });
     }
-  }, []);
-
-  const validateUniqueUser = (data: FormData) => {
-    const usersDb = JSON.parse(localStorage.getItem("usersDb") || "{}");
-    const users = Object.values(usersDb) as any[];
-    
-    // Check for ID
-    if (usersDb[data.iqamaId]) {
-      form.setError("iqamaId", { type: "manual", message: "This ID is already registered." });
-      return false;
-    }
-    
-    // Check for Email
-    const duplicateEmail = users.find(u => u.personalInfo.email.toLowerCase() === data.email.toLowerCase());
-    if (duplicateEmail) {
-      form.setError("email", { type: "manual", message: "This email is already registered." });
-      return false;
-    }
-    
-    // Check for Phone
-    const duplicatePhone = users.find(u => u.personalInfo.phone === data.phone);
-    if (duplicatePhone) {
-      form.setError("phone", { type: "manual", message: "This phone number is already registered." });
-      return false;
-    }
-
-    return true;
-  };
+  });
 
   const onSubmit = (data: FormData) => {
-    // Final validation check before saving
-    if (!validateUniqueUser(data)) {
-      toast({
-         variant: "destructive",
-         title: "Registration Failed",
-         description: "User with these details already exists."
-      });
-      return;
+    // Prepare address data only if full reg or address provided
+    if (regType === "full" && (!data.textAddress || data.textAddress.length < 10)) {
+       // Should be caught by validation before submit, but double check
+       return;
     }
-
-    // Generate ID
-    const digitalId = generateDigitalId();
-    const usersDb = JSON.parse(localStorage.getItem("usersDb") || "{}");
     
-    let userData = usersDb[data.iqamaId] || {
-      iqamaId: data.iqamaId,
-      personalInfo: {
-        name: data.name,
-        phone: data.phone,
-        email: data.email
-      },
-      addresses: [],
-      password: data.password
-    };
-    
-    // Check if address is actually provided
-    let newAddressEntry = null;
-    if (regType === "full" && data.textAddress && data.textAddress.length >= 10) {
-       newAddressEntry = {
-        id: digitalId,
-        textAddress: data.textAddress,
-        location: { lat: data.latitude || 0, lng: data.longitude || 0 },
-        photos: {
-          building: files.building ? files.building.name : null,
-          mainGate: files.gate ? files.gate.name : null,
-          flatDoor: files.door ? files.door.name : null,
-        },
-        instructions: {
-          preferredTime: data.preferredTime,
-          note: data.specialNote
-        },
-        timestamp: new Date().toISOString()
-      };
-      userData.addresses.push(newAddressEntry);
-    }
-
-    // Save User
-    usersDb[data.iqamaId] = userData;
-    localStorage.setItem("usersDb", JSON.stringify(usersDb));
-    localStorage.removeItem("registrationDraft");
-
-    if (newAddressEntry) {
-      // Full flow success -> Digital ID page
-      const fileData = {
-        building: files.building ? URL.createObjectURL(files.building) : null,
-        gate: files.gate ? URL.createObjectURL(files.gate) : null,
-        door: files.door ? URL.createObjectURL(files.door) : null,
-      };
-
-      localStorage.setItem("currentSessionData", JSON.stringify({
-        digitalId,
-        user: userData,
-        currentAddress: newAddressEntry,
-        previews: fileData
-      }));
-
-      toast({
-        title: "Address Registered!",
-        description: `Digital ID ${digitalId} created successfully.`,
-      });
-      setLocation("/success");
-    } else {
-      // No address added (Quick Reg or fallback) -> Login
-      toast({
-        title: "Account Created!",
-        description: "You can now login with your ID/Email and Password.",
-      });
-      setLocation("/login");
-    }
+    registerMutation.mutate(data);
   };
 
   // Handle Quick Registration Button Click
@@ -249,16 +172,7 @@ export default function Register() {
     setRegType("quick");
     const valid = await form.trigger(["iqamaId", "phone", "email", "name", "password"]);
     if (valid) {
-      const isUnique = validateUniqueUser(form.getValues());
-      if (isUnique) {
-        form.handleSubmit(onSubmit)();
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Validation Error",
-          description: "Please fix the errors before proceeding."
-        });
-      }
+      form.handleSubmit(onSubmit)();
     }
   };
 
@@ -269,19 +183,7 @@ export default function Register() {
     
     if (step === 1) {
       valid = await form.trigger(["iqamaId", "phone", "email", "name", "password"]);
-      if (valid) {
-         // Check uniqueness before allowing to proceed to Step 2
-         const isUnique = validateUniqueUser(form.getValues());
-         if (isUnique) {
-           setStep(2);
-         } else {
-            toast({
-              variant: "destructive",
-              title: "Validation Error",
-              description: "This user already exists. Please login or recover account."
-            });
-         }
-      }
+      if (valid) setStep(2);
     } else if (step === 2) {
       // Enforce address validation here for full flow
       const address = form.getValues("textAddress");
@@ -594,6 +496,7 @@ export default function Register() {
                     variant="secondary"
                     onClick={handleQuickRegister} 
                     className="w-full sm:w-auto"
+                    disabled={registerMutation.isPending}
                   >
                     Quick Register <CheckCircle2 className="w-4 h-4 ml-2" />
                   </Button>
@@ -601,6 +504,7 @@ export default function Register() {
                     type="button" 
                     onClick={handleFullRegistration} 
                     className="w-full sm:w-auto bg-primary hover:bg-primary/90"
+                    disabled={registerMutation.isPending}
                   >
                     Add Address Details <ChevronRight className="w-4 h-4 ml-2" />
                   </Button>
@@ -615,8 +519,13 @@ export default function Register() {
               )}
 
               {step === 3 && (
-                <Button type="button" onClick={form.handleSubmit(onSubmit)} className="w-full sm:w-40 bg-primary hover:bg-primary/90 order-1 sm:order-2">
-                  Submit <CheckCircle2 className="w-4 h-4 ml-2" />
+                <Button 
+                  type="button" 
+                  onClick={form.handleSubmit(onSubmit)} 
+                  className="w-full sm:w-40 bg-primary hover:bg-primary/90 order-1 sm:order-2"
+                  disabled={registerMutation.isPending}
+                >
+                  {registerMutation.isPending ? "Submitting..." : "Submit"} <CheckCircle2 className="w-4 h-4 ml-2" />
                 </Button>
               )}
             </div>

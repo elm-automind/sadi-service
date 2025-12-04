@@ -4,13 +4,15 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Clock, FileText, CheckCircle2, ArrowRight, Home, Settings, AlertCircle } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { VoiceInput } from "@/components/voice-input";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 const preferencesSchema = z.object({
   preferredTime: z.string().min(1, "Please select a time"),
@@ -23,8 +25,8 @@ type PreferencesData = z.infer<typeof preferencesSchema>;
 export default function DeliveryPreferences() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const [activeAddressId, setActiveAddressId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const [activeAddressId, setActiveAddressId] = useState<number | null>(null);
 
   const form = useForm<PreferencesData>({
     resolver: zodResolver(preferencesSchema),
@@ -35,84 +37,60 @@ export default function DeliveryPreferences() {
     }
   });
 
+  const { data: user, isLoading } = useQuery<any>({
+    queryKey: ["/api/user"],
+    retry: false,
+  });
+
   useEffect(() => {
-    const userId = localStorage.getItem("loggedInUserId");
-    const usersDb = JSON.parse(localStorage.getItem("usersDb") || "{}");
-    
-    if (userId && usersDb[userId]) {
-      const user = usersDb[userId];
-      setCurrentUser(user);
-      
-      // Load data from the most recent address
-      if (user.addresses && user.addresses.length > 0) {
-        const latestAddress = user.addresses[user.addresses.length - 1];
-        setActiveAddressId(latestAddress.id);
-        
-        form.reset({
-          preferredTime: latestAddress.instructions?.preferredTime || "morning",
-          specialNote: latestAddress.instructions?.note || "",
-          fallbackOption: latestAddress.instructions?.fallback || "door"
-        });
-      } else {
-        // Should not happen in this flow, but redirect if no address
-        setLocation("/add-address");
-      }
-    } else {
+    if (user) {
+       if (user.addresses && user.addresses.length > 0) {
+         const latestAddress = user.addresses[user.addresses.length - 1];
+         setActiveAddressId(latestAddress.id);
+         
+         form.reset({
+           preferredTime: latestAddress.preferredTime || "morning",
+           specialNote: latestAddress.specialNote || "",
+           fallbackOption: latestAddress.fallbackOption || "door"
+         });
+       } else {
+         setLocation("/add-address");
+       }
+    } else if (!isLoading && !user) {
       setLocation("/login");
     }
-  }, []);
+  }, [user, isLoading]);
+
+  const updateMutation = useMutation({
+    mutationFn: async (data: PreferencesData) => {
+      if (!activeAddressId) throw new Error("No active address");
+      const res = await apiRequest("PATCH", `/api/addresses/${activeAddressId}`, data);
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      toast({
+        title: "Preferences Updated",
+        description: "Your delivery instructions have been saved.",
+      });
+      // Simulate success page data context locally if needed, or let success page fetch latest
+      setLocation("/success");
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message
+      });
+    }
+  });
 
   const onSubmit = (data: PreferencesData) => {
-    if (!currentUser || !activeAddressId) return;
-
-    // Update the specific address with new instructions
-    const updatedAddresses = currentUser.addresses.map((addr: any) => {
-      if (addr.id === activeAddressId) {
-        return {
-          ...addr,
-          instructions: {
-            ...addr.instructions,
-            preferredTime: data.preferredTime,
-            note: data.specialNote,
-            fallback: data.fallbackOption
-          }
-        };
-      }
-      return addr;
-    });
-
-    const updatedUser = { ...currentUser, addresses: updatedAddresses };
-    
-    // Save to DB
-    const usersDb = JSON.parse(localStorage.getItem("usersDb") || "{}");
-    usersDb[updatedUser.iqamaId] = updatedUser;
-    localStorage.setItem("usersDb", JSON.stringify(usersDb));
-
-    // Update session data for Success page display
-    const currentAddr = updatedAddresses.find((a: any) => a.id === activeAddressId);
-    localStorage.setItem("currentSessionData", JSON.stringify({
-      digitalId: activeAddressId,
-      user: updatedUser,
-      currentAddress: currentAddr,
-      previews: {
-         // Re-construct preview URLs if possible, or just use names (mockup limitation: URLs might be lost on refresh if not persisted properly, 
-         // but names are in DB. For mockup, we might lose the blob URLs unless we persisted them differently. 
-         // We'll just pass nulls for previews if lost, the success page handles missing images gracefully)
-         building: null, 
-         gate: null, 
-         door: null 
-      }
-    }));
-
-    toast({
-      title: "Preferences Updated",
-      description: "Your delivery instructions have been saved.",
-    });
-    
-    setLocation("/success");
+    updateMutation.mutate(data);
   };
 
-  if (!currentUser) return null;
+  if (isLoading) return <div className="p-8 text-center">Loading...</div>;
+  if (!user) return null;
 
   return (
     <div className="min-h-screen bg-muted/30 p-4 flex items-center justify-center relative">
@@ -209,15 +187,16 @@ export default function DeliveryPreferences() {
                     id="specialNote" 
                     placeholder="e.g., Ring the doorbell twice, beware of dog..." 
                     className="h-32 resize-none"
-                    {...field} 
+                    {...field}
+                    value={field.value || ""} // Fix: Ensure value is never undefined
                   />
                 )}
               />
             </div>
 
             <div className="pt-6 border-t border-border/40 flex justify-end">
-              <Button type="submit" size="lg" className="w-full md:w-auto">
-                Save Preferences <CheckCircle2 className="w-4 h-4 ml-2" />
+              <Button type="submit" size="lg" className="w-full md:w-auto" disabled={updateMutation.isPending}>
+                 {updateMutation.isPending ? "Saving..." : "Save Preferences"} <CheckCircle2 className="w-4 h-4 ml-2" />
               </Button>
             </div>
           </form>

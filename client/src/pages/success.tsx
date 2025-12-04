@@ -7,35 +7,50 @@ import { Separator } from "@/components/ui/separator";
 import { Phone, MapPin, CheckCircle2, Home, QrCode, Download, Share2, Plus } from "lucide-react";
 import { AddressMap } from "@/components/address-map";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useQuery } from "@tanstack/react-query";
 
 export default function Success() {
-  const [sessionData, setSessionData] = useState<any>(null);
   const [, setLocation] = useLocation();
 
+  const { data: user, isLoading } = useQuery<any>({
+    queryKey: ["/api/user"],
+    retry: false,
+  });
+
   useEffect(() => {
-    const stored = localStorage.getItem("currentSessionData");
-    if (stored) {
-      setSessionData(JSON.parse(stored));
-    } else {
-      setLocation("/"); // Redirect if no data found
+    if (!isLoading && !user) {
+      setLocation("/login");
     }
-  }, []);
+  }, [user, isLoading]);
 
-  if (!sessionData) return null;
+  if (isLoading) return <div className="p-10 text-center">Loading...</div>;
+  if (!user) return null;
 
-  const { user, currentAddress, digitalId, previews } = sessionData;
+  // Use the last address for display
+  const currentAddress = user.addresses && user.addresses.length > 0 
+    ? user.addresses[user.addresses.length - 1] 
+    : null;
+
+  if (!currentAddress) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-4">
+        <p>No address found.</p>
+        <Link href="/add-address"><Button className="mt-4">Add Address</Button></Link>
+      </div>
+    );
+  }
 
   // Prepare QR Code Data
   const qrCodeValue = JSON.stringify({
-    id: digitalId, // Unique Address ID
-    n: user.personalInfo.name,
-    p: user.personalInfo.phone,
+    id: currentAddress.digitalId, 
+    n: user.name,
+    p: user.phone,
     addr: currentAddress.textAddress,
-    loc: currentAddress.location,
+    loc: { lat: currentAddress.lat, lng: currentAddress.lng },
     imgs: {
-      b: currentAddress.photos.building ? "Yes" : "No",
-      g: currentAddress.photos.mainGate ? "Yes" : "No",
-      d: currentAddress.photos.flatDoor ? "Yes" : "No"
+      b: currentAddress.photoBuilding ? "Yes" : "No",
+      g: currentAddress.photoGate ? "Yes" : "No",
+      d: currentAddress.photoDoor ? "Yes" : "No"
     }
   });
 
@@ -51,7 +66,7 @@ export default function Success() {
           
           <div className="mt-4 inline-block px-4 py-2 bg-background rounded-lg border border-border shadow-sm">
             <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Your Digital ID</p>
-            <p className="text-xl font-mono font-bold text-primary tracking-widest">{digitalId}</p>
+            <p className="text-xl font-mono font-bold text-primary tracking-widest">{currentAddress.digitalId}</p>
           </div>
         </div>
 
@@ -67,13 +82,13 @@ export default function Success() {
               <TabsContent value="details" className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xl shrink-0">
-                    {user.personalInfo.name.charAt(0)}
+                    {user.name.charAt(0)}
                   </div>
                   <div>
-                    <h2 className="font-bold text-lg">{user.personalInfo.name}</h2>
+                    <h2 className="font-bold text-lg">{user.name}</h2>
                     <div className="flex items-center text-muted-foreground text-sm gap-1">
                       <Phone className="w-3 h-3" />
-                      {user.personalInfo.phone}
+                      {user.phone}
                     </div>
                   </div>
                 </div>
@@ -93,8 +108,8 @@ export default function Success() {
                   <div className="rounded-lg overflow-hidden border border-border h-48">
                     <AddressMap 
                       readOnly 
-                      initialLat={currentAddress.location.lat} 
-                      initialLng={currentAddress.location.lng} 
+                      initialLat={currentAddress.lat} 
+                      initialLng={currentAddress.lng} 
                     />
                   </div>
 
@@ -111,14 +126,15 @@ export default function Success() {
                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Reference Photos</h3>
                    <div className="grid grid-cols-3 gap-2">
                      {[
-                        { label: "Building", src: previews.building },
-                        { label: "Gate", src: previews.gate },
-                        { label: "Door", src: previews.door }
+                        { label: "Building", src: currentAddress.photoBuilding }, // In real app these would be URLs
+                        { label: "Gate", src: currentAddress.photoGate },
+                        { label: "Door", src: currentAddress.photoDoor }
                      ].map((img, i) => (
                        <div key={i} className="space-y-1">
                          <div className="aspect-square bg-muted rounded-md flex items-center justify-center border border-border overflow-hidden relative group">
                            {img.src ? (
-                             <img src={img.src} alt={img.label} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                             // Mockup: just showing name if no URL logic yet, or valid url if implemented
+                             <div className="text-[10px] p-2 text-center break-words">{img.src}</div>
                            ) : (
                              <span className="text-[10px] text-muted-foreground text-center p-1">No {img.label}</span>
                            )}
@@ -132,7 +148,7 @@ export default function Success() {
 
               <TabsContent value="qr" className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
                 <div className="text-center space-y-2">
-                  <h3 className="font-semibold">Digital Location ID: {digitalId}</h3>
+                  <h3 className="font-semibold">Digital Location ID: {currentAddress.digitalId}</h3>
                   <p className="text-xs text-muted-foreground max-w-xs mx-auto">
                     This QR code is unique to this specific address entry.
                   </p>

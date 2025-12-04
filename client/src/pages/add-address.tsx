@@ -8,6 +8,7 @@ import {
   MapPin, Camera, Clock, CheckCircle2, 
   ChevronRight, ChevronLeft, Upload, Home
 } from "lucide-react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +18,7 @@ import { Separator } from "@/components/ui/separator";
 import { AddressMap } from "@/components/address-map";
 import { VoiceInput } from "@/components/voice-input";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 // --- Schema ---
 const addressSchema = z.object({
@@ -28,16 +30,6 @@ const addressSchema = z.object({
 });
 
 type AddressData = z.infer<typeof addressSchema>;
-
-// --- Utilities ---
-const generateDigitalId = () => {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let result = '';
-  for (let i = 0; i < 8; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
-};
 
 const FileUploadBox = ({ label, icon: Icon, onDrop, file }: { label: string, icon: any, onDrop: (files: File[]) => void, file: File | null }) => {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
@@ -84,7 +76,7 @@ export default function AddAddress() {
   const [step, setStep] = useState(1);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  
   const [files, setFiles] = useState<{
     building?: File;
     gate?: File;
@@ -100,68 +92,52 @@ export default function AddAddress() {
     }
   });
 
-  useEffect(() => {
-    const userId = localStorage.getItem("loggedInUserId");
-    const usersDb = JSON.parse(localStorage.getItem("usersDb") || "{}");
-    
-    if (userId && usersDb[userId]) {
-      setCurrentUser(usersDb[userId]);
-    } else {
-      setLocation("/login");
+  // Check Auth
+  const { data: user, isLoading } = useQuery({
+    queryKey: ["/api/user"],
+    retry: false,
+  });
+
+  // Redirect if not logged in
+  if (!isLoading && !user) {
+    setLocation("/login");
+  }
+
+  const addressMutation = useMutation({
+    mutationFn: async (data: AddressData) => {
+      const payload = {
+        ...data,
+        lat: data.latitude,
+        lng: data.longitude,
+        photoBuilding: files.building?.name,
+        photoGate: files.gate?.name,
+        photoDoor: files.door?.name,
+      };
+      const res = await apiRequest("POST", "/api/addresses", payload);
+      return await res.json();
+    },
+    onSuccess: (data) => {
+       // Update local session-like storage for success page preview 
+       // In real fullstack we might fetch this on success page by ID
+       localStorage.setItem("lastCreatedAddress", JSON.stringify(data));
+       
+       toast({
+        title: "Address Added!",
+        description: `Digital ID ${data.digitalId} created successfully.`,
+      });
+      setLocation("/success");
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to add address"
+      });
     }
-  }, []);
+  });
 
   const onSubmit = (data: AddressData) => {
-    if (!currentUser) return;
-
-    const digitalId = generateDigitalId();
-    
-    const newAddressEntry = {
-      id: digitalId,
-      textAddress: data.textAddress,
-      location: { lat: data.latitude || 0, lng: data.longitude || 0 },
-      photos: {
-        building: files.building ? files.building.name : null,
-        mainGate: files.gate ? files.gate.name : null,
-        flatDoor: files.door ? files.door.name : null,
-      },
-      instructions: {
-        preferredTime: data.preferredTime,
-        note: data.specialNote
-      },
-      timestamp: new Date().toISOString()
-    };
-
-    // Update User
-    const updatedUser = { 
-      ...currentUser, 
-      addresses: [...currentUser.addresses, newAddressEntry] 
-    };
-
-    // Save to DB
-    const usersDb = JSON.parse(localStorage.getItem("usersDb") || "{}");
-    usersDb[updatedUser.iqamaId] = updatedUser;
-    localStorage.setItem("usersDb", JSON.stringify(usersDb));
-
-    // Set Session Data
-    const fileData = {
-      building: files.building ? URL.createObjectURL(files.building) : null,
-      gate: files.gate ? URL.createObjectURL(files.gate) : null,
-      door: files.door ? URL.createObjectURL(files.door) : null,
-    };
-
-    localStorage.setItem("currentSessionData", JSON.stringify({
-      digitalId,
-      user: updatedUser,
-      currentAddress: newAddressEntry,
-      previews: fileData
-    }));
-
-    toast({
-      title: "Address Added!",
-      description: `Digital ID ${digitalId} created successfully.`,
-    });
-    setLocation("/success");
+    addressMutation.mutate(data);
   };
 
   const nextStep = async () => {
@@ -174,7 +150,7 @@ export default function AddAddress() {
 
   const prevStep = () => setStep(s => s - 1);
 
-  if (!currentUser) return null;
+  if (isLoading) return <div className="flex justify-center p-8">Loading...</div>;
 
   return (
     <div className="min-h-screen bg-muted/30 p-3 md:p-8 flex justify-center items-start pt-6 md:pt-20 relative">
@@ -351,8 +327,8 @@ export default function AddAddress() {
                   Next <ChevronRight className="w-4 h-4 ml-2" />
                 </Button>
               ) : (
-                <Button type="submit" className="w-32 md:w-40 bg-primary hover:bg-primary/90">
-                  Save Address <CheckCircle2 className="w-4 h-4 ml-2" />
+                <Button type="submit" className="w-32 md:w-40 bg-primary hover:bg-primary/90" disabled={addressMutation.isPending}>
+                   {addressMutation.isPending ? "Saving..." : "Save Address"} <CheckCircle2 className="w-4 h-4 ml-2" />
                 </Button>
               )}
             </div>

@@ -3,23 +3,15 @@ import { useLocation, Link } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { User, Lock, ArrowRight, Home, ArrowLeft, Trash2 } from "lucide-react";
+import { User, Lock, ArrowRight, Home, Trash2 } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { apiRequest } from "@/lib/queryClient";
 
 const loginSchema = z.object({
   identifier: z.string().min(3, "Email or ID is required"),
@@ -35,55 +27,54 @@ export default function Login() {
     resolver: zodResolver(loginSchema),
   });
 
-  const onSubmit = (data: LoginData) => {
-    const usersDb = JSON.parse(localStorage.getItem("usersDb") || "{}");
-    let foundUser = null;
-
-    // Naive search for user by email or ID
-    Object.values(usersDb).forEach((user: any) => {
-      if (user.iqamaId === data.identifier || user.personalInfo.email === data.identifier) {
-        if (user.password === data.password) {
-          foundUser = user;
-        }
-      }
-    });
-
-    if (foundUser) {
-      // Login successful
-      const user = foundUser as any;
-      localStorage.setItem("loggedInUserId", user.iqamaId);
-      
+  const loginMutation = useMutation({
+    mutationFn: async (data: LoginData) => {
+      const res = await apiRequest("POST", "/api/login", data);
+      return await res.json();
+    },
+    onSuccess: (data) => {
       toast({
         title: "Login Successful",
-        description: `Welcome back, ${user.personalInfo.name}`,
+        description: `Welcome back, ${data.user.name}`,
       });
-
-      // Check address status
-      if (user.addresses && user.addresses.length > 0) {
-        // Has address -> Go to Preferences (Instructions & Fallback)
-        setLocation("/preferences");
-      } else {
-        // No address -> Go to Add Address
-        setLocation("/add-address");
-      }
-    } else {
-      // Login failed
+      
+      // Simple logic to check if we should go to dashboard/preferences or add address
+      // For now, we'll fetch user data in the next page to decide, or trust the response
+      // We'll query the user endpoint to check addresses
+      // But for simplicity, let's just go to preferences if they have an address.
+      // The API could return this info.
+      
+      // Let's assume we go to add-address first, and let that page redirect if they already have one?
+      // Or query /api/user here.
+      
+      checkUserStatus();
+    },
+    onError: (error: any) => {
       toast({
         variant: "destructive",
         title: "Login Failed",
-        description: "Invalid credentials or user not found.",
+        description: error.message || "Invalid credentials"
       });
+    }
+  });
+
+  const checkUserStatus = async () => {
+    try {
+       const res = await apiRequest("GET", "/api/user");
+       const userData = await res.json();
+       
+       if (userData.addresses && userData.addresses.length > 0) {
+         setLocation("/preferences");
+       } else {
+         setLocation("/add-address");
+       }
+    } catch (e) {
+      setLocation("/add-address"); // Default fallback
     }
   };
 
-  const handleResetData = () => {
-    localStorage.clear();
-    toast({
-      title: "Data Cleared",
-      description: "All registration data has been wiped. You can start fresh.",
-    });
-    // Refresh page to ensure clean state
-    window.location.reload();
+  const onSubmit = (data: LoginData) => {
+    loginMutation.mutate(data);
   };
 
   return (
@@ -96,32 +87,6 @@ export default function Login() {
             <span className="hidden sm:inline">Home</span>
           </Button>
         </Link>
-      </div>
-
-      <div className="absolute top-4 right-4">
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button variant="destructive" size="sm" className="gap-2 opacity-80 hover:opacity-100">
-              <Trash2 className="w-4 h-4" />
-              <span className="hidden sm:inline">Reset Demo Data</span>
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This will permanently delete all registered users and addresses from this browser's local storage. 
-                This action cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleResetData} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                Yes, Delete Everything
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
       </div>
 
       <Card className="w-full max-w-md shadow-xl border-border/60 bg-card/95 backdrop-blur-sm">
@@ -164,8 +129,8 @@ export default function Login() {
               )}
             </div>
 
-            <Button type="submit" className="w-full mt-4">
-              Log In <ArrowRight className="ml-2 w-4 h-4" />
+            <Button type="submit" className="w-full mt-4" disabled={loginMutation.isPending}>
+              {loginMutation.isPending ? "Logging in..." : "Log In"} <ArrowRight className="ml-2 w-4 h-4" />
             </Button>
             
             <div className="text-center text-sm text-muted-foreground pt-4 border-t mt-4">
