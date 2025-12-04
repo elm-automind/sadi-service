@@ -22,6 +22,8 @@ export interface IStorage {
   createFallbackContact(contact: InsertFallbackContact): Promise<FallbackContact>;
   getFallbackContactsByAddressId(addressId: number): Promise<FallbackContact[]>;
   getFallbackContactById(id: number): Promise<FallbackContact | undefined>;
+  deleteFallbackContactsByAddressId(addressId: number): Promise<void>;
+  deleteAddress(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -99,6 +101,15 @@ export class DatabaseStorage implements IStorage {
   async getFallbackContactById(id: number): Promise<FallbackContact | undefined> {
     const [contact] = await db.select().from(fallbackContacts).where(eq(fallbackContacts.id, id));
     return contact || undefined;
+  }
+
+  async deleteFallbackContactsByAddressId(addressId: number): Promise<void> {
+    await db.delete(fallbackContacts).where(eq(fallbackContacts.addressId, addressId));
+  }
+
+  async deleteAddress(id: number): Promise<boolean> {
+    const [deleted] = await db.delete(addresses).where(eq(addresses.id, id)).returning();
+    return !!deleted;
   }
 }
 

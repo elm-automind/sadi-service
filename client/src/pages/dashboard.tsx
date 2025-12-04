@@ -1,53 +1,100 @@
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, Link } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
-  MapPin, Plus, Settings, Clock, Users, LogOut, 
+  MapPin, Plus, Clock, Users, LogOut, 
   ChevronRight, QrCode, Eye, Edit, Home as HomeIcon,
-  UserPlus, Phone, Navigation, AlertCircle, Calendar
+  UserPlus, Phone, Navigation, Calendar, Trash2
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import type { User, Address, FallbackContact } from "@shared/schema";
 
-interface AddressWithFallbacks extends Address {
-  fallbackContacts?: FallbackContact[];
-}
-
 interface UserWithAddresses extends User {
-  addresses: AddressWithFallbacks[];
+  addresses: Address[];
 }
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [addressToDelete, setAddressToDelete] = useState<Address | null>(null);
+  const [selectedFallbackAddressId, setSelectedFallbackAddressId] = useState<number | null>(null);
 
   const { data: user, isLoading } = useQuery<UserWithAddresses>({
     queryKey: ["/api/user"],
     retry: false,
   });
 
-  // Fetch fallback contacts for all addresses - key includes address IDs to refetch when they change
-  const addressIds = user?.addresses?.map(a => a.id).sort().join(',') || '';
-  const { data: fallbacksByAddress } = useQuery<Record<number, FallbackContact[]>>({
-    queryKey: ["/api/fallback-contacts-all", addressIds],
-    queryFn: async () => {
-      if (!user?.addresses || user.addresses.length === 0) return {};
-      const result: Record<number, FallbackContact[]> = {};
-      for (const addr of user.addresses) {
-        try {
-          const res = await fetch(`/api/fallback-contacts/${addr.id}`, { credentials: 'include' });
-          if (res.ok) {
-            result[addr.id] = await res.json();
-          }
-        } catch {}
+  // Set default selected address for fallback section when user data loads or changes
+  useEffect(() => {
+    if (user?.addresses?.length) {
+      // Check if current selection still exists in addresses
+      const currentSelectionExists = user.addresses.some(a => a.id === selectedFallbackAddressId);
+      if (!currentSelectionExists) {
+        // Reset to first address if current selection no longer exists
+        setSelectedFallbackAddressId(user.addresses[0].id);
       }
-      return result;
+    } else {
+      // No addresses, clear selection
+      setSelectedFallbackAddressId(null);
+    }
+  }, [user?.addresses]);
+
+  // Check if selected address exists in current user addresses
+  const selectedAddressExists = user?.addresses?.some(a => a.id === selectedFallbackAddressId) ?? false;
+
+  // Fetch fallback contacts only for the selected address if it exists
+  const { data: fallbackContacts } = useQuery<FallbackContact[]>({
+    queryKey: ["/api/fallback-contacts", selectedFallbackAddressId],
+    queryFn: async () => {
+      if (!selectedFallbackAddressId) return [];
+      const res = await fetch(`/api/fallback-contacts/${selectedFallbackAddressId}`, { credentials: 'include' });
+      if (res.ok) return res.json();
+      return [];
     },
-    enabled: !!user?.addresses?.length,
+    enabled: !!selectedFallbackAddressId && selectedAddressExists,
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (addressId: number) => {
+      const res = await apiRequest("DELETE", `/api/addresses/${addressId}`, {});
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      toast({
+        title: "Address Deleted",
+        description: "The address and its fallback contacts have been removed.",
+      });
+      setDeleteDialogOpen(false);
+      setAddressToDelete(null);
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to delete address",
+      });
+    }
   });
 
   useEffect(() => {
@@ -61,6 +108,17 @@ export default function Dashboard() {
     setLocation("/login");
   };
 
+  const handleDeleteClick = (address: Address) => {
+    setAddressToDelete(address);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (addressToDelete) {
+      deleteMutation.mutate(addressToDelete.id);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-muted/30 flex items-center justify-center">
@@ -70,6 +128,8 @@ export default function Dashboard() {
   }
 
   if (!user) return null;
+
+  const selectedAddress = user.addresses.find(a => a.id === selectedFallbackAddressId);
 
   return (
     <div className="min-h-screen bg-muted/30 p-4 md:p-8">
@@ -172,6 +232,7 @@ export default function Dashboard() {
               user.addresses.map((address) => (
                 <div 
                   key={address.id}
+                  data-testid={`address-card-${address.id}`}
                   className="p-4 bg-muted/50 rounded-lg border border-border/50 hover:border-primary/30 transition-colors"
                 >
                   <div className="flex items-start justify-between gap-4">
@@ -195,22 +256,32 @@ export default function Dashboard() {
                         </p>
                       )}
                     </div>
-                    <div className="flex gap-2 shrink-0">
+                    <div className="flex gap-1 shrink-0">
                       <Link href={`/view/${address.digitalId}`}>
-                        <Button variant="ghost" size="sm" title="View">
+                        <Button variant="ghost" size="sm" title="View" data-testid={`btn-view-${address.id}`}>
                           <Eye className="w-4 h-4" />
                         </Button>
                       </Link>
                       <Link href={`/edit-address/${address.id}`}>
-                        <Button variant="ghost" size="sm" title="Edit">
+                        <Button variant="ghost" size="sm" title="Edit" data-testid={`btn-edit-${address.id}`}>
                           <Edit className="w-4 h-4" />
                         </Button>
                       </Link>
                       <Link href={`/view/${address.digitalId}`}>
-                        <Button variant="ghost" size="sm" title="QR Code">
+                        <Button variant="ghost" size="sm" title="QR Code" data-testid={`btn-qr-${address.id}`}>
                           <QrCode className="w-4 h-4" />
                         </Button>
                       </Link>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        title="Delete"
+                        data-testid={`btn-delete-${address.id}`}
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => handleDeleteClick(address)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -232,8 +303,8 @@ export default function Dashboard() {
                   Alternative people who can receive deliveries when you're not available
                 </CardDescription>
               </div>
-              {user.addresses.length > 0 && (
-                <Link href="/fallback-contact">
+              {user.addresses.length > 0 && selectedFallbackAddressId && (
+                <Link href={`/fallback-contact?addressId=${selectedFallbackAddressId}`}>
                   <Button size="sm" variant="outline" className="gap-2">
                     <UserPlus className="w-4 h-4" /> Add
                   </Button>
@@ -248,34 +319,51 @@ export default function Dashboard() {
                 <p className="text-sm">Register an address first to add fallback contacts.</p>
               </div>
             ) : (
-              user.addresses.map((address) => {
-                const contacts = fallbacksByAddress?.[address.id] || [];
-                return (
-                  <div key={address.id} className="space-y-3">
-                    <div className="flex items-center gap-2 text-sm">
-                      <MapPin className="w-4 h-4 text-primary" />
-                      <span className="font-mono text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
-                        {address.digitalId}
-                      </span>
-                      <span className="text-muted-foreground truncate flex-1">
-                        {address.textAddress.substring(0, 40)}...
-                      </span>
-                    </div>
-                    
-                    {contacts.length === 0 ? (
-                      <div className="ml-6 p-3 bg-muted/30 rounded-lg border border-dashed border-border/50 text-center">
-                        <p className="text-sm text-muted-foreground">No fallback contacts added</p>
-                        <Link href={`/fallback-contact?addressId=${address.id}`}>
-                          <Button variant="link" size="sm" className="mt-1 gap-1">
+              <>
+                {/* Address Selector */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-muted-foreground">Select Primary Address</label>
+                  <Select 
+                    value={selectedFallbackAddressId?.toString() || ""} 
+                    onValueChange={(v) => setSelectedFallbackAddressId(parseInt(v))}
+                  >
+                    <SelectTrigger data-testid="select-fallback-address">
+                      <SelectValue placeholder="Select an address" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {user.addresses.map((addr) => (
+                        <SelectItem key={addr.id} value={addr.id.toString()}>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+                              {addr.digitalId}
+                            </span>
+                            <span className="truncate max-w-[200px]">{addr.textAddress}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Fallback Contacts for Selected Address */}
+                {selectedAddress && (
+                  <div className="space-y-3 pt-2">
+                    {!fallbackContacts || fallbackContacts.length === 0 ? (
+                      <div className="p-4 bg-muted/30 rounded-lg border border-dashed border-border/50 text-center">
+                        <Users className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                        <p className="text-sm text-muted-foreground">No fallback contacts for this address</p>
+                        <Link href={`/fallback-contact?addressId=${selectedFallbackAddressId}`}>
+                          <Button variant="link" size="sm" className="mt-2 gap-1">
                             <UserPlus className="w-3 h-3" /> Add Fallback Contact
                           </Button>
                         </Link>
                       </div>
                     ) : (
-                      <div className="ml-6 space-y-2">
-                        {contacts.map((contact) => (
+                      <div className="space-y-2">
+                        {fallbackContacts.map((contact) => (
                           <div 
                             key={contact.id}
+                            data-testid={`fallback-card-${contact.id}`}
                             className="p-3 bg-muted/50 rounded-lg border border-border/50 hover:border-purple-300 transition-colors"
                           >
                             <div className="flex items-start justify-between gap-3">
@@ -310,14 +398,14 @@ export default function Dashboard() {
                                 </div>
                               </div>
                               <Link href={`/view-fallback/${contact.id}`}>
-                                <Button variant="ghost" size="sm" title="View Details">
+                                <Button variant="ghost" size="sm" title="View Details" data-testid={`btn-view-fallback-${contact.id}`}>
                                   <Eye className="w-4 h-4" />
                                 </Button>
                               </Link>
                             </div>
                           </div>
                         ))}
-                        <Link href={`/fallback-contact?addressId=${address.id}`}>
+                        <Link href={`/fallback-contact?addressId=${selectedFallbackAddressId}`}>
                           <Button variant="ghost" size="sm" className="w-full gap-1 text-purple-600 hover:text-purple-700 hover:bg-purple-50">
                             <UserPlus className="w-3 h-3" /> Add Another Fallback
                           </Button>
@@ -325,13 +413,34 @@ export default function Dashboard() {
                       </div>
                     )}
                   </div>
-                );
-              })
+                )}
+              </>
             )}
           </CardContent>
         </Card>
 
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Address?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the address "{addressToDelete?.digitalId}" and all its fallback contacts. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteMutation.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

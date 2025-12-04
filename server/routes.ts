@@ -132,6 +132,38 @@ export async function registerRoutes(httpServer: Server, app: Express) {
     res.json(updated);
   });
 
+  app.delete("/api/addresses/:id", requireAuth, async (req, res) => {
+    try {
+      const addressId = parseInt(req.params.id);
+      if (isNaN(addressId)) {
+        return res.status(400).json({ message: "Invalid address ID" });
+      }
+
+      // Verify ownership
+      const address = await storage.getAddressById(addressId);
+      if (!address) {
+        return res.status(404).json({ message: "Address not found" });
+      }
+      if (address.userId !== req.session.userId) {
+        return res.status(403).json({ message: "Not authorized to delete this address" });
+      }
+
+      // Delete associated fallback contacts first
+      await storage.deleteFallbackContactsByAddressId(addressId);
+      
+      // Delete the address
+      const deleted = await storage.deleteAddress(addressId);
+      if (!deleted) {
+        return res.status(500).json({ message: "Failed to delete address" });
+      }
+
+      res.json({ message: "Address deleted successfully" });
+    } catch (error) {
+      console.error("Delete address error:", error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  });
+
   // --- Fallback Contact Routes ---
   app.post("/api/fallback-contacts", requireAuth, async (req, res) => {
     try {

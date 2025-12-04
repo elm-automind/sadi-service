@@ -161,8 +161,23 @@ export default function FallbackContact() {
     }
   }, [user, isLoading]);
 
+  // Helper to convert file to base64 data URI
+  const fileToDataUri = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
   const fallbackMutation = useMutation({
     mutationFn: async (data: FallbackData) => {
+      // Convert files to base64 data URIs
+      const photoBuilding = files.building ? await fileToDataUri(files.building) : undefined;
+      const photoGate = files.gate ? await fileToDataUri(files.gate) : undefined;
+      const photoDoor = files.door ? await fileToDataUri(files.door) : undefined;
+
       const payload = {
         ...data,
         lat: data.latitude,
@@ -172,9 +187,9 @@ export default function FallbackContact() {
         extraFeeAcknowledged: data.extraFeeAcknowledged,
         scheduledDate: data.scheduledDate,
         scheduledTimeSlot: data.scheduledTimeSlot,
-        photoBuilding: files.building?.name,
-        photoGate: files.gate?.name,
-        photoDoor: files.door?.name,
+        photoBuilding,
+        photoGate,
+        photoDoor,
       };
       const res = await apiRequest("POST", "/api/fallback-contacts", payload);
       return await res.json();
