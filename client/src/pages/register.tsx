@@ -151,12 +151,12 @@ export default function Register() {
       password: data.password
     };
     
-    // If this is a full reg, add the address
+    // Check if address is actually provided
     let newAddressEntry = null;
-    if (regType === "full") {
+    if (regType === "full" && data.textAddress && data.textAddress.length >= 10) {
        newAddressEntry = {
         id: digitalId,
-        textAddress: data.textAddress || "Quick Addr",
+        textAddress: data.textAddress,
         location: { lat: data.latitude || 0, lng: data.longitude || 0 },
         photos: {
           building: files.building ? files.building.name : null,
@@ -177,14 +177,8 @@ export default function Register() {
     localStorage.setItem("usersDb", JSON.stringify(usersDb));
     localStorage.removeItem("registrationDraft");
 
-    if (regType === "quick") {
-      toast({
-        title: "Account Created!",
-        description: "You can now login with your ID/Email and Password.",
-      });
-      setLocation("/login");
-    } else {
-      // Full flow -> Success page
+    if (newAddressEntry) {
+      // Full flow success -> Digital ID page
       const fileData = {
         building: files.building ? URL.createObjectURL(files.building) : null,
         gate: files.gate ? URL.createObjectURL(files.gate) : null,
@@ -203,6 +197,13 @@ export default function Register() {
         description: `Digital ID ${digitalId} created successfully.`,
       });
       setLocation("/success");
+    } else {
+      // No address added (Quick Reg or fallback) -> Login
+      toast({
+        title: "Account Created!",
+        description: "You can now login with your ID/Email and Password.",
+      });
+      setLocation("/login");
     }
   };
 
@@ -224,6 +225,15 @@ export default function Register() {
       valid = await form.trigger(["iqamaId", "phone", "email", "name", "password"]);
       if (valid) setStep(2);
     } else if (step === 2) {
+      // Enforce address validation here for full flow
+      const address = form.getValues("textAddress");
+      if (!address || address.length < 10) {
+        form.setError("textAddress", { 
+          type: "manual", 
+          message: "Please provide a valid detailed address (min 10 chars) or use Quick Register." 
+        });
+        return;
+      }
       valid = await form.trigger(["textAddress"]); 
       if (valid) setStep(3);
     }
