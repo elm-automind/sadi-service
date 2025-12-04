@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -21,19 +21,38 @@ import { useToast } from "@/hooks/use-toast";
 // --- Schemas ---
 
 const registrationSchema = z.object({
-  iqamaId: z.string().min(5, "National ID is required"),
-  phone: z.string().min(9, "Valid phone number is required"),
+  iqamaId: z.string()
+    .min(10, "National ID must be at least 10 digits")
+    .max(10, "National ID must be 10 digits")
+    .regex(/^\d+$/, "National ID must contain only numbers"),
+  phone: z.string()
+    .min(9, "Phone number is too short")
+    .max(14, "Phone number is too long")
+    .regex(/^\+?[\d\s]+$/, "Invalid phone number format"),
   email: z.string().email("Valid email is required"),
   name: z.string().min(2, "Full name is required"),
   // Address
-  latitude: z.number().optional(),
-  longitude: z.number().optional(),
-  textAddress: z.string().min(5, "Address details are required"),
+  latitude: z.number({ required_error: "Location is required" }).optional(),
+  longitude: z.number({ required_error: "Location is required" }).optional(),
+  textAddress: z.string().min(10, "Please provide a more detailed address (at least 10 chars)"),
   preferredTime: z.string().optional(),
   specialNote: z.string().optional(),
 });
 
 type FormData = z.infer<typeof registrationSchema>;
+
+// --- Utilities ---
+
+const generateDigitalId = () => {
+  // Generate 8-10 char unique ID (alphanumeric uppercase)
+  // e.g., 'A7X29B1C'
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Exclude confusing chars like I, 1, O, 0
+  let result = '';
+  for (let i = 0; i < 8; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+};
 
 // --- Components ---
 
@@ -93,73 +112,115 @@ export default function Register() {
     defaultValues: {
       preferredTime: "morning",
       textAddress: "",
+      name: "",
+      iqamaId: "",
+      phone: "",
+      email: "",
+      specialNote: ""
     }
   });
 
-  const onSubmit = (data: FormData) => {
-    // --- Data Formatting for Backend ---
-    // Organizing data into separate entities as requested
-    
-    const registrationEntity = {
-      iqamaId: data.iqamaId,
-      phone: data.phone,
-      email: data.email,
-      name: data.name
-    };
+  // Load draft from memory
+  useEffect(() => {
+    const savedDraft = localStorage.getItem("registrationDraft");
+    if (savedDraft) {
+      try {
+        const parsed = JSON.parse(savedDraft);
+        form.reset(parsed);
+        toast({
+           title: "Draft Restored",
+           description: "We found an unfinished registration and restored it.",
+        });
+      } catch (e) {
+        console.error("Failed to parse draft", e);
+      }
+    }
+  }, []);
 
-    const addressPassportEntity = {
-      location: {
-        lat: data.latitude,
-        lng: data.longitude
-      },
+  // Save draft on change (debounced slightly by nature of react state updates or just save on unmount/next step)
+  // For simplicity, we'll save on step change or can use a watch effect
+  const formValues = form.watch();
+  useEffect(() => {
+    if (formValues.name || formValues.iqamaId) { // Only save if started
+       localStorage.setItem("registrationDraft", JSON.stringify(formValues));
+    }
+  }, [formValues]);
+
+  const onSubmit = (data: FormData) => {
+    // Generate ID
+    const digitalId = generateDigitalId();
+    
+    // --- Simulated Backend Logic for Multiple Addresses ---
+    const usersDb = JSON.parse(localStorage.getItem("usersDb") || "{}");
+    const existingUser = usersDb[data.iqamaId];
+    
+    const newAddressEntry = {
+      id: digitalId,
       textAddress: data.textAddress,
+      location: { lat: data.latitude, lng: data.longitude },
       photos: {
         building: files.building ? files.building.name : null,
         mainGate: files.gate ? files.gate.name : null,
         flatDoor: files.door ? files.door.name : null,
-        qrCode: null // Generated on server/frontend later
-      }
-    };
-
-    const instruction = {
-      preferredDeliveryTime: data.preferredTime,
-      specialNote: data.specialNote
-    };
-
-    const defaultFallback = {
-      name: data.name,
-      phone: data.phone,
-      location: {
-        lat: data.latitude,
-        lng: data.longitude
       },
-      textAddress: data.textAddress,
-      photo: files.building ? files.building.name : null // Primary photo
+      instructions: {
+        preferredTime: data.preferredTime,
+        note: data.specialNote
+      },
+      timestamp: new Date().toISOString()
     };
 
-    // Simulate Backend Call
-    console.log("--- SIMULATING BACKEND SAVE ---");
-    console.log("Saving Registration Entity:", registrationEntity);
-    console.log("Saving Address Passport Entity:", addressPassportEntity);
-    console.log("Saving Instruction:", instruction);
-    console.log("Saving Default Fallback:", defaultFallback);
+    let finalUserData;
+
+    if (existingUser) {
+       // Add address to existing user
+       existingUser.addresses.push(newAddressEntry);
+       // Update personal info in case it changed (optional decision)
+       existingUser.personalInfo = {
+         name: data.name,
+         phone: data.phone,
+         email: data.email
+       };
+       finalUserData = existingUser;
+       usersDb[data.iqamaId] = existingUser;
+    } else {
+       // Create new user
+       finalUserData = {
+         iqamaId: data.iqamaId,
+         personalInfo: {
+           name: data.name,
+           phone: data.phone,
+           email: data.email
+         },
+         addresses: [newAddressEntry]
+       };
+       usersDb[data.iqamaId] = finalUserData;
+    }
+
+    // Save DB
+    localStorage.setItem("usersDb", JSON.stringify(usersDb));
     
-    // Mock URLs for images (in a real app, these would be uploaded to S3/storage and return URLs)
+    // Clear Draft
+    localStorage.removeItem("registrationDraft");
+
+    // Save Current Session Data for Success Page
+    // Mock URLs for images
     const fileData = {
       building: files.building ? URL.createObjectURL(files.building) : null,
       gate: files.gate ? URL.createObjectURL(files.gate) : null,
       door: files.door ? URL.createObjectURL(files.door) : null,
     };
 
-    // Save to local storage for demo purposes so the success page can read it
-    localStorage.setItem("registrationData", JSON.stringify({
-      ...data,
-      ...fileData
+    localStorage.setItem("currentSessionData", JSON.stringify({
+      digitalId,
+      user: finalUserData,
+      currentAddress: newAddressEntry,
+      previews: fileData
     }));
 
     toast({
-      title: "Registration Successful",
-      description: "Your profile has been created and data entities saved.",
+      title: "Address Registered!",
+      description: `Digital ID ${digitalId} created successfully.`,
     });
 
     setLocation("/success");

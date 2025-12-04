@@ -4,37 +4,38 @@ import QRCode from "react-qr-code";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Phone, MapPin, CheckCircle2, Home, QrCode, Download, Share2 } from "lucide-react";
+import { Phone, MapPin, CheckCircle2, Home, QrCode, Download, Share2, Plus } from "lucide-react";
 import { AddressMap } from "@/components/address-map";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Success() {
-  const [data, setData] = useState<any>(null);
+  const [sessionData, setSessionData] = useState<any>(null);
   const [, setLocation] = useLocation();
 
   useEffect(() => {
-    const stored = localStorage.getItem("registrationData");
+    const stored = localStorage.getItem("currentSessionData");
     if (stored) {
-      setData(JSON.parse(stored));
+      setSessionData(JSON.parse(stored));
     } else {
       setLocation("/"); // Redirect if no data found
     }
   }, []);
 
-  if (!data) return null;
+  if (!sessionData) return null;
+
+  const { user, currentAddress, digitalId, previews } = sessionData;
 
   // Prepare QR Code Data
-  // We include the text address and metadata about images. 
-  // In a real app, this would likely be a URL to a tracking page or a JSON blob with image URLs.
   const qrCodeValue = JSON.stringify({
-    n: data.name,
-    p: data.phone,
-    addr: data.textAddress,
-    loc: { lat: data.latitude, lng: data.longitude },
+    id: digitalId, // Unique Address ID
+    n: user.personalInfo.name,
+    p: user.personalInfo.phone,
+    addr: currentAddress.textAddress,
+    loc: currentAddress.location,
     imgs: {
-      b: data.building ? "Attached" : "No",
-      g: data.gate ? "Attached" : "No",
-      d: data.door ? "Attached" : "No"
+      b: currentAddress.photos.building ? "Yes" : "No",
+      g: currentAddress.photos.mainGate ? "Yes" : "No",
+      d: currentAddress.photos.flatDoor ? "Yes" : "No"
     }
   });
 
@@ -46,7 +47,12 @@ export default function Success() {
             <CheckCircle2 className="w-8 h-8" />
           </div>
           <h1 className="text-2xl font-bold text-foreground">Registration Complete</h1>
-          <p className="text-muted-foreground text-sm mt-1">Your profile has been successfully saved.</p>
+          <p className="text-muted-foreground text-sm mt-1">Your location has been secured.</p>
+          
+          <div className="mt-4 inline-block px-4 py-2 bg-background rounded-lg border border-border shadow-sm">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Your Digital ID</p>
+            <p className="text-xl font-mono font-bold text-primary tracking-widest">{digitalId}</p>
+          </div>
         </div>
 
         <CardContent className="p-0">
@@ -55,40 +61,47 @@ export default function Success() {
             <Tabs defaultValue="details" className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-6">
                 <TabsTrigger value="details">Details</TabsTrigger>
-                <TabsTrigger value="qr">Digital ID</TabsTrigger>
+                <TabsTrigger value="qr">Digital ID Card</TabsTrigger>
               </TabsList>
               
               <TabsContent value="details" className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xl shrink-0">
-                    {data.name.charAt(0)}
+                    {user.personalInfo.name.charAt(0)}
                   </div>
                   <div>
-                    <h2 className="font-bold text-lg">{data.name}</h2>
+                    <h2 className="font-bold text-lg">{user.personalInfo.name}</h2>
                     <div className="flex items-center text-muted-foreground text-sm gap-1">
                       <Phone className="w-3 h-3" />
-                      {data.phone}
+                      {user.personalInfo.phone}
                     </div>
                   </div>
                 </div>
 
+                {/* Show multiple addresses if exist */}
+                {user.addresses.length > 1 && (
+                  <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
+                    You have {user.addresses.length} addresses registered under this ID.
+                  </div>
+                )}
+
                 <Separator />
 
                 <div className="space-y-3">
-                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Location</h3>
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Current Location</h3>
                   
                   <div className="rounded-lg overflow-hidden border border-border h-48">
                     <AddressMap 
                       readOnly 
-                      initialLat={data.latitude} 
-                      initialLng={data.longitude} 
+                      initialLat={currentAddress.location.lat} 
+                      initialLng={currentAddress.location.lng} 
                     />
                   </div>
 
                   <div className="flex items-start gap-2 p-3 bg-muted/50 rounded-lg border border-border/50">
                     <MapPin className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                     <p className="text-sm text-foreground leading-snug">
-                      {data.textAddress}
+                      {currentAddress.textAddress}
                     </p>
                   </div>
                 </div>
@@ -98,9 +111,9 @@ export default function Success() {
                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Reference Photos</h3>
                    <div className="grid grid-cols-3 gap-2">
                      {[
-                        { label: "Building", src: data.building },
-                        { label: "Gate", src: data.gate },
-                        { label: "Door", src: data.door }
+                        { label: "Building", src: previews.building },
+                        { label: "Gate", src: previews.gate },
+                        { label: "Door", src: previews.door }
                      ].map((img, i) => (
                        <div key={i} className="space-y-1">
                          <div className="aspect-square bg-muted rounded-md flex items-center justify-center border border-border overflow-hidden relative group">
@@ -119,31 +132,34 @@ export default function Success() {
 
               <TabsContent value="qr" className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
                 <div className="text-center space-y-2">
-                  <h3 className="font-semibold">Your Digital Location ID</h3>
+                  <h3 className="font-semibold">Digital Location ID: {digitalId}</h3>
                   <p className="text-xs text-muted-foreground max-w-xs mx-auto">
-                    Scan this code to retrieve your address details and location photos.
+                    This QR code is unique to this specific address entry.
                   </p>
                 </div>
 
                 <div className="flex justify-center py-4">
-                  <div className="p-4 bg-white rounded-xl shadow-sm border border-border">
+                  <div className="p-4 bg-white rounded-xl shadow-sm border border-border relative">
                     <QRCode 
                       value={qrCodeValue} 
                       size={200}
                       level="M"
                       viewBox={`0 0 256 256`}
                     />
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white p-1 rounded-full border border-gray-100 shadow-sm">
+                      <MapPin className="w-6 h-6 text-primary fill-primary/10" />
+                    </div>
                   </div>
                 </div>
 
                 <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg text-xs text-blue-700 dark:text-blue-300 flex gap-2 items-start">
                   <QrCode className="w-4 h-4 mt-0.5 shrink-0" />
-                  <p>This QR code contains your name, phone, verified coordinates, and links to your uploaded location photos.</p>
+                  <p>Scan to verify address: {currentAddress.textAddress.substring(0, 40)}...</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 pt-2">
                   <Button variant="outline" className="w-full">
-                    <Download className="w-4 h-4 mr-2" /> Save
+                    <Download className="w-4 h-4 mr-2" /> Save ID
                   </Button>
                   <Button className="w-full">
                     <Share2 className="w-4 h-4 mr-2" /> Share
@@ -152,10 +168,15 @@ export default function Success() {
               </TabsContent>
             </Tabs>
             
-            <div className="pt-6 mt-2 border-t border-border/40">
+            <div className="pt-6 mt-2 border-t border-border/40 grid grid-cols-2 gap-3">
               <Link href="/">
                 <Button className="w-full" variant="ghost">
-                  <Home className="w-4 h-4 mr-2" /> Return to Home
+                  <Home className="w-4 h-4 mr-2" /> Home
+                </Button>
+              </Link>
+              <Link href="/register">
+                <Button className="w-full" variant="outline">
+                  <Plus className="w-4 h-4 mr-2" /> Add Another
                 </Button>
               </Link>
             </div>
