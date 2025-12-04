@@ -2,7 +2,10 @@ import type { Express } from "express";
 import { type Server } from "http";
 import { storage } from "./storage";
 import { insertUserSchema, insertAddressSchema, insertFallbackContactSchema } from "@shared/schema";
+import { calculateDistanceKm } from "@shared/utils";
 import { z } from "zod";
+
+const MAX_FREE_DISTANCE_KM = 3;
 
 declare module "express-session" {
   interface SessionData {
@@ -133,7 +136,60 @@ export async function registerRoutes(httpServer: Server, app: Express) {
   app.post("/api/fallback-contacts", requireAuth, async (req, res) => {
     try {
       const contactData = insertFallbackContactSchema.parse(req.body);
-      const newContact = await storage.createFallbackContact(contactData);
+      
+      // Strict validation for lat/lng - ensure they are valid finite numbers
+      if (!Number.isFinite(contactData.lat) || !Number.isFinite(contactData.lng)) {
+        return res.status(400).json({ 
+          message: "Please select a location on the map for the fallback contact." 
+        });
+      }
+      
+      // Fetch the primary address to calculate distance
+      const primaryAddress = await storage.getAddressById(contactData.addressId);
+      if (!primaryAddress) {
+        return res.status(400).json({ message: "Primary address not found" });
+      }
+
+      // Primary address must have coordinates for distance calculation
+      if (!primaryAddress.lat || !primaryAddress.lng) {
+        return res.status(400).json({ message: "Primary address does not have location data" });
+      }
+
+      // Calculate distance using server-side trusted coordinates
+      const computedDistance = calculateDistanceKm(
+        primaryAddress.lat,
+        primaryAddress.lng,
+        contactData.lat,
+        contactData.lng
+      );
+      const requiresExtraFee = computedDistance > MAX_FREE_DISTANCE_KM;
+
+      // If distance exceeds 3km, enforce scheduling and fee acknowledgment with strict validation
+      if (requiresExtraFee) {
+        // Zod already trims, so check for non-empty after trim
+        const hasScheduledDate = contactData.scheduledDate && contactData.scheduledDate.length > 0;
+        const hasScheduledTimeSlot = contactData.scheduledTimeSlot && contactData.scheduledTimeSlot.length > 0;
+        
+        if (!hasScheduledDate || !hasScheduledTimeSlot) {
+          return res.status(400).json({ 
+            message: "Fallback locations beyond 3km require scheduled delivery date and time slot." 
+          });
+        }
+        if (contactData.extraFeeAcknowledged !== true) {
+          return res.status(400).json({ 
+            message: "Please acknowledge the extra delivery fee for locations beyond 3km." 
+          });
+        }
+      }
+
+      // Create the fallback contact with server-computed distance (ignore client-sent values)
+      const finalContactData = {
+        ...contactData,
+        distanceKm: computedDistance,
+        requiresExtraFee,
+      };
+
+      const newContact = await storage.createFallbackContact(finalContactData);
       res.status(201).json(newContact);
     } catch (error) {
       if (error instanceof z.ZodError) {

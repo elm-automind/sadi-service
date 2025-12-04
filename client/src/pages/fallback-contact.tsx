@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useLocation, Link } from "wouter";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -6,7 +6,8 @@ import * as z from "zod";
 import { useDropzone } from "react-dropzone";
 import { 
   MapPin, Camera, CheckCircle2, ChevronRight, ChevronLeft, 
-  Upload, Home, Users, Phone, User as UserIcon
+  Upload, Home, Users, Phone, User as UserIcon, AlertTriangle,
+  Calendar, Clock, DollarSign, Info
 } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 
@@ -16,10 +17,12 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { AddressMap } from "@/components/address-map";
 import { VoiceInput } from "@/components/voice-input";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { calculateDistanceKm, formatDistance } from "@shared/utils";
 import type { User, Address } from "@shared/schema";
 
 interface UserWithAddresses extends User {
@@ -31,10 +34,13 @@ const fallbackSchema = z.object({
   name: z.string().min(2, "Name is required"),
   phone: z.string().min(9, "Phone number is required"),
   relationship: z.string().optional(),
-  textAddress: z.string().optional(),
-  latitude: z.number().optional(),
-  longitude: z.number().optional(),
+  textAddress: z.string().min(5, "Please provide an address or select on the map"),
+  latitude: z.number({ required_error: "Please select a location on the map" }),
+  longitude: z.number({ required_error: "Please select a location on the map" }),
   specialNote: z.string().optional(),
+  scheduledDate: z.string().optional(),
+  scheduledTimeSlot: z.string().optional(),
+  extraFeeAcknowledged: z.boolean().optional(),
 });
 
 type FallbackData = z.infer<typeof fallbackSchema>;
@@ -77,6 +83,19 @@ const FileUploadBox = ({ label, icon: Icon, onDrop, file }: { label: string, ico
   );
 };
 
+const MAX_FREE_DISTANCE_KM = 3;
+const EXTRA_FEE_AMOUNT = 15;
+
+const TIME_SLOTS = [
+  { value: "morning-8-10", label: "Morning (8:00 AM - 10:00 AM)" },
+  { value: "morning-10-12", label: "Morning (10:00 AM - 12:00 PM)" },
+  { value: "afternoon-12-2", label: "Afternoon (12:00 PM - 2:00 PM)" },
+  { value: "afternoon-2-4", label: "Afternoon (2:00 PM - 4:00 PM)" },
+  { value: "afternoon-4-6", label: "Afternoon (4:00 PM - 6:00 PM)" },
+  { value: "evening-6-8", label: "Evening (6:00 PM - 8:00 PM)" },
+  { value: "evening-8-9", label: "Evening (8:00 PM - 9:00 PM)" },
+];
+
 export default function FallbackContact() {
   const [step, setStep] = useState(1);
   const [, setLocation] = useLocation();
@@ -95,9 +114,43 @@ export default function FallbackContact() {
       phone: "",
       relationship: "",
       textAddress: "",
-      specialNote: ""
+      specialNote: "",
+      scheduledDate: "",
+      scheduledTimeSlot: "",
+      extraFeeAcknowledged: false,
     }
   });
+
+  const watchedAddressId = form.watch("addressId");
+  const watchedLat = form.watch("latitude");
+  const watchedLng = form.watch("longitude");
+  const watchedExtraFeeAck = form.watch("extraFeeAcknowledged");
+  const watchedScheduledDate = form.watch("scheduledDate");
+  const watchedScheduledTimeSlot = form.watch("scheduledTimeSlot");
+
+  const primaryAddress = useMemo(() => {
+    if (!user?.addresses || !watchedAddressId) return null;
+    return user.addresses.find(a => a.id === watchedAddressId);
+  }, [user?.addresses, watchedAddressId]);
+
+  const distance = useMemo(() => {
+    if (!primaryAddress || !watchedLat || !watchedLng) return null;
+    if (!primaryAddress.lat || !primaryAddress.lng) return null;
+    return calculateDistanceKm(
+      primaryAddress.lat,
+      primaryAddress.lng,
+      watchedLat,
+      watchedLng
+    );
+  }, [primaryAddress, watchedLat, watchedLng]);
+
+  const isOverMaxDistance = distance !== null && distance > MAX_FREE_DISTANCE_KM;
+  const requiresScheduling = isOverMaxDistance;
+
+  const canSubmit = useMemo(() => {
+    if (!requiresScheduling) return true;
+    return watchedExtraFeeAck && watchedScheduledDate && watchedScheduledTimeSlot;
+  }, [requiresScheduling, watchedExtraFeeAck, watchedScheduledDate, watchedScheduledTimeSlot]);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -114,6 +167,11 @@ export default function FallbackContact() {
         ...data,
         lat: data.latitude,
         lng: data.longitude,
+        distanceKm: distance,
+        requiresExtraFee: isOverMaxDistance,
+        extraFeeAcknowledged: data.extraFeeAcknowledged,
+        scheduledDate: data.scheduledDate,
+        scheduledTimeSlot: data.scheduledTimeSlot,
         photoBuilding: files.building?.name,
         photoGate: files.gate?.name,
         photoDoor: files.door?.name,
@@ -124,7 +182,9 @@ export default function FallbackContact() {
     onSuccess: () => {
       toast({
         title: "Fallback Contact Added!",
-        description: "Your backup contact has been saved.",
+        description: isOverMaxDistance 
+          ? "Your backup contact has been saved with scheduled delivery."
+          : "Your backup contact has been saved.",
       });
       setLocation("/dashboard");
     },
@@ -137,7 +197,26 @@ export default function FallbackContact() {
     }
   });
 
-  const onSubmit = (data: FallbackData) => {
+  const onSubmit = async (data: FallbackData) => {
+    // Ensure location is selected with proper finite number validation
+    if (data.latitude === undefined || data.longitude === undefined ||
+        !Number.isFinite(data.latitude) || !Number.isFinite(data.longitude)) {
+      toast({
+        variant: "destructive",
+        title: "Location Required",
+        description: "Please select a location on the map for the fallback contact."
+      });
+      return;
+    }
+    
+    if (requiresScheduling && !canSubmit) {
+      toast({
+        variant: "destructive",
+        title: "Scheduling Required",
+        description: "Please complete the scheduling and acknowledge the extra fee for addresses over 3km."
+      });
+      return;
+    }
     fallbackMutation.mutate(data);
   };
 
@@ -146,6 +225,25 @@ export default function FallbackContact() {
       const valid = await form.trigger(["addressId", "name", "phone"]);
       if (valid) setStep(2);
     }
+  };
+  
+  const validateStep2 = async (): Promise<boolean> => {
+    const valid = await form.trigger(["latitude", "longitude", "textAddress"]);
+    if (!valid) {
+      toast({
+        variant: "destructive",
+        title: "Location Required",
+        description: "Please select a location on the map for the fallback contact."
+      });
+      return false;
+    }
+    return true;
+  };
+
+  const getMinDate = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split('T')[0];
   };
 
   if (isLoading) return <div className="p-8 text-center">Loading...</div>;
@@ -167,7 +265,7 @@ export default function FallbackContact() {
   }
 
   return (
-    <div className="min-h-screen bg-muted/30 p-3 md:p-8 flex justify-center items-start pt-6 md:pt-20 relative">
+    <div className="min-h-screen bg-muted/30 p-3 md:p-8 flex justify-center items-start pt-6 md:pt-12 relative">
       <div className="absolute top-4 left-4">
         <Link href="/dashboard">
           <Button variant="ghost" size="sm" className="gap-2">
@@ -212,7 +310,7 @@ export default function FallbackContact() {
                         value={field.value?.toString()} 
                         onValueChange={(v) => field.onChange(parseInt(v))}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger data-testid="select-address">
                           <SelectValue placeholder="Select an address" />
                         </SelectTrigger>
                         <SelectContent>
@@ -238,7 +336,13 @@ export default function FallbackContact() {
                     <Label htmlFor="name">Contact Name</Label>
                     <div className="relative">
                       <UserIcon className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <Input id="name" placeholder="Full name" className="pl-9" {...form.register("name")} />
+                      <Input 
+                        id="name" 
+                        placeholder="Full name" 
+                        className="pl-9" 
+                        data-testid="input-contact-name"
+                        {...form.register("name")} 
+                      />
                     </div>
                     {form.formState.errors.name && <p className="text-destructive text-xs">{form.formState.errors.name.message}</p>}
                   </div>
@@ -247,7 +351,13 @@ export default function FallbackContact() {
                     <Label htmlFor="phone">Phone Number</Label>
                     <div className="relative">
                       <Phone className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <Input id="phone" placeholder="+966 5XXXXXXXX" className="pl-9" {...form.register("phone")} />
+                      <Input 
+                        id="phone" 
+                        placeholder="+966 5XXXXXXXX" 
+                        className="pl-9"
+                        data-testid="input-contact-phone" 
+                        {...form.register("phone")} 
+                      />
                     </div>
                     {form.formState.errors.phone && <p className="text-destructive text-xs">{form.formState.errors.phone.message}</p>}
                   </div>
@@ -260,7 +370,7 @@ export default function FallbackContact() {
                     name="relationship"
                     render={({ field }) => (
                       <Select value={field.value || ""} onValueChange={field.onChange}>
-                        <SelectTrigger>
+                        <SelectTrigger data-testid="select-relationship">
                           <SelectValue placeholder="Select relationship" />
                         </SelectTrigger>
                         <SelectContent>
@@ -278,19 +388,25 @@ export default function FallbackContact() {
               </div>
             )}
 
-            {/* Step 2: Location (Optional) */}
+            {/* Step 2: Location */}
             {step === 2 && (
               <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
-                <div className="bg-muted/50 p-3 rounded-lg text-sm text-muted-foreground">
-                  Location details are optional. Fill them in if the fallback contact has a different address.
+                {/* Info Banner */}
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 flex items-start gap-3">
+                  <Info className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                  <div className="text-sm text-blue-800 dark:text-blue-200">
+                    <p className="font-medium">Fallback locations within 3km are free.</p>
+                    <p className="text-xs mt-1 opacity-80">Locations beyond 3km require scheduling and an extra fee of SAR {EXTRA_FEE_AMOUNT}.</p>
+                  </div>
                 </div>
 
+                {/* Map Section */}
                 <div className="space-y-3">
                   <Label className="flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-purple-500" />
-                    Map Location (Optional)
+                    Fallback Location
                   </Label>
-                  <div className="overflow-hidden border-2 border-muted rounded-lg">
+                  <div className="overflow-hidden border-2 border-muted hover:border-purple-300 transition-colors rounded-lg">
                     <AddressMap 
                       onLocationSelect={(lat, lng, address) => {
                         form.setValue("latitude", lat);
@@ -299,10 +415,39 @@ export default function FallbackContact() {
                       }}
                     />
                   </div>
+                  <p className="text-xs text-muted-foreground text-right">Tap on the map to pin the fallback location</p>
                 </div>
 
+                {/* Distance Badge */}
+                {distance !== null && (
+                  <div className={`
+                    p-4 rounded-lg border-2 flex items-center gap-3
+                    ${isOverMaxDistance 
+                      ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700' 
+                      : 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700'}
+                  `}>
+                    <div className={`
+                      p-2 rounded-full
+                      ${isOverMaxDistance ? 'bg-amber-100 text-amber-600' : 'bg-green-100 text-green-600'}
+                    `}>
+                      {isOverMaxDistance ? <AlertTriangle className="w-5 h-5" /> : <CheckCircle2 className="w-5 h-5" />}
+                    </div>
+                    <div className="flex-1">
+                      <p className={`font-semibold ${isOverMaxDistance ? 'text-amber-700 dark:text-amber-400' : 'text-green-700 dark:text-green-400'}`}>
+                        Distance: {formatDistance(distance)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {isOverMaxDistance 
+                          ? `Exceeds ${MAX_FREE_DISTANCE_KM}km limit. Extra fee and scheduling required.`
+                          : `Within ${MAX_FREE_DISTANCE_KM}km free zone.`}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Text Address - Auto-filled from map */}
                 <div className="space-y-2">
-                  <Label htmlFor="textAddress">Address (Optional)</Label>
+                  <Label htmlFor="textAddress">Address</Label>
                   <Controller
                     control={form.control}
                     name="textAddress"
@@ -310,8 +455,9 @@ export default function FallbackContact() {
                       <VoiceInput 
                         as="textarea"
                         id="textAddress" 
-                        placeholder="Building, Street, District..." 
+                        placeholder="Select a location on the map, or enter manually..." 
                         className="resize-none h-20"
+                        data-testid="input-fallback-address"
                         {...field}
                         value={field.value || ""}
                       />
@@ -319,8 +465,82 @@ export default function FallbackContact() {
                   />
                 </div>
 
+                {/* Extra Fee & Scheduling Section - Only shown when over 3km */}
+                {isOverMaxDistance && (
+                  <div className="space-y-4 p-4 bg-amber-50/50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-lg">
+                    <h3 className="font-semibold text-amber-800 dark:text-amber-400 flex items-center gap-2">
+                      <DollarSign className="w-4 h-4" />
+                      Extra Distance Scheduling
+                    </h3>
+                    
+                    <p className="text-sm text-amber-700 dark:text-amber-300">
+                      Since this location is {formatDistance(distance)} away (over {MAX_FREE_DISTANCE_KM}km), 
+                      an extra fee of <strong>SAR {EXTRA_FEE_AMOUNT}</strong> applies and you must schedule the delivery in advance.
+                    </p>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="scheduledDate" className="flex items-center gap-2">
+                          <Calendar className="w-4 h-4" /> Scheduled Date
+                        </Label>
+                        <Input 
+                          id="scheduledDate"
+                          type="date"
+                          min={getMinDate()}
+                          data-testid="input-scheduled-date"
+                          {...form.register("scheduledDate")}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="flex items-center gap-2">
+                          <Clock className="w-4 h-4" /> Time Slot
+                        </Label>
+                        <Controller
+                          control={form.control}
+                          name="scheduledTimeSlot"
+                          render={({ field }) => (
+                            <Select value={field.value || ""} onValueChange={field.onChange}>
+                              <SelectTrigger data-testid="select-time-slot">
+                                <SelectValue placeholder="Select time slot" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {TIME_SLOTS.map((slot) => (
+                                  <SelectItem key={slot.value} value={slot.value}>
+                                    {slot.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-amber-200 dark:border-amber-700">
+                      <Controller
+                        control={form.control}
+                        name="extraFeeAcknowledged"
+                        render={({ field }) => (
+                          <Checkbox
+                            id="extraFeeAcknowledged"
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            data-testid="checkbox-extra-fee"
+                          />
+                        )}
+                      />
+                      <label htmlFor="extraFeeAcknowledged" className="text-sm leading-tight cursor-pointer">
+                        I understand and agree to pay the extra delivery fee of <strong>SAR {EXTRA_FEE_AMOUNT}</strong> for 
+                        this fallback location that exceeds the {MAX_FREE_DISTANCE_KM}km free zone.
+                      </label>
+                    </div>
+                  </div>
+                )}
+
                 <Separator />
 
+                {/* Photos Section */}
                 <div className="space-y-4">
                   <h3 className="text-sm font-semibold flex items-center gap-2 text-purple-600">
                     <Camera className="w-4 h-4" />
@@ -359,6 +579,7 @@ export default function FallbackContact() {
                         id="specialNote" 
                         placeholder="Any special instructions for this fallback..." 
                         className="resize-none h-20"
+                        data-testid="input-special-note"
                         {...field}
                         value={field.value || ""}
                       />
@@ -379,12 +600,19 @@ export default function FallbackContact() {
               )}
               
               {step < 2 ? (
-                <Button type="button" onClick={nextStep}>
+                <Button type="button" onClick={nextStep} data-testid="button-next">
                   Next <ChevronRight className="w-4 h-4 ml-2" />
                 </Button>
               ) : (
-                <Button type="submit" className="bg-purple-600 hover:bg-purple-700" disabled={fallbackMutation.isPending}>
-                  {fallbackMutation.isPending ? "Saving..." : "Save Contact"} <CheckCircle2 className="w-4 h-4 ml-2" />
+                <Button 
+                  type="submit" 
+                  className={`${isOverMaxDistance ? 'bg-amber-600 hover:bg-amber-700' : 'bg-purple-600 hover:bg-purple-700'}`}
+                  disabled={fallbackMutation.isPending || (requiresScheduling && !canSubmit)}
+                  data-testid="button-submit"
+                >
+                  {fallbackMutation.isPending ? "Saving..." : (
+                    isOverMaxDistance ? "Schedule & Save" : "Save Contact"
+                  )} <CheckCircle2 className="w-4 h-4 ml-2" />
                 </Button>
               )}
             </div>

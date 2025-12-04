@@ -38,6 +38,11 @@ export const fallbackContacts = pgTable("fallback_contacts", {
   textAddress: text("text_address"),
   lat: doublePrecision("lat"),
   lng: doublePrecision("lng"),
+  distanceKm: doublePrecision("distance_km"),
+  requiresExtraFee: boolean("requires_extra_fee").default(false),
+  extraFeeAcknowledged: boolean("extra_fee_acknowledged").default(false),
+  scheduledDate: text("scheduled_date"),
+  scheduledTimeSlot: text("scheduled_time_slot"),
   photoBuilding: text("photo_building"),
   photoGate: text("photo_gate"),
   photoDoor: text("photo_door"),
@@ -76,10 +81,21 @@ export const insertFallbackContactSchema = createInsertSchema(fallbackContacts).
   textAddress: true,
   lat: true,
   lng: true,
+  distanceKm: true,
+  requiresExtraFee: true,
+  extraFeeAcknowledged: true,
+  scheduledDate: true,
+  scheduledTimeSlot: true,
   photoBuilding: true,
   photoGate: true,
   photoDoor: true,
   specialNote: true,
+}).extend({
+  lat: z.number({ required_error: "Location latitude is required" }).finite("Latitude must be a valid number"),
+  lng: z.number({ required_error: "Location longitude is required" }).finite("Longitude must be a valid number"),
+  textAddress: z.string().trim().min(5, "Address is required"),
+  scheduledDate: z.string().trim().optional(),
+  scheduledTimeSlot: z.string().trim().optional(),
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
