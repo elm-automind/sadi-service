@@ -10,6 +10,7 @@ import Success from "@/pages/success";
 import Login from "@/pages/login";
 import AddAddress from "@/pages/add-address";
 import DeliveryPreferences from "@/pages/delivery-preferences";
+import ViewAddress from "@/pages/view-address";
 
 function Router() {
   return (
@@ -20,6 +21,7 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/add-address" component={AddAddress} />
       <Route path="/preferences" component={DeliveryPreferences} />
+      <Route path="/view/:digitalId" component={ViewAddress} />
       <Route component={NotFound} />
     </Switch>
   );

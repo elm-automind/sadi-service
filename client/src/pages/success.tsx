@@ -45,19 +45,9 @@ export default function Success() {
     );
   }
 
-  // Prepare QR Code Data
-  const qrCodeValue = JSON.stringify({
-    id: currentAddress.digitalId, 
-    n: user.name,
-    p: user.phone,
-    addr: currentAddress.textAddress,
-    loc: { lat: currentAddress.lat, lng: currentAddress.lng },
-    imgs: {
-      b: currentAddress.photoBuilding ? "Yes" : "No",
-      g: currentAddress.photoGate ? "Yes" : "No",
-      d: currentAddress.photoDoor ? "Yes" : "No"
-    }
-  });
+  // Generate QR Code URL pointing to public view page
+  const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+  const qrCodeUrl = `${baseUrl}/view/${currentAddress.digitalId}`;
 
   return (
     <div className="min-h-screen bg-muted/30 p-4 flex items-center justify-center py-10">
@@ -155,14 +145,14 @@ export default function Success() {
                 <div className="text-center space-y-2">
                   <h3 className="font-semibold">Digital Location ID: {currentAddress.digitalId}</h3>
                   <p className="text-xs text-muted-foreground max-w-xs mx-auto">
-                    This QR code is unique to this specific address entry.
+                    Scan this QR code to view address details, photos, and delivery instructions.
                   </p>
                 </div>
 
                 <div className="flex justify-center py-4">
                   <div className="p-4 bg-white rounded-xl shadow-sm border border-border relative">
                     <QRCode 
-                      value={qrCodeValue} 
+                      value={qrCodeUrl} 
                       size={200}
                       level="M"
                       viewBox={`0 0 256 256`}
@@ -173,18 +163,30 @@ export default function Success() {
                   </div>
                 </div>
 
-                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg text-xs text-blue-700 dark:text-blue-300 flex gap-2 items-start">
-                  <QrCode className="w-4 h-4 mt-0.5 shrink-0" />
-                  <p>Scan to verify address: {currentAddress.textAddress.substring(0, 40)}...</p>
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg text-xs text-blue-700 dark:text-blue-300 space-y-2">
+                  <div className="flex gap-2 items-start">
+                    <QrCode className="w-4 h-4 mt-0.5 shrink-0" />
+                    <p>Scan or share this link to view full address details:</p>
+                  </div>
+                  <a 
+                    href={qrCodeUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="block font-mono text-xs bg-white/50 p-2 rounded border border-blue-200 hover:bg-white transition-colors break-all"
+                  >
+                    {qrCodeUrl}
+                  </a>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 pt-2">
                   <Button variant="outline" className="w-full">
                     <Download className="w-4 h-4 mr-2" /> Save ID
                   </Button>
-                  <Button className="w-full">
-                    <Share2 className="w-4 h-4 mr-2" /> Share
-                  </Button>
+                  <Link href={`/view/${currentAddress.digitalId}`}>
+                    <Button className="w-full">
+                      <Share2 className="w-4 h-4 mr-2" /> View Page
+                    </Button>
+                  </Link>
                 </div>
               </TabsContent>
             </Tabs>

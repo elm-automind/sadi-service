@@ -129,6 +129,37 @@ export async function registerRoutes(httpServer: Server, app: Express) {
     res.json(updated);
   });
 
+  // --- Public Address View Route (no auth required) ---
+  app.get("/api/address/:digitalId", async (req, res) => {
+    try {
+      const { digitalId } = req.params;
+      const address = await storage.getAddressByDigitalId(digitalId);
+      
+      if (!address) {
+        return res.status(404).json({ message: "Address not found" });
+      }
+
+      // Get the user info (without sensitive data)
+      const user = await storage.getUser(address.userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Return public-safe user info
+      res.json({
+        address,
+        user: {
+          name: user.name,
+          phone: user.phone,
+          email: user.email
+        }
+      });
+    } catch (error) {
+      console.error("Fetch address error:", error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  });
+
   return httpServer;
 }
 

@@ -11,6 +11,7 @@ export interface IStorage {
   
   createAddress(address: InsertAddress): Promise<Address>;
   getAddressesByUserId(userId: number): Promise<Address[]>;
+  getAddressByDigitalId(digitalId: string): Promise<Address | undefined>;
   updateAddress(id: number, address: Partial<Address>): Promise<Address | undefined>;
 }
 
@@ -53,6 +54,11 @@ export class DatabaseStorage implements IStorage {
 
   async getAddressesByUserId(userId: number): Promise<Address[]> {
     return await db.select().from(addresses).where(eq(addresses.userId, userId));
+  }
+
+  async getAddressByDigitalId(digitalId: string): Promise<Address | undefined> {
+    const [address] = await db.select().from(addresses).where(eq(addresses.digitalId, digitalId));
+    return address || undefined;
   }
 
   async updateAddress(id: number, updates: Partial<Address>): Promise<Address | undefined> {
