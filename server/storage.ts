@@ -1,4 +1,6 @@
-import { type User, type InsertUser, type Address, type InsertAddress } from "@shared/schema";
+import { type User, type InsertUser, type Address, type InsertAddress, users, addresses } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -12,72 +14,55 @@ export interface IStorage {
   updateAddress(id: number, address: Partial<Address>): Promise<Address | undefined>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private addresses: Map<number, Address>;
-  private userIdCounter = 1;
-  private addressIdCounter = 1;
-
-  constructor() {
-    this.users = new Map();
-    this.addresses = new Map();
-  }
-
+export class DatabaseStorage implements IStorage {
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
   }
 
   async getUserByIqama(iqamaId: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(u => u.iqamaId === iqamaId);
+    const [user] = await db.select().from(users).where(eq(users.iqamaId, iqamaId));
+    return user || undefined;
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(u => u.email === email);
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user || undefined;
   }
 
   async getUserByPhone(phone: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(u => u.phone === phone);
+    const [user] = await db.select().from(users).where(eq(users.phone, phone));
+    return user || undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.userIdCounter++;
-    const user: User = { ...insertUser, id, createdAt: new Date() };
-    this.users.set(id, user);
+    const [user] = await db
+      .insert(users)
+      .values(insertUser)
+      .returning();
     return user;
   }
 
   async createAddress(insertAddress: InsertAddress): Promise<Address> {
-    const id = this.addressIdCounter++;
-    const address: Address = { 
-      ...insertAddress, 
-      id, 
-      createdAt: new Date(),
-      // Default values for optional fields if missing
-      lat: insertAddress.lat ?? 0,
-      lng: insertAddress.lng ?? 0,
-      photoBuilding: insertAddress.photoBuilding ?? null,
-      photoGate: insertAddress.photoGate ?? null,
-      photoDoor: insertAddress.photoDoor ?? null,
-      preferredTime: insertAddress.preferredTime ?? "morning",
-      specialNote: insertAddress.specialNote ?? null,
-      fallbackOption: insertAddress.fallbackOption ?? "door"
-    };
-    this.addresses.set(id, address);
+    const [address] = await db
+      .insert(addresses)
+      .values(insertAddress)
+      .returning();
     return address;
   }
 
   async getAddressesByUserId(userId: number): Promise<Address[]> {
-    return Array.from(this.addresses.values()).filter(a => a.userId === userId);
+    return await db.select().from(addresses).where(eq(addresses.userId, userId));
   }
 
   async updateAddress(id: number, updates: Partial<Address>): Promise<Address | undefined> {
-    const existing = this.addresses.get(id);
-    if (!existing) return undefined;
-    
-    const updated = { ...existing, ...updates };
-    this.addresses.set(id, updated);
-    return updated;
+    const [updated] = await db
+      .update(addresses)
+      .set(updates)
+      .where(eq(addresses.id, id))
+      .returning();
+    return updated || undefined;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
