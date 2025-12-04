@@ -25,12 +25,44 @@ export default function Login() {
   });
 
   const onSubmit = (data: LoginData) => {
-    console.log("Logging in with:", data);
-    toast({
-      title: "Login Successful",
-      description: "Welcome back!",
+    const usersDb = JSON.parse(localStorage.getItem("usersDb") || "{}");
+    let foundUser = null;
+
+    // Naive search for user by email or ID
+    Object.values(usersDb).forEach((user: any) => {
+      if (user.iqamaId === data.identifier || user.personalInfo.email === data.identifier) {
+        if (user.password === data.password) {
+          foundUser = user;
+        }
+      }
     });
-    setLocation("/success"); 
+
+    if (foundUser) {
+      // Login successful
+      const user = foundUser as any;
+      localStorage.setItem("loggedInUserId", user.iqamaId);
+      
+      toast({
+        title: "Login Successful",
+        description: `Welcome back, ${user.personalInfo.name}`,
+      });
+
+      // Check address status
+      if (user.addresses && user.addresses.length > 0) {
+        // Has address -> Go to Preferences (Instructions & Fallback)
+        setLocation("/preferences");
+      } else {
+        // No address -> Go to Add Address
+        setLocation("/add-address");
+      }
+    } else {
+      // Login failed
+      toast({
+        variant: "destructive",
+        title: "Login Failed",
+        description: "Invalid credentials or user not found.",
+      });
+    }
   };
 
   return (

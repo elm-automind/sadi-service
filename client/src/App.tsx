@@ -8,6 +8,8 @@ import Home from "@/pages/home";
 import Register from "@/pages/register";
 import Success from "@/pages/success";
 import Login from "@/pages/login";
+import AddAddress from "@/pages/add-address";
+import DeliveryPreferences from "@/pages/delivery-preferences";
 
 function Router() {
   return (
@@ -16,6 +18,8 @@ function Router() {
       <Route path="/register" component={Register} />
       <Route path="/success" component={Success} />
       <Route path="/login" component={Login} />
+      <Route path="/add-address" component={AddAddress} />
+      <Route path="/preferences" component={DeliveryPreferences} />
       <Route component={NotFound} />
     </Switch>
   );
