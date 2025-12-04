@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { type Server } from "http";
 import { storage } from "./storage";
-import { insertUserSchema, insertAddressSchema } from "@shared/schema";
+import { insertUserSchema, insertAddressSchema, insertFallbackContactSchema } from "@shared/schema";
 import { z } from "zod";
 
 declare module "express-session" {
@@ -127,6 +127,28 @@ export async function registerRoutes(httpServer: Server, app: Express) {
     if (!updated) return res.status(404).json({ message: "Address not found" });
     
     res.json(updated);
+  });
+
+  // --- Fallback Contact Routes ---
+  app.post("/api/fallback-contacts", requireAuth, async (req, res) => {
+    try {
+      const contactData = insertFallbackContactSchema.parse(req.body);
+      const newContact = await storage.createFallbackContact(contactData);
+      res.status(201).json(newContact);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Validation Error", errors: error.errors });
+      } else {
+        console.error("Create fallback contact error:", error);
+        res.status(500).json({ message: "Internal Server Error" });
+      }
+    }
+  });
+
+  app.get("/api/fallback-contacts/:addressId", requireAuth, async (req, res) => {
+    const addressId = parseInt(req.params.addressId);
+    const contacts = await storage.getFallbackContactsByAddressId(addressId);
+    res.json(contacts);
   });
 
   // --- Public Address View Route (no auth required) ---

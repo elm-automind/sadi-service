@@ -60,16 +60,10 @@ export default function Login() {
 
   const checkUserStatus = async () => {
     try {
-       const res = await apiRequest("GET", "/api/user");
-       const userData = await res.json();
-       
-       if (userData.addresses && userData.addresses.length > 0) {
-         setLocation("/preferences");
-       } else {
-         setLocation("/add-address");
-       }
+       // After login, always go to Dashboard
+       setLocation("/dashboard");
     } catch (e) {
-      setLocation("/add-address"); // Default fallback
+      setLocation("/dashboard");
     }
   };
 

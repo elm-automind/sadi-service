@@ -1,4 +1,8 @@
-import { type User, type InsertUser, type Address, type InsertAddress, users, addresses } from "@shared/schema";
+import { 
+  type User, type InsertUser, type Address, type InsertAddress,
+  type FallbackContact, type InsertFallbackContact,
+  users, addresses, fallbackContacts 
+} from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 
@@ -13,6 +17,9 @@ export interface IStorage {
   getAddressesByUserId(userId: number): Promise<Address[]>;
   getAddressByDigitalId(digitalId: string): Promise<Address | undefined>;
   updateAddress(id: number, address: Partial<Address>): Promise<Address | undefined>;
+
+  createFallbackContact(contact: InsertFallbackContact): Promise<FallbackContact>;
+  getFallbackContactsByAddressId(addressId: number): Promise<FallbackContact[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -68,6 +75,18 @@ export class DatabaseStorage implements IStorage {
       .where(eq(addresses.id, id))
       .returning();
     return updated || undefined;
+  }
+
+  async createFallbackContact(insertContact: InsertFallbackContact): Promise<FallbackContact> {
+    const [contact] = await db
+      .insert(fallbackContacts)
+      .values(insertContact)
+      .returning();
+    return contact;
+  }
+
+  async getFallbackContactsByAddressId(addressId: number): Promise<FallbackContact[]> {
+    return await db.select().from(fallbackContacts).where(eq(fallbackContacts.addressId, addressId));
   }
 }
 

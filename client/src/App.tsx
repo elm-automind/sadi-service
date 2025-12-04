@@ -11,6 +11,8 @@ import Login from "@/pages/login";
 import AddAddress from "@/pages/add-address";
 import DeliveryPreferences from "@/pages/delivery-preferences";
 import ViewAddress from "@/pages/view-address";
+import Dashboard from "@/pages/dashboard";
+import FallbackContact from "@/pages/fallback-contact";
 
 function Router() {
   return (
@@ -19,8 +21,10 @@ function Router() {
       <Route path="/register" component={Register} />
       <Route path="/success" component={Success} />
       <Route path="/login" component={Login} />
+      <Route path="/dashboard" component={Dashboard} />
       <Route path="/add-address" component={AddAddress} />
       <Route path="/preferences" component={DeliveryPreferences} />
+      <Route path="/fallback-contact" component={FallbackContact} />
       <Route path="/view/:digitalId" component={ViewAddress} />
       <Route component={NotFound} />
     </Switch>

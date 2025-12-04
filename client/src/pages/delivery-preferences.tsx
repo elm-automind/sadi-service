@@ -3,22 +3,62 @@ import { useLocation, Link } from "wouter";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Clock, FileText, CheckCircle2, ArrowRight, Home, Settings, AlertCircle } from "lucide-react";
+import { Clock, FileText, CheckCircle2, Home, Settings, Sun, Sunset, Moon } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { User, Address } from "@shared/schema";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { VoiceInput } from "@/components/voice-input";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
+const TIME_SLOTS = {
+  morning: {
+    label: "Morning",
+    icon: Sun,
+    color: "text-amber-500",
+    bgColor: "bg-amber-50 dark:bg-amber-900/20",
+    borderColor: "border-amber-200 dark:border-amber-800",
+    slots: [
+      { value: "8am-9am", label: "8:00 AM - 9:00 AM" },
+      { value: "9am-10am", label: "9:00 AM - 10:00 AM" },
+      { value: "10am-11am", label: "10:00 AM - 11:00 AM" },
+      { value: "11am-12pm", label: "11:00 AM - 12:00 PM" },
+    ]
+  },
+  afternoon: {
+    label: "Afternoon",
+    icon: Sunset,
+    color: "text-orange-500",
+    bgColor: "bg-orange-50 dark:bg-orange-900/20",
+    borderColor: "border-orange-200 dark:border-orange-800",
+    slots: [
+      { value: "12pm-2pm", label: "12:00 PM - 2:00 PM" },
+      { value: "2pm-4pm", label: "2:00 PM - 4:00 PM" },
+      { value: "4pm-6pm", label: "4:00 PM - 6:00 PM" },
+    ]
+  },
+  evening: {
+    label: "Evening",
+    icon: Moon,
+    color: "text-indigo-500",
+    bgColor: "bg-indigo-50 dark:bg-indigo-900/20",
+    borderColor: "border-indigo-200 dark:border-indigo-800",
+    slots: [
+      { value: "6pm-7pm", label: "6:00 PM - 7:00 PM" },
+      { value: "7pm-8pm", label: "7:00 PM - 8:00 PM" },
+      { value: "8pm-9pm", label: "8:00 PM - 9:00 PM" },
+    ]
+  }
+};
+
 const preferencesSchema = z.object({
-  preferredTime: z.string().min(1, "Please select a time"),
+  preferredTime: z.string().min(1, "Please select a time period"),
+  preferredTimeSlot: z.string().optional(),
   specialNote: z.string().optional(),
-  fallbackOption: z.string().min(1, "Please select a fallback option"),
 });
 
 type PreferencesData = z.infer<typeof preferencesSchema>;
@@ -32,13 +72,14 @@ export default function DeliveryPreferences() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeAddressId, setActiveAddressId] = useState<number | null>(null);
+  const [selectedPeriod, setSelectedPeriod] = useState<string>("morning");
 
   const form = useForm<PreferencesData>({
     resolver: zodResolver(preferencesSchema),
     defaultValues: {
       preferredTime: "morning",
+      preferredTimeSlot: "",
       specialNote: "",
-      fallbackOption: "door"
     }
   });
 
@@ -49,18 +90,21 @@ export default function DeliveryPreferences() {
 
   useEffect(() => {
     if (user) {
-       if (user.addresses && user.addresses.length > 0) {
-         const latestAddress = user.addresses[user.addresses.length - 1];
-         setActiveAddressId(latestAddress.id);
-         
-         form.reset({
-           preferredTime: latestAddress.preferredTime || "morning",
-           specialNote: latestAddress.specialNote || "",
-           fallbackOption: latestAddress.fallbackOption || "door"
-         });
-       } else {
-         setLocation("/add-address");
-       }
+      if (user.addresses && user.addresses.length > 0) {
+        const latestAddress = user.addresses[user.addresses.length - 1];
+        setActiveAddressId(latestAddress.id);
+        
+        const period = latestAddress.preferredTime || "morning";
+        setSelectedPeriod(period);
+        
+        form.reset({
+          preferredTime: period,
+          preferredTimeSlot: latestAddress.preferredTimeSlot || "",
+          specialNote: latestAddress.specialNote || "",
+        });
+      } else {
+        setLocation("/add-address");
+      }
     } else if (!isLoading && !user) {
       setLocation("/login");
     }
@@ -72,14 +116,13 @@ export default function DeliveryPreferences() {
       const res = await apiRequest("PATCH", `/api/addresses/${activeAddressId}`, data);
       return await res.json();
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       toast({
         title: "Preferences Updated",
-        description: "Your delivery instructions have been saved.",
+        description: "Your delivery preferences have been saved.",
       });
-      // Simulate success page data context locally if needed, or let success page fetch latest
-      setLocation("/success");
+      setLocation("/dashboard");
     },
     onError: (error: any) => {
       toast({
@@ -94,15 +137,21 @@ export default function DeliveryPreferences() {
     updateMutation.mutate(data);
   };
 
+  const handlePeriodSelect = (period: string) => {
+    setSelectedPeriod(period);
+    form.setValue("preferredTime", period);
+    form.setValue("preferredTimeSlot", "");
+  };
+
   if (isLoading) return <div className="p-8 text-center">Loading...</div>;
   if (!user) return null;
 
   return (
     <div className="min-h-screen bg-muted/30 p-4 flex items-center justify-center relative">
       <div className="absolute top-4 left-4">
-        <Link href="/">
+        <Link href="/dashboard">
           <Button variant="ghost" size="sm" className="gap-2">
-            <Home className="w-4 h-4" /> Home
+            <Home className="w-4 h-4" /> Dashboard
           </Button>
         </Link>
       </div>
@@ -115,73 +164,113 @@ export default function DeliveryPreferences() {
             </div>
             <div>
               <CardTitle className="text-xl font-bold text-primary">Delivery Preferences</CardTitle>
-              <CardDescription>Customize how you want your packages delivered.</CardDescription>
+              <CardDescription>Set your preferred delivery times and special instructions.</CardDescription>
             </div>
           </div>
+
+          {user.addresses.length > 1 && (
+            <div className="mt-4">
+              <Label className="text-sm">Select Address</Label>
+              <Select 
+                value={activeAddressId?.toString()} 
+                onValueChange={(v) => {
+                  const addrId = parseInt(v);
+                  setActiveAddressId(addrId);
+                  const addr = user.addresses.find(a => a.id === addrId);
+                  if (addr) {
+                    const period = addr.preferredTime || "morning";
+                    setSelectedPeriod(period);
+                    form.reset({
+                      preferredTime: period,
+                      preferredTimeSlot: addr.preferredTimeSlot || "",
+                      specialNote: addr.specialNote || "",
+                    });
+                  }
+                }}
+              >
+                <SelectTrigger className="mt-2">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {user.addresses.map((addr) => (
+                    <SelectItem key={addr.id} value={addr.id.toString()}>
+                      <span className="font-mono text-xs mr-2">{addr.digitalId}</span>
+                      {addr.textAddress.substring(0, 30)}...
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </CardHeader>
 
         <CardContent className="p-6">
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             
-            {/* Preferred Time */}
+            {/* Time Period Selection */}
             <div className="space-y-4">
               <Label className="text-base font-semibold flex items-center gap-2">
                 <Clock className="w-4 h-4" /> Preferred Delivery Time
               </Label>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {['Morning (8am - 12pm)', 'Afternoon (1pm - 5pm)', 'Evening (6pm - 9pm)'].map((time) => (
-                  <div 
-                    key={time}
-                    className={`
-                      p-4 rounded-lg border-2 text-sm font-medium cursor-pointer transition-all
-                      flex items-center justify-center text-center gap-2
-                      ${form.watch('preferredTime') === time 
-                        ? 'border-primary bg-primary/5 text-primary shadow-sm' 
-                        : 'border-muted hover:border-muted-foreground/30'}
-                    `}
-                    onClick={() => form.setValue('preferredTime', time)}
-                  >
-                    {time.split(' (')[0]}
-                  </div>
-                ))}
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {Object.entries(TIME_SLOTS).map(([key, period]) => {
+                  const Icon = period.icon;
+                  const isSelected = selectedPeriod === key;
+                  
+                  return (
+                    <div
+                      key={key}
+                      className={`
+                        rounded-xl border-2 cursor-pointer transition-all overflow-hidden
+                        ${isSelected 
+                          ? `${period.borderColor} ${period.bgColor} shadow-md` 
+                          : 'border-muted hover:border-muted-foreground/30'}
+                      `}
+                      onClick={() => handlePeriodSelect(key)}
+                    >
+                      <div className={`p-4 ${isSelected ? period.bgColor : ''}`}>
+                        <div className="flex items-center gap-2 mb-3">
+                          <Icon className={`w-5 h-5 ${period.color}`} />
+                          <span className="font-semibold">{period.label}</span>
+                        </div>
+                        
+                        {isSelected && (
+                          <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                            {period.slots.map((slot) => (
+                              <div
+                                key={slot.value}
+                                className={`
+                                  p-2 rounded-lg text-sm cursor-pointer transition-all
+                                  ${form.watch("preferredTimeSlot") === slot.value 
+                                    ? 'bg-white dark:bg-gray-800 shadow-sm border border-primary/50 font-medium' 
+                                    : 'bg-white/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-800'}
+                                `}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  form.setValue("preferredTimeSlot", slot.value);
+                                }}
+                              >
+                                {slot.label}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-              {form.formState.errors.preferredTime && <p className="text-destructive text-xs">{form.formState.errors.preferredTime.message}</p>}
-            </div>
-
-            {/* Fallback Options */}
-            <div className="space-y-4">
-              <Label className="text-base font-semibold flex items-center gap-2">
-                <AlertCircle className="w-4 h-4" /> If You're Not Home (Default Fallback)
-              </Label>
-              <RadioGroup 
-                defaultValue={form.getValues("fallbackOption")} 
-                onValueChange={(val) => form.setValue("fallbackOption", val)}
-                className="grid grid-cols-1 md:grid-cols-2 gap-4"
-              >
-                <div className={`flex items-center space-x-2 border rounded-lg p-4 cursor-pointer transition-colors ${form.watch('fallbackOption') === 'door' ? 'border-primary bg-primary/5' : 'border-muted'}`}>
-                  <RadioGroupItem value="door" id="door" />
-                  <Label htmlFor="door" className="cursor-pointer flex-1">Leave at door / reception</Label>
-                </div>
-                <div className={`flex items-center space-x-2 border rounded-lg p-4 cursor-pointer transition-colors ${form.watch('fallbackOption') === 'neighbor' ? 'border-primary bg-primary/5' : 'border-muted'}`}>
-                  <RadioGroupItem value="neighbor" id="neighbor" />
-                  <Label htmlFor="neighbor" className="cursor-pointer flex-1">Leave with neighbor</Label>
-                </div>
-                <div className={`flex items-center space-x-2 border rounded-lg p-4 cursor-pointer transition-colors ${form.watch('fallbackOption') === 'call' ? 'border-primary bg-primary/5' : 'border-muted'}`}>
-                  <RadioGroupItem value="call" id="call" />
-                  <Label htmlFor="call" className="cursor-pointer flex-1">Call me to reschedule</Label>
-                </div>
-                <div className={`flex items-center space-x-2 border rounded-lg p-4 cursor-pointer transition-colors ${form.watch('fallbackOption') === 'security' ? 'border-primary bg-primary/5' : 'border-muted'}`}>
-                  <RadioGroupItem value="security" id="security" />
-                  <Label htmlFor="security" className="cursor-pointer flex-1">Leave with security guard</Label>
-                </div>
-              </RadioGroup>
-              {form.formState.errors.fallbackOption && <p className="text-destructive text-xs">{form.formState.errors.fallbackOption.message}</p>}
+              
+              {form.formState.errors.preferredTime && (
+                <p className="text-destructive text-xs">{form.formState.errors.preferredTime.message}</p>
+              )}
             </div>
 
             {/* Special Notes */}
             <div className="space-y-3">
               <Label htmlFor="specialNote" className="text-base font-semibold flex items-center gap-2">
-                <FileText className="w-4 h-4" /> Special Instructions
+                <FileText className="w-4 h-4" /> Special Delivery Instructions
               </Label>
               <Controller
                 control={form.control}
@@ -190,18 +279,26 @@ export default function DeliveryPreferences() {
                   <VoiceInput 
                     as="textarea"
                     id="specialNote" 
-                    placeholder="e.g., Ring the doorbell twice, beware of dog..." 
+                    placeholder="e.g., Ring the doorbell twice, leave at reception if not home, call before arriving, beware of dog..." 
                     className="h-32 resize-none"
                     {...field}
-                    value={field.value || ""} // Ensure value is never undefined
+                    value={field.value || ""}
                   />
                 )}
               />
+              <p className="text-xs text-muted-foreground">
+                Tap the microphone icon to use voice input for hands-free typing.
+              </p>
             </div>
 
-            <div className="pt-6 border-t border-border/40 flex justify-end">
-              <Button type="submit" size="lg" className="w-full md:w-auto" disabled={updateMutation.isPending}>
-                 {updateMutation.isPending ? "Saving..." : "Save Preferences"} <CheckCircle2 className="w-4 h-4 ml-2" />
+            <div className="pt-6 border-t border-border/40 flex flex-col sm:flex-row gap-3 justify-end">
+              <Link href="/dashboard">
+                <Button type="button" variant="outline" className="w-full sm:w-auto">
+                  Cancel
+                </Button>
+              </Link>
+              <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={updateMutation.isPending}>
+                {updateMutation.isPending ? "Saving..." : "Save Preferences"} <CheckCircle2 className="w-4 h-4 ml-2" />
               </Button>
             </div>
           </form>
