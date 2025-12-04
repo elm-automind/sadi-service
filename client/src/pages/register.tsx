@@ -135,7 +135,44 @@ export default function Register() {
     }
   }, []);
 
+  const validateUniqueUser = (data: FormData) => {
+    const usersDb = JSON.parse(localStorage.getItem("usersDb") || "{}");
+    const users = Object.values(usersDb) as any[];
+    
+    // Check for ID
+    if (usersDb[data.iqamaId]) {
+      form.setError("iqamaId", { type: "manual", message: "This ID is already registered." });
+      return false;
+    }
+    
+    // Check for Email
+    const duplicateEmail = users.find(u => u.personalInfo.email.toLowerCase() === data.email.toLowerCase());
+    if (duplicateEmail) {
+      form.setError("email", { type: "manual", message: "This email is already registered." });
+      return false;
+    }
+    
+    // Check for Phone
+    const duplicatePhone = users.find(u => u.personalInfo.phone === data.phone);
+    if (duplicatePhone) {
+      form.setError("phone", { type: "manual", message: "This phone number is already registered." });
+      return false;
+    }
+
+    return true;
+  };
+
   const onSubmit = (data: FormData) => {
+    // Final validation check before saving
+    if (!validateUniqueUser(data)) {
+      toast({
+         variant: "destructive",
+         title: "Registration Failed",
+         description: "User with these details already exists."
+      });
+      return;
+    }
+
     // Generate ID
     const digitalId = generateDigitalId();
     const usersDb = JSON.parse(localStorage.getItem("usersDb") || "{}");
@@ -212,7 +249,16 @@ export default function Register() {
     setRegType("quick");
     const valid = await form.trigger(["iqamaId", "phone", "email", "name", "password"]);
     if (valid) {
-      form.handleSubmit(onSubmit)();
+      const isUnique = validateUniqueUser(form.getValues());
+      if (isUnique) {
+        form.handleSubmit(onSubmit)();
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Validation Error",
+          description: "Please fix the errors before proceeding."
+        });
+      }
     }
   };
 
@@ -223,7 +269,19 @@ export default function Register() {
     
     if (step === 1) {
       valid = await form.trigger(["iqamaId", "phone", "email", "name", "password"]);
-      if (valid) setStep(2);
+      if (valid) {
+         // Check uniqueness before allowing to proceed to Step 2
+         const isUnique = validateUniqueUser(form.getValues());
+         if (isUnique) {
+           setStep(2);
+         } else {
+            toast({
+              variant: "destructive",
+              title: "Validation Error",
+              description: "This user already exists. Please login or recover account."
+            });
+         }
+      }
     } else if (step === 2) {
       // Enforce address validation here for full flow
       const address = form.getValues("textAddress");
@@ -561,15 +619,6 @@ export default function Register() {
                   Submit <CheckCircle2 className="w-4 h-4 ml-2" />
                 </Button>
               )}
-            </div>
-
-             <div className="text-center text-sm text-muted-foreground pt-4 border-t mt-4 sm:hidden">
-              Already have an account?{" "}
-              <Link href="/login">
-                <Button variant="link" className="p-0 h-auto font-medium text-primary">
-                  Login
-                </Button>
-              </Link>
             </div>
 
           </form>
