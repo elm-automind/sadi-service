@@ -6,7 +6,7 @@ import * as z from "zod";
 import { useDropzone } from "react-dropzone";
 import { 
   User, MapPin, Camera, Clock, CheckCircle2, 
-  ChevronRight, ChevronLeft, Upload, QrCode, FileText 
+  ChevronRight, ChevronLeft, Upload, FileText 
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AddressMap } from "@/components/address-map";
 import { useToast } from "@/hooks/use-toast";
 
@@ -52,7 +51,7 @@ const FileUploadBox = ({ label, icon: Icon, onDrop, file }: { label: string, ico
         {...getRootProps()} 
         className={`
           border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-all duration-200
-          flex flex-col items-center justify-center gap-2 h-32
+          flex flex-col items-center justify-center gap-2 h-24 md:h-32
           ${isDragActive ? 'border-primary bg-primary/5' : 'border-muted-foreground/20 hover:border-primary/50 hover:bg-muted/50'}
           ${file ? 'bg-blue-50/50 border-blue-200' : ''}
         `}
@@ -60,14 +59,14 @@ const FileUploadBox = ({ label, icon: Icon, onDrop, file }: { label: string, ico
         <input {...getInputProps()} />
         {file ? (
           <>
-            <CheckCircle2 className="w-8 h-8 text-green-500" />
-            <p className="text-xs font-medium text-foreground truncate max-w-[150px]">{file.name}</p>
+            <CheckCircle2 className="w-6 h-6 md:w-8 md:h-8 text-green-500" />
+            <p className="text-xs font-medium text-foreground truncate max-w-[120px] md:max-w-[150px]">{file.name}</p>
             <p className="text-[10px] text-muted-foreground">Click to replace</p>
           </>
         ) : (
           <>
             <div className="p-2 bg-muted rounded-full">
-              <Icon className="w-5 h-5 text-muted-foreground" />
+              <Icon className="w-4 h-4 md:w-5 md:h-5 text-muted-foreground" />
             </div>
             <p className="text-xs text-muted-foreground">
               {isDragActive ? "Drop here" : "Tap to upload"}
@@ -87,7 +86,6 @@ export default function Register() {
     building?: File;
     gate?: File;
     door?: File;
-    qr?: File;
   }>({});
 
   const form = useForm<FormData>({
@@ -101,10 +99,17 @@ export default function Register() {
     // Simulate API call
     console.log("Submitting:", { ...data, files });
     
+    // Mock URLs for images (in a real app, these would be uploaded to S3/storage and return URLs)
+    const fileData = {
+      building: files.building ? URL.createObjectURL(files.building) : null,
+      gate: files.gate ? URL.createObjectURL(files.gate) : null,
+      door: files.door ? URL.createObjectURL(files.door) : null,
+    };
+
     // Save to local storage for demo purposes so the success page can read it
     localStorage.setItem("registrationData", JSON.stringify({
       ...data,
-      filePreview: files.building ? URL.createObjectURL(files.building) : null // Just save one preview URL mock
+      ...fileData
     }));
 
     toast({
@@ -120,10 +125,10 @@ export default function Register() {
     if (step === 1) {
       valid = await form.trigger(["iqamaId", "phone", "email", "name"]);
     } else if (step === 2) {
-      valid = await form.trigger(["textAddress"]); // We don't strictly enforce photo uploads in this prototype, but in real app we might
+      valid = await form.trigger(["textAddress"]); 
     }
     
-    if (valid || step === 2) { // Allow skipping validation on step 2 for easier prototyping if needed, but trigger checks textAddress
+    if (valid || step === 2) { 
       setStep(s => s + 1);
     }
   };
@@ -131,21 +136,21 @@ export default function Register() {
   const prevStep = () => setStep(s => s - 1);
 
   return (
-    <div className="min-h-screen bg-muted/30 p-4 md:p-8 flex justify-center items-start pt-10 md:pt-20">
+    <div className="min-h-screen bg-muted/30 p-3 md:p-8 flex justify-center items-start pt-6 md:pt-20">
       <Card className="w-full max-w-3xl shadow-xl border-border/60 bg-card/95 backdrop-blur-sm">
-        <CardHeader className="border-b border-border/40 pb-6">
-          <div className="flex items-center justify-between">
+        <CardHeader className="border-b border-border/40 pb-4 md:pb-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
             <div>
-              <CardTitle className="text-2xl font-bold text-primary">Registration</CardTitle>
-              <CardDescription>Complete your profile for secure delivery services.</CardDescription>
+              <CardTitle className="text-xl md:text-2xl font-bold text-primary">Registration</CardTitle>
+              <CardDescription className="text-xs md:text-sm">Complete your profile for secure delivery services.</CardDescription>
             </div>
-            <div className="text-sm font-medium text-muted-foreground bg-muted px-3 py-1 rounded-full">
+            <div className="text-xs md:text-sm font-medium text-muted-foreground bg-muted px-3 py-1 rounded-full w-fit">
               Step {step} of 3
             </div>
           </div>
           
           {/* Progress Bar */}
-          <div className="w-full h-1.5 bg-muted mt-6 rounded-full overflow-hidden">
+          <div className="w-full h-1.5 bg-muted mt-4 md:mt-6 rounded-full overflow-hidden">
             <div 
               className="h-full bg-primary transition-all duration-500 ease-out" 
               style={{ width: `${(step / 3) * 100}%` }}
@@ -153,13 +158,13 @@ export default function Register() {
           </div>
         </CardHeader>
 
-        <CardContent className="p-6">
+        <CardContent className="p-4 md:p-6">
           <form onSubmit={form.handleSubmit(onSubmit)}>
             
             {/* STEP 1: Personal Information */}
             {step === 1 && (
               <div className="space-y-6 animate-in slide-in-from-right-4 duration-300 fade-in">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="name">Full Name</Label>
                     <div className="relative">
@@ -198,7 +203,7 @@ export default function Register() {
 
             {/* STEP 2: Address & Passport Entity */}
             {step === 2 && (
-              <div className="space-y-8 animate-in slide-in-from-right-4 duration-300 fade-in">
+              <div className="space-y-6 md:space-y-8 animate-in slide-in-from-right-4 duration-300 fade-in">
                 
                 {/* Map Section */}
                 <div className="space-y-3">
@@ -206,14 +211,14 @@ export default function Register() {
                     <MapPin className="w-4 h-4 text-primary" />
                     Map Location
                   </Label>
-                  <Card className="overflow-hidden border-2 border-muted hover:border-primary/20 transition-colors">
+                  <div className="overflow-hidden border-2 border-muted hover:border-primary/20 transition-colors rounded-lg">
                     <AddressMap 
                       onLocationSelect={(lat, lng) => {
                         form.setValue("latitude", lat);
                         form.setValue("longitude", lng);
                       }}
                     />
-                  </Card>
+                  </div>
                   <p className="text-xs text-muted-foreground text-right">Tap on the map to pin your location</p>
                 </div>
 
@@ -237,7 +242,8 @@ export default function Register() {
                     <Camera className="w-4 h-4" />
                     Location Photos
                   </h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {/* Adjusted grid for better responsiveness */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
                     <FileUploadBox 
                       label="Building" 
                       icon={Upload} 
@@ -255,12 +261,6 @@ export default function Register() {
                       icon={Upload} 
                       file={files.door || null}
                       onDrop={(f) => setFiles(p => ({...p, door: f[0]}))} 
-                    />
-                    <FileUploadBox 
-                      label="QR Code" 
-                      icon={QrCode} 
-                      file={files.qr || null}
-                      onDrop={(f) => setFiles(p => ({...p, qr: f[0]}))} 
                     />
                   </div>
                 </div>
@@ -289,7 +289,7 @@ export default function Register() {
                           onClick={() => form.setValue('preferredTime', time)}
                         >
                           <Clock className="w-4 h-4" />
-                          {time}
+                          {time.split(' (')[0]} <span className="hidden md:inline text-xs text-muted-foreground">({time.split(' (')[1]}</span>
                         </div>
                       ))}
                     </div>
@@ -308,18 +308,18 @@ export default function Register() {
 
                 <div className="bg-muted/50 p-4 rounded-lg space-y-2 border border-border/50">
                   <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wider">Quick Summary</h4>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4 text-sm">
                     <div>
                       <span className="text-muted-foreground">Name:</span> 
-                      <p className="font-medium">{form.getValues("name")}</p>
+                      <span className="ml-2 font-medium">{form.getValues("name")}</span>
                     </div>
                     <div>
                       <span className="text-muted-foreground">Phone:</span> 
-                      <p className="font-medium">{form.getValues("phone")}</p>
+                      <span className="ml-2 font-medium">{form.getValues("phone")}</span>
                     </div>
-                    <div className="col-span-2">
-                      <span className="text-muted-foreground">Address:</span> 
-                      <p className="font-medium truncate">{form.getValues("textAddress")}</p>
+                    <div className="md:col-span-2">
+                      <span className="text-muted-foreground block md:inline">Address:</span> 
+                      <p className="font-medium truncate mt-1 md:mt-0">{form.getValues("textAddress")}</p>
                     </div>
                   </div>
                 </div>
@@ -333,17 +333,17 @@ export default function Register() {
                 variant="outline" 
                 onClick={prevStep}
                 disabled={step === 1}
-                className="w-28"
+                className="w-24 md:w-28"
               >
                 <ChevronLeft className="w-4 h-4 mr-2" /> Back
               </Button>
               
               {step < 3 ? (
-                <Button type="button" onClick={nextStep} className="w-28">
+                <Button type="button" onClick={nextStep} className="w-24 md:w-28">
                   Next <ChevronRight className="w-4 h-4 ml-2" />
                 </Button>
               ) : (
-                <Button type="submit" className="w-32 bg-primary hover:bg-primary/90">
+                <Button type="submit" className="flex-1 ml-4 md:ml-0 md:w-32 bg-primary hover:bg-primary/90">
                   Submit <CheckCircle2 className="w-4 h-4 ml-2" />
                 </Button>
               )}
