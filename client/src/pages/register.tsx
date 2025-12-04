@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useDropzone } from "react-dropzone";
@@ -12,10 +12,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { AddressMap } from "@/components/address-map";
+import { VoiceInput } from "@/components/voice-input";
 import { useToast } from "@/hooks/use-toast";
 
 // --- Schemas ---
@@ -92,12 +92,57 @@ export default function Register() {
     resolver: zodResolver(registrationSchema),
     defaultValues: {
       preferredTime: "morning",
+      textAddress: "",
     }
   });
 
   const onSubmit = (data: FormData) => {
-    // Simulate API call
-    console.log("Submitting:", { ...data, files });
+    // --- Data Formatting for Backend ---
+    // Organizing data into separate entities as requested
+    
+    const registrationEntity = {
+      iqamaId: data.iqamaId,
+      phone: data.phone,
+      email: data.email,
+      name: data.name
+    };
+
+    const addressPassportEntity = {
+      location: {
+        lat: data.latitude,
+        lng: data.longitude
+      },
+      textAddress: data.textAddress,
+      photos: {
+        building: files.building ? files.building.name : null,
+        mainGate: files.gate ? files.gate.name : null,
+        flatDoor: files.door ? files.door.name : null,
+        qrCode: null // Generated on server/frontend later
+      }
+    };
+
+    const instruction = {
+      preferredDeliveryTime: data.preferredTime,
+      specialNote: data.specialNote
+    };
+
+    const defaultFallback = {
+      name: data.name,
+      phone: data.phone,
+      location: {
+        lat: data.latitude,
+        lng: data.longitude
+      },
+      textAddress: data.textAddress,
+      photo: files.building ? files.building.name : null // Primary photo
+    };
+
+    // Simulate Backend Call
+    console.log("--- SIMULATING BACKEND SAVE ---");
+    console.log("Saving Registration Entity:", registrationEntity);
+    console.log("Saving Address Passport Entity:", addressPassportEntity);
+    console.log("Saving Instruction:", instruction);
+    console.log("Saving Default Fallback:", defaultFallback);
     
     // Mock URLs for images (in a real app, these would be uploaded to S3/storage and return URLs)
     const fileData = {
@@ -114,7 +159,7 @@ export default function Register() {
 
     toast({
       title: "Registration Successful",
-      description: "Your profile has been created.",
+      description: "Your profile has been created and data entities saved.",
     });
 
     setLocation("/success");
@@ -168,8 +213,19 @@ export default function Register() {
                   <div className="space-y-2">
                     <Label htmlFor="name">Full Name</Label>
                     <div className="relative">
-                      <User className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <Input id="name" placeholder="John Doe" className="pl-9" {...form.register("name")} />
+                      <Controller
+                        control={form.control}
+                        name="name"
+                        render={({ field }) => (
+                          <VoiceInput 
+                            id="name" 
+                            placeholder="John Doe" 
+                            className="pl-9" 
+                            {...field} 
+                          />
+                        )}
+                      />
+                      <User className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
                     </div>
                     {form.formState.errors.name && <p className="text-destructive text-xs">{form.formState.errors.name.message}</p>}
                   </div>
@@ -177,7 +233,7 @@ export default function Register() {
                   <div className="space-y-2">
                     <Label htmlFor="iqamaId">Iqama / National ID</Label>
                     <div className="relative">
-                      <FileText className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <FileText className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
                       <Input id="iqamaId" placeholder="10XXXXXXXX" className="pl-9" {...form.register("iqamaId")} />
                     </div>
                     {form.formState.errors.iqamaId && <p className="text-destructive text-xs">{form.formState.errors.iqamaId.message}</p>}
@@ -194,7 +250,18 @@ export default function Register() {
 
                   <div className="space-y-2">
                     <Label htmlFor="email">Email Address</Label>
-                    <Input id="email" type="email" placeholder="name@example.com" {...form.register("email")} />
+                    <Controller
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                           <VoiceInput 
+                           id="email" 
+                           type="email" 
+                           placeholder="name@example.com" 
+                           {...field} 
+                           />
+                        )}
+                     />
                     {form.formState.errors.email && <p className="text-destructive text-xs">{form.formState.errors.email.message}</p>}
                   </div>
                 </div>
@@ -213,9 +280,12 @@ export default function Register() {
                   </Label>
                   <div className="overflow-hidden border-2 border-muted hover:border-primary/20 transition-colors rounded-lg">
                     <AddressMap 
-                      onLocationSelect={(lat, lng) => {
+                      onLocationSelect={(lat, lng, address) => {
                         form.setValue("latitude", lat);
                         form.setValue("longitude", lng);
+                        if (address) {
+                           form.setValue("textAddress", address);
+                        }
                       }}
                     />
                   </div>
@@ -225,11 +295,18 @@ export default function Register() {
                 {/* Text Address */}
                 <div className="space-y-2">
                   <Label htmlFor="textAddress">Detailed Address</Label>
-                  <Textarea 
-                    id="textAddress" 
-                    placeholder="Building No., Street Name, District, Landmarks..." 
-                    className="resize-none h-24"
-                    {...form.register("textAddress")} 
+                  <Controller
+                    control={form.control}
+                    name="textAddress"
+                    render={({ field }) => (
+                      <VoiceInput 
+                        as="textarea"
+                        id="textAddress" 
+                        placeholder="Building No., Street Name, District, Landmarks..." 
+                        className="resize-none h-24"
+                        {...field} 
+                      />
+                    )}
                   />
                   {form.formState.errors.textAddress && <p className="text-destructive text-xs">{form.formState.errors.textAddress.message}</p>}
                 </div>
@@ -297,11 +374,18 @@ export default function Register() {
 
                   <div className="space-y-2">
                     <Label htmlFor="specialNote">Special Notes</Label>
-                    <Textarea 
-                      id="specialNote" 
-                      placeholder="e.g., Leave at the reception, call before arrival..." 
-                      className="h-24"
-                      {...form.register("specialNote")} 
+                    <Controller
+                      control={form.control}
+                      name="specialNote"
+                      render={({ field }) => (
+                        <VoiceInput 
+                          as="textarea"
+                          id="specialNote" 
+                          placeholder="e.g., Leave at the reception, call before arrival..." 
+                          className="h-24"
+                          {...field} 
+                        />
+                      )}
                     />
                   </div>
                 </div>

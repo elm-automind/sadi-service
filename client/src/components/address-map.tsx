@@ -23,10 +23,26 @@ L.Marker.prototype.options.icon = DefaultIcon;
 const DEFAULT_CENTER = { lat: 24.7136, lng: 46.6753 }; // Riyadh
 
 interface AddressMapProps {
-  onLocationSelect?: (lat: number, lng: number) => void;
+  onLocationSelect?: (lat: number, lng: number, address?: string) => void;
   initialLat?: number;
   initialLng?: number;
   readOnly?: boolean;
+}
+
+// Helper to reverse geocode
+async function reverseGeocode(lat: number, lng: number): Promise<string | null> {
+  try {
+    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, {
+      headers: {
+        'User-Agent': 'SecureDeliveryApp/1.0'
+      }
+    });
+    const data = await response.json();
+    return data.display_name || null;
+  } catch (error) {
+    console.error("Geocoding error:", error);
+    return null;
+  }
 }
 
 // Component to handle map clicks and updates
@@ -34,12 +50,14 @@ function LocationMarker({
   position, 
   setPosition, 
   readOnly, 
-  onLocationSelect 
+  onLocationSelect,
+  setLoadingAddress
 }: { 
   position: { lat: number; lng: number } | null; 
   setPosition: (pos: { lat: number; lng: number }) => void;
   readOnly: boolean;
-  onLocationSelect?: (lat: number, lng: number) => void;
+  onLocationSelect?: (lat: number, lng: number, address?: string) => void;
+  setLoadingAddress: (loading: boolean) => void;
 }) {
   const map = useMap();
 
@@ -48,8 +66,13 @@ function LocationMarker({
       if (readOnly) return;
       const newPos = { lat: e.latlng.lat, lng: e.latlng.lng };
       setPosition(newPos);
+      
       if (onLocationSelect) {
-        onLocationSelect(newPos.lat, newPos.lng);
+        setLoadingAddress(true);
+        reverseGeocode(newPos.lat, newPos.lng).then(address => {
+          onLocationSelect(newPos.lat, newPos.lng, address || undefined);
+          setLoadingAddress(false);
+        });
       }
     },
   });
@@ -71,6 +94,7 @@ export function AddressMap({ onLocationSelect, initialLat, initialLng, readOnly 
   );
   const [isLocating, setIsLocating] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
+  const [isLoadingAddress, setIsLoadingAddress] = useState(false);
   const [key, setKey] = useState(0); // Force re-render map on resize/modal open
 
   // Handle "Locate Me"
@@ -91,11 +115,21 @@ export function AddressMap({ onLocationSelect, initialLat, initialLng, readOnly 
       (pos) => {
         const newPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         setPosition(newPos);
+        
         if (onLocationSelect) {
-          onLocationSelect(newPos.lat, newPos.lng);
+          setIsLoadingAddress(true);
+          reverseGeocode(newPos.lat, newPos.lng).then(address => {
+            onLocationSelect(newPos.lat, newPos.lng, address || undefined);
+            setIsLoadingAddress(false);
+            toast({ 
+              title: "Location Updated", 
+              description: address ? "Address found!" : "Coordinates updated." 
+            });
+          });
+        } else {
+           toast({ title: "Location Updated", description: "Map centered on your current location" });
         }
         setIsLocating(false);
-        toast({ title: "Location Updated", description: "Map centered on your current location" });
       },
       (error) => {
         console.error(error);
@@ -141,6 +175,7 @@ export function AddressMap({ onLocationSelect, initialLat, initialLng, readOnly 
           setPosition={setPosition} 
           readOnly={readOnly}
           onLocationSelect={onLocationSelect}
+          setLoadingAddress={setIsLoadingAddress}
         />
       </MapContainer>
 
@@ -201,7 +236,16 @@ export function AddressMap({ onLocationSelect, initialLat, initialLng, readOnly 
         </div>
       )}
       
-      {!readOnly && !position && (
+      {!readOnly && isLoadingAddress && (
+         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[400]">
+            <span className="bg-background/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium shadow-sm flex items-center gap-2 border border-border">
+               <Loader2 className="w-3 h-3 animate-spin" />
+               Fetching address...
+            </span>
+         </div>
+      )}
+
+      {!readOnly && !position && !isLoadingAddress && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-black/5 z-[400]">
           <span className="bg-background/90 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium shadow-sm flex items-center gap-2">
             <MapPin className="w-4 h-4 text-primary" />
