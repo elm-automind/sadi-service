@@ -101,15 +101,16 @@ export default function DeliveryPreferences() {
   useEffect(() => {
     if (user) {
       if (user.addresses && user.addresses.length > 0) {
-        const latestAddress = user.addresses[user.addresses.length - 1];
-        setActiveAddressId(latestAddress.id);
+        // Find primary address or fall back to first address
+        const primaryAddress = user.addresses.find(a => a.isPrimary) || user.addresses[0];
+        setActiveAddressId(primaryAddress.id);
         
-        const period = latestAddress.preferredTime || "morning";
+        const period = primaryAddress.preferredTime || "morning";
         
         form.reset({
           preferredTime: period,
-          preferredTimeSlot: latestAddress.preferredTimeSlot || "",
-          specialNote: latestAddress.specialNote || "",
+          preferredTimeSlot: primaryAddress.preferredTimeSlot || "",
+          specialNote: primaryAddress.specialNote || "",
         });
       } else {
         setLocation("/add-address");

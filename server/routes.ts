@@ -105,10 +105,15 @@ export async function registerRoutes(httpServer: Server, app: Express) {
 
   app.post("/api/addresses", requireAuth, async (req, res) => {
     try {
+      // Check if user already has addresses
+      const existingAddresses = await storage.getAddressesByUserId(req.session.userId!);
+      const isFirstAddress = existingAddresses.length === 0;
+
       const addressData = insertAddressSchema.parse({
         ...req.body,
         userId: req.session.userId,
-        digitalId: generateDigitalId()
+        digitalId: generateDigitalId(),
+        isPrimary: isFirstAddress // First address is automatically primary
       });
 
       const newAddress = await storage.createAddress(addressData);
@@ -119,6 +124,34 @@ export async function registerRoutes(httpServer: Server, app: Express) {
       } else {
         res.status(500).json({ message: "Internal Server Error" });
       }
+    }
+  });
+  
+  // Set primary address
+  app.post("/api/addresses/:id/set-primary", requireAuth, async (req, res) => {
+    try {
+      const addressId = parseInt(req.params.id);
+      if (isNaN(addressId)) {
+        return res.status(400).json({ message: "Invalid address ID" });
+      }
+
+      // Verify ownership
+      const address = await storage.getAddressById(addressId);
+      if (!address) {
+        return res.status(404).json({ message: "Address not found" });
+      }
+      if (address.userId !== req.session.userId) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      // Clear primary flag on all user's addresses, then set this one as primary
+      await storage.clearPrimaryAddresses(req.session.userId!);
+      const updated = await storage.updateAddress(addressId, { isPrimary: true });
+      
+      res.json(updated);
+    } catch (error) {
+      console.error("Set primary address error:", error);
+      res.status(500).json({ message: "Internal Server Error" });
     }
   });
 

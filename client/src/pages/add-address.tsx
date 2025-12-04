@@ -208,15 +208,12 @@ export default function AddAddress() {
       return await res.json();
     },
     onSuccess: (data) => {
-       // Update local session-like storage for success page preview 
-       // In real fullstack we might fetch this on success page by ID
-       localStorage.setItem("lastCreatedAddress", JSON.stringify(data));
-       
        toast({
         title: "Address Added!",
         description: `Digital ID ${data.digitalId} created successfully.`,
       });
-      setLocation("/success");
+      // Navigate to the address view page
+      setLocation(`/view/${data.digitalId}`);
     },
     onError: (error: any) => {
       toast({

@@ -24,6 +24,7 @@ export interface IStorage {
   getFallbackContactById(id: number): Promise<FallbackContact | undefined>;
   deleteFallbackContactsByAddressId(addressId: number): Promise<void>;
   deleteAddress(id: number): Promise<boolean>;
+  clearPrimaryAddresses(userId: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -110,6 +111,13 @@ export class DatabaseStorage implements IStorage {
   async deleteAddress(id: number): Promise<boolean> {
     const [deleted] = await db.delete(addresses).where(eq(addresses.id, id)).returning();
     return !!deleted;
+  }
+
+  async clearPrimaryAddresses(userId: number): Promise<void> {
+    await db
+      .update(addresses)
+      .set({ isPrimary: false })
+      .where(eq(addresses.userId, userId));
   }
 }
 

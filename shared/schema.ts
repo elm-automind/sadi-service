@@ -26,6 +26,7 @@ export const addresses = pgTable("addresses", {
   preferredTimeSlot: text("preferred_time_slot"),
   specialNote: text("special_note"),
   fallbackOption: text("fallback_option").default("door"),
+  isPrimary: boolean("is_primary").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -71,6 +72,7 @@ export const insertAddressSchema = createInsertSchema(addresses).pick({
   preferredTimeSlot: true,
   specialNote: true,
   fallbackOption: true,
+  isPrimary: true,
 });
 
 export const insertFallbackContactSchema = createInsertSchema(fallbackContacts).pick({
