@@ -3,7 +3,7 @@ import { useLocation, Link } from "wouter";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Clock, FileText, CheckCircle2, Home, Settings, Sun, Sunset, Moon } from "lucide-react";
+import { Clock, FileText, CheckCircle2, Home, Settings, Sun, Sunset, Moon, Check } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { User, Address } from "@shared/schema";
 
@@ -19,9 +19,12 @@ const TIME_SLOTS = {
   morning: {
     label: "Morning",
     icon: Sun,
-    color: "text-amber-500",
-    bgColor: "bg-amber-50 dark:bg-amber-900/20",
-    borderColor: "border-amber-200 dark:border-amber-800",
+    color: "text-amber-600",
+    bgColor: "bg-amber-50 dark:bg-amber-900/30",
+    activeBg: "bg-amber-500",
+    activeText: "text-white",
+    borderColor: "border-amber-300 dark:border-amber-700",
+    hoverBg: "hover:bg-amber-100 dark:hover:bg-amber-900/50",
     slots: [
       { value: "8am-9am", label: "8:00 AM - 9:00 AM" },
       { value: "9am-10am", label: "9:00 AM - 10:00 AM" },
@@ -32,9 +35,12 @@ const TIME_SLOTS = {
   afternoon: {
     label: "Afternoon",
     icon: Sunset,
-    color: "text-orange-500",
-    bgColor: "bg-orange-50 dark:bg-orange-900/20",
-    borderColor: "border-orange-200 dark:border-orange-800",
+    color: "text-orange-600",
+    bgColor: "bg-orange-50 dark:bg-orange-900/30",
+    activeBg: "bg-orange-500",
+    activeText: "text-white",
+    borderColor: "border-orange-300 dark:border-orange-700",
+    hoverBg: "hover:bg-orange-100 dark:hover:bg-orange-900/50",
     slots: [
       { value: "12pm-2pm", label: "12:00 PM - 2:00 PM" },
       { value: "2pm-4pm", label: "2:00 PM - 4:00 PM" },
@@ -44,9 +50,12 @@ const TIME_SLOTS = {
   evening: {
     label: "Evening",
     icon: Moon,
-    color: "text-indigo-500",
-    bgColor: "bg-indigo-50 dark:bg-indigo-900/20",
-    borderColor: "border-indigo-200 dark:border-indigo-800",
+    color: "text-indigo-600",
+    bgColor: "bg-indigo-50 dark:bg-indigo-900/30",
+    activeBg: "bg-indigo-500",
+    activeText: "text-white",
+    borderColor: "border-indigo-300 dark:border-indigo-700",
+    hoverBg: "hover:bg-indigo-100 dark:hover:bg-indigo-900/50",
     slots: [
       { value: "6pm-7pm", label: "6:00 PM - 7:00 PM" },
       { value: "7pm-8pm", label: "7:00 PM - 8:00 PM" },
@@ -72,7 +81,6 @@ export default function DeliveryPreferences() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeAddressId, setActiveAddressId] = useState<number | null>(null);
-  const [selectedPeriod, setSelectedPeriod] = useState<string>("morning");
 
   const form = useForm<PreferencesData>({
     resolver: zodResolver(preferencesSchema),
@@ -82,6 +90,8 @@ export default function DeliveryPreferences() {
       specialNote: "",
     }
   });
+
+  const selectedTimeSlot = form.watch("preferredTimeSlot");
 
   const { data: user, isLoading } = useQuery<UserWithAddresses>({
     queryKey: ["/api/user"],
@@ -95,7 +105,6 @@ export default function DeliveryPreferences() {
         setActiveAddressId(latestAddress.id);
         
         const period = latestAddress.preferredTime || "morning";
-        setSelectedPeriod(period);
         
         form.reset({
           preferredTime: period,
@@ -137,10 +146,18 @@ export default function DeliveryPreferences() {
     updateMutation.mutate(data);
   };
 
-  const handlePeriodSelect = (period: string) => {
-    setSelectedPeriod(period);
-    form.setValue("preferredTime", period);
-    form.setValue("preferredTimeSlot", "");
+  const handleSlotSelect = (periodKey: string, slotValue: string) => {
+    form.setValue("preferredTime", periodKey);
+    form.setValue("preferredTimeSlot", slotValue);
+  };
+
+  const getSlotPeriod = (slotValue: string): string | null => {
+    for (const [key, period] of Object.entries(TIME_SLOTS)) {
+      if (period.slots.some(s => s.value === slotValue)) {
+        return key;
+      }
+    }
+    return null;
   };
 
   if (isLoading) return <div className="p-8 text-center">Loading...</div>;
@@ -156,7 +173,7 @@ export default function DeliveryPreferences() {
         </Link>
       </div>
 
-      <Card className="w-full max-w-2xl shadow-xl border-border/60 bg-card/95 backdrop-blur-sm">
+      <Card className="w-full max-w-3xl shadow-xl border-border/60 bg-card/95 backdrop-blur-sm">
         <CardHeader className="border-b border-border/40 pb-6">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-primary/10 rounded-full text-primary">
@@ -179,7 +196,6 @@ export default function DeliveryPreferences() {
                   const addr = user.addresses.find(a => a.id === addrId);
                   if (addr) {
                     const period = addr.preferredTime || "morning";
-                    setSelectedPeriod(period);
                     form.reset({
                       preferredTime: period,
                       preferredTimeSlot: addr.preferredTimeSlot || "",
@@ -207,55 +223,66 @@ export default function DeliveryPreferences() {
         <CardContent className="p-6">
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             
-            {/* Time Period Selection */}
+            {/* Time Period Selection - All slots always visible */}
             <div className="space-y-4">
               <Label className="text-base font-semibold flex items-center gap-2">
                 <Clock className="w-4 h-4" /> Preferred Delivery Time
               </Label>
+              <p className="text-sm text-muted-foreground">
+                Select your preferred time slot. The selected time will be highlighted.
+              </p>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {Object.entries(TIME_SLOTS).map(([key, period]) => {
                   const Icon = period.icon;
-                  const isSelected = selectedPeriod === key;
+                  const activePeriod = getSlotPeriod(selectedTimeSlot || "");
+                  const isPeriodActive = activePeriod === key;
                   
                   return (
                     <div
                       key={key}
                       className={`
-                        rounded-xl border-2 cursor-pointer transition-all overflow-hidden
-                        ${isSelected 
-                          ? `${period.borderColor} ${period.bgColor} shadow-md` 
-                          : 'border-muted hover:border-muted-foreground/30'}
+                        rounded-xl border-2 overflow-hidden transition-all
+                        ${isPeriodActive 
+                          ? `${period.borderColor} shadow-lg` 
+                          : 'border-muted'}
                       `}
-                      onClick={() => handlePeriodSelect(key)}
                     >
-                      <div className={`p-4 ${isSelected ? period.bgColor : ''}`}>
-                        <div className="flex items-center gap-2 mb-3">
+                      {/* Period Header */}
+                      <div className={`p-3 ${period.bgColor} border-b ${period.borderColor}`}>
+                        <div className="flex items-center gap-2">
                           <Icon className={`w-5 h-5 ${period.color}`} />
-                          <span className="font-semibold">{period.label}</span>
+                          <span className={`font-semibold ${period.color}`}>{period.label}</span>
+                          {isPeriodActive && (
+                            <Check className={`w-4 h-4 ml-auto ${period.color}`} />
+                          )}
                         </div>
-                        
-                        {isSelected && (
-                          <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
-                            {period.slots.map((slot) => (
-                              <div
-                                key={slot.value}
-                                className={`
-                                  p-2 rounded-lg text-sm cursor-pointer transition-all
-                                  ${form.watch("preferredTimeSlot") === slot.value 
-                                    ? 'bg-white dark:bg-gray-800 shadow-sm border border-primary/50 font-medium' 
-                                    : 'bg-white/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-800'}
-                                `}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  form.setValue("preferredTimeSlot", slot.value);
-                                }}
-                              >
-                                {slot.label}
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                      </div>
+                      
+                      {/* Time Slots - Always Visible */}
+                      <div className="p-2 space-y-1.5 bg-background">
+                        {period.slots.map((slot) => {
+                          const isSlotSelected = selectedTimeSlot === slot.value;
+                          
+                          return (
+                            <div
+                              key={slot.value}
+                              data-testid={`slot-${slot.value}`}
+                              className={`
+                                p-2.5 rounded-lg text-sm cursor-pointer transition-all flex items-center gap-2
+                                ${isSlotSelected 
+                                  ? `${period.activeBg} ${period.activeText} font-semibold shadow-md` 
+                                  : `bg-muted/50 ${period.hoverBg} text-foreground`}
+                              `}
+                              onClick={() => handleSlotSelect(key, slot.value)}
+                            >
+                              {isSlotSelected && (
+                                <Check className="w-4 h-4 shrink-0" />
+                              )}
+                              <span className={isSlotSelected ? "" : "ml-6"}>{slot.label}</span>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   );
