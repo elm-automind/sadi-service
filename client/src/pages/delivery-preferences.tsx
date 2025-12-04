@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Clock, FileText, CheckCircle2, ArrowRight, Home, Settings, AlertCircle } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { User, Address } from "@shared/schema";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -22,6 +23,10 @@ const preferencesSchema = z.object({
 
 type PreferencesData = z.infer<typeof preferencesSchema>;
 
+interface UserWithAddresses extends User {
+  addresses: Address[];
+}
+
 export default function DeliveryPreferences() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -37,7 +42,7 @@ export default function DeliveryPreferences() {
     }
   });
 
-  const { data: user, isLoading } = useQuery<any>({
+  const { data: user, isLoading } = useQuery<UserWithAddresses>({
     queryKey: ["/api/user"],
     retry: false,
   });
@@ -188,7 +193,7 @@ export default function DeliveryPreferences() {
                     placeholder="e.g., Ring the doorbell twice, beware of dog..." 
                     className="h-32 resize-none"
                     {...field}
-                    value={field.value || ""} // Fix: Ensure value is never undefined
+                    value={field.value || ""} // Ensure value is never undefined
                   />
                 )}
               />

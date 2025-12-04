@@ -6,7 +6,7 @@ import { Mic, MicOff, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface VoiceInputProps {
-  value: string;
+  value?: string | null;
   onChange: (value: string) => void;
   placeholder?: string;
   id?: string;
@@ -74,7 +74,7 @@ export function VoiceInput({
     <div className="relative">
       <Component
         id={id}
-        value={value}
+        value={value || ""}
         onChange={(e: any) => onChange(e.target.value)}
         placeholder={placeholder}
         className={cn("pr-10", className)}

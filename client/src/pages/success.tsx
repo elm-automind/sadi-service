@@ -8,11 +8,16 @@ import { Phone, MapPin, CheckCircle2, Home, QrCode, Download, Share2, Plus } fro
 import { AddressMap } from "@/components/address-map";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery } from "@tanstack/react-query";
+import type { User, Address } from "@shared/schema";
+
+interface UserWithAddresses extends User {
+  addresses: Address[];
+}
 
 export default function Success() {
   const [, setLocation] = useLocation();
 
-  const { data: user, isLoading } = useQuery<any>({
+  const { data: user, isLoading } = useQuery<UserWithAddresses>({
     queryKey: ["/api/user"],
     retry: false,
   });
@@ -108,8 +113,8 @@ export default function Success() {
                   <div className="rounded-lg overflow-hidden border border-border h-48">
                     <AddressMap 
                       readOnly 
-                      initialLat={currentAddress.lat} 
-                      initialLng={currentAddress.lng} 
+                      initialLat={currentAddress.lat ?? undefined} 
+                      initialLng={currentAddress.lng ?? undefined} 
                     />
                   </div>
 
