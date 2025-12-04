@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useDropzone } from "react-dropzone";
 import { 
   User, MapPin, Camera, Clock, CheckCircle2, 
-  ChevronRight, ChevronLeft, Upload, FileText, Lock
+  ChevronRight, ChevronLeft, Upload, FileText, Lock, Home, LogIn
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -242,7 +242,27 @@ export default function Register() {
   const prevStep = () => setStep(s => s - 1);
 
   return (
-    <div className="min-h-screen bg-muted/30 p-3 md:p-8 flex justify-center items-start pt-6 md:pt-20">
+    <div className="min-h-screen bg-muted/30 p-3 md:p-8 flex justify-center items-start pt-6 md:pt-20 relative">
+      
+      {/* Navigation Buttons */}
+      <div className="absolute top-4 left-4 flex gap-2">
+        <Link href="/">
+          <Button variant="ghost" size="sm" className="gap-2">
+            <Home className="w-4 h-4" />
+            <span className="hidden sm:inline">Home</span>
+          </Button>
+        </Link>
+      </div>
+
+      <div className="absolute top-4 right-4 flex gap-2">
+        <Link href="/login">
+           <Button variant="ghost" size="sm" className="gap-2 text-primary">
+            <LogIn className="w-4 h-4" />
+            <span className="hidden sm:inline">Login</span>
+           </Button>
+        </Link>
+      </div>
+
       <Card className="w-full max-w-3xl shadow-xl border-border/60 bg-card/95 backdrop-blur-sm">
         <CardHeader className="border-b border-border/40 pb-4 md:pb-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
@@ -541,6 +561,15 @@ export default function Register() {
                   Submit <CheckCircle2 className="w-4 h-4 ml-2" />
                 </Button>
               )}
+            </div>
+
+             <div className="text-center text-sm text-muted-foreground pt-4 border-t mt-4 sm:hidden">
+              Already have an account?{" "}
+              <Link href="/login">
+                <Button variant="link" className="p-0 h-auto font-medium text-primary">
+                  Login
+                </Button>
+              </Link>
             </div>
 
           </form>

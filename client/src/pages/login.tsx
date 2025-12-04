@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { User, Lock, Mail, FileText, Phone, CheckCircle2, ArrowRight } from "lucide-react";
+import { User, Lock, ArrowRight, Home, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,25 +25,26 @@ export default function Login() {
   });
 
   const onSubmit = (data: LoginData) => {
-    // Simulate login
     console.log("Logging in with:", data);
-    
-    // In a real app, we would verify credentials against the backend
-    // For prototype, we'll just simulate success and redirect to success page with mock data
-    // or a dashboard page (which we haven't built yet, so we'll just toast)
-    
     toast({
       title: "Login Successful",
       description: "Welcome back!",
     });
-    
-    // Redirect to success page to show "dashboard" view (using existing success page for now)
-    // In real app, this would go to /dashboard
     setLocation("/success"); 
   };
 
   return (
-    <div className="min-h-screen bg-muted/30 p-4 flex items-center justify-center">
+    <div className="min-h-screen bg-muted/30 p-4 flex items-center justify-center relative">
+      {/* Navigation Buttons */}
+      <div className="absolute top-4 left-4 flex gap-2">
+        <Link href="/">
+          <Button variant="ghost" size="sm" className="gap-2">
+            <Home className="w-4 h-4" />
+            <span className="hidden sm:inline">Home</span>
+          </Button>
+        </Link>
+      </div>
+
       <Card className="w-full max-w-md shadow-xl border-border/60 bg-card/95 backdrop-blur-sm">
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-2xl font-bold text-primary">Welcome Back</CardTitle>
@@ -88,11 +89,13 @@ export default function Login() {
               Log In <ArrowRight className="ml-2 w-4 h-4" />
             </Button>
             
-            <div className="text-center text-sm text-muted-foreground pt-2">
+            <div className="text-center text-sm text-muted-foreground pt-4 border-t mt-4">
               Don't have an account?{" "}
-              <a href="/register" className="text-primary hover:underline font-medium">
-                Register
-              </a>
+              <Link href="/register">
+                <Button variant="link" className="p-0 h-auto font-medium text-primary">
+                  Register
+                </Button>
+              </Link>
             </div>
           </form>
         </CardContent>
