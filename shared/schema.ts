@@ -87,6 +87,7 @@ export const addresses = pgTable("addresses", {
   id: serial("id").primaryKey(),
   digitalId: text("digital_id").notNull().unique(),
   userId: integer("user_id").notNull().references(() => users.id),
+  label: text("label"),
   textAddress: text("text_address").notNull(),
   lat: doublePrecision("lat").default(0),
   lng: doublePrecision("lng").default(0),
@@ -220,6 +221,7 @@ export const bulkDriverSchema = z.object({
 export const insertAddressSchema = createInsertSchema(addresses).pick({
   digitalId: true,
   userId: true,
+  label: true,
   textAddress: true,
   lat: true,
   lng: true,
