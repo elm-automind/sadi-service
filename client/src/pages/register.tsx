@@ -37,6 +37,7 @@ const registrationSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
   
   // Address (optional if quick reg)
+  addressLabel: z.string().optional(),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
   textAddress: z.string().optional(),
@@ -103,6 +104,7 @@ export default function Register() {
     resolver: zodResolver(registrationSchema),
     defaultValues: {
       preferredTime: "morning",
+      addressLabel: "",
       textAddress: "",
       name: "",
       iqamaId: "",
@@ -121,6 +123,7 @@ export default function Register() {
       
       const payload = {
         ...data,
+        label: data.addressLabel,
         lat: data.latitude,
         lng: data.longitude,
         photoBuilding: files.building?.name,
@@ -336,6 +339,18 @@ export default function Register() {
             {/* STEP 2: Address & Passport Entity */}
             {step === 2 && (
               <div className="space-y-6 md:space-y-8 animate-in slide-in-from-right-4 duration-300 fade-in">
+                {/* Address Label */}
+                <div className="space-y-2">
+                  <Label htmlFor="addressLabel">Address Name</Label>
+                  <Input 
+                    id="addressLabel"
+                    placeholder="e.g., Home, Office, Parents House..."
+                    {...form.register("addressLabel")}
+                    data-testid="input-address-label"
+                  />
+                  <p className="text-xs text-muted-foreground">Give this address a friendly name to identify it easily</p>
+                </div>
+
                 {/* Map Section */}
                 <div className="space-y-3">
                   <Label className="flex items-center gap-2">
