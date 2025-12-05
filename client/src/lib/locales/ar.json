@@ -1,13 +1,16 @@
 {
   "home": {
-    "secureDelivery": "توصيل آمن",
-    "description": "سجّل ملفك الشخصي وموقعك للحصول على توصيلات سريعة ودقيقة وآمنة.",
-    "optimizedLogistics": "خدمات لوجستية متقدمة",
-    "preciseLocation": "تحديد الموقع بدقة",
-    "visualVerification": "تحقق بصري",
-    "photoConfirmation": "تأكيد العنوان بالصور",
-    "startRegistration": "ابدأ التسجيل",
-    "copyright": "نظام اللوجستيات الآمنة. جميع الحقوق محفوظة."
+    "tagline": "الذكاء وراء كل عملية توصيل",
+    "description": "إدارة عناوين ذكية مدعومة بالذكاء الاصطناعي. سجّل مرة واحدة، وصّل بشكل مثالي في كل مرة.",
+    "smartRouting": "توجيه ذكي",
+    "smartRoutingDesc": "ذكاء عناوين مدعوم بالذكاء الاصطناعي لتوصيل أسرع",
+    "preciseDelivery": "توصيل دقيق",
+    "preciseDeliveryDesc": "التحقق البصري يضمن النجاح من المحاولة الأولى",
+    "trustedNetwork": "شبكة موثوقة",
+    "trustedNetworkDesc": "سائقون معتمدون ومشاركة عناوين آمنة",
+    "getStarted": "ابدأ الآن",
+    "joinNetwork": "انضم لآلاف الشركات التي تحسّن توصيلاتها",
+    "copyright": "جميع الحقوق محفوظة."
   },
   "common": {
     "loading": "جاري التحميل...",

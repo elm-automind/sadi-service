@@ -1,13 +1,16 @@
 {
   "home": {
-    "secureDelivery": "Secure Delivery",
-    "description": "Register your profile and location for fast, accurate, and secure deliveries.",
-    "optimizedLogistics": "Optimized Logistics",
-    "preciseLocation": "Precise location mapping",
-    "visualVerification": "Visual Verification",
-    "photoConfirmation": "Photo-based address confirmation",
-    "startRegistration": "Start Registration",
-    "copyright": "Secure Logistics System. All rights reserved."
+    "tagline": "The Intelligence Behind Every Delivery",
+    "description": "Smart address management powered by AI. Register once, deliver perfectly every time.",
+    "smartRouting": "Smart Routing",
+    "smartRoutingDesc": "AI-powered address intelligence for faster deliveries",
+    "preciseDelivery": "Precise Delivery",
+    "preciseDeliveryDesc": "Visual verification ensures first-attempt success",
+    "trustedNetwork": "Trusted Network",
+    "trustedNetworkDesc": "Verified drivers and secure address sharing",
+    "getStarted": "Get Started",
+    "joinNetwork": "Join thousands of businesses optimizing their deliveries",
+    "copyright": "All rights reserved."
   },
   "common": {
     "loading": "Loading...",
