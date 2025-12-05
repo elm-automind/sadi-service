@@ -38,16 +38,21 @@ export function PageNavigation({ className = "" }: PageNavigationProps) {
     setLocation("/login");
   };
 
+  // Hide Home button on dashboard since user is already there
+  const isOnDashboard = location === "/dashboard";
+
   return (
     <div className={`flex gap-2 ${className}`}>
       <Button variant="ghost" size="sm" className="gap-2" onClick={handleBack} data-testid="button-back">
         <ArrowLeft className="w-4 h-4" /> Back
       </Button>
-      <Link href={homeLink}>
-        <Button variant="ghost" size="sm" className="gap-2" data-testid="button-home">
-          <Home className="w-4 h-4" /> Home
-        </Button>
-      </Link>
+      {!isOnDashboard && (
+        <Link href={homeLink}>
+          <Button variant="ghost" size="sm" className="gap-2" data-testid="button-home">
+            <Home className="w-4 h-4" /> Home
+          </Button>
+        </Link>
+      )}
       {isLoggedIn && (
         <Button variant="ghost" size="sm" className="gap-2 text-destructive hover:text-destructive" onClick={handleLogout} data-testid="button-logout">
           <LogOut className="w-4 h-4" /> Logout
