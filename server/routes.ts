@@ -485,6 +485,102 @@ export async function registerRoutes(httpServer: Server, app: Express) {
     res.json(contact);
   });
 
+  app.put("/api/fallback-contact/:id", requireAuth, async (req: any, res) => {
+    try {
+      const contactId = parseInt(req.params.id);
+      if (isNaN(contactId)) {
+        return res.status(400).json({ message: "Invalid contact ID" });
+      }
+
+      const existingContact = await storage.getFallbackContactById(contactId);
+      if (!existingContact) {
+        return res.status(404).json({ message: "Fallback contact not found" });
+      }
+
+      // Verify the user owns the address this contact belongs to
+      const address = await storage.getAddressById(existingContact.addressId);
+      if (!address || address.userId !== req.session.userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const updateData = insertFallbackContactSchema.partial().parse(req.body);
+      
+      // If lat/lng are being updated, recalculate distance
+      if (updateData.lat !== undefined && updateData.lng !== undefined) {
+        if (!Number.isFinite(updateData.lat) || !Number.isFinite(updateData.lng)) {
+          return res.status(400).json({ 
+            message: "Please select a valid location on the map." 
+          });
+        }
+
+        if (address.lat && address.lng) {
+          const computedDistance = calculateDistanceKm(
+            address.lat,
+            address.lng,
+            updateData.lat,
+            updateData.lng
+          );
+          const requiresExtraFee = computedDistance > MAX_FREE_DISTANCE_KM;
+
+          if (requiresExtraFee) {
+            const hasScheduledDate = updateData.scheduledDate && updateData.scheduledDate.length > 0;
+            const hasScheduledTimeSlot = updateData.scheduledTimeSlot && updateData.scheduledTimeSlot.length > 0;
+            
+            if (!hasScheduledDate || !hasScheduledTimeSlot) {
+              return res.status(400).json({ 
+                message: "Fallback locations beyond 3km require scheduled delivery date and time slot." 
+              });
+            }
+            if (updateData.extraFeeAcknowledged !== true) {
+              return res.status(400).json({ 
+                message: "Please acknowledge the extra delivery fee for locations beyond 3km." 
+              });
+            }
+          }
+
+          (updateData as any).distanceKm = computedDistance;
+          (updateData as any).requiresExtraFee = requiresExtraFee;
+        }
+      }
+
+      const updated = await storage.updateFallbackContact(contactId, updateData);
+      res.json(updated);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Validation Error", errors: error.errors });
+      } else {
+        console.error("Update fallback contact error:", error);
+        res.status(500).json({ message: "Internal Server Error" });
+      }
+    }
+  });
+
+  app.delete("/api/fallback-contact/:id", requireAuth, async (req: any, res) => {
+    try {
+      const contactId = parseInt(req.params.id);
+      if (isNaN(contactId)) {
+        return res.status(400).json({ message: "Invalid contact ID" });
+      }
+
+      const existingContact = await storage.getFallbackContactById(contactId);
+      if (!existingContact) {
+        return res.status(404).json({ message: "Fallback contact not found" });
+      }
+
+      // Verify the user owns the address this contact belongs to
+      const address = await storage.getAddressById(existingContact.addressId);
+      if (!address || address.userId !== req.session.userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      await storage.deleteFallbackContact(contactId);
+      res.json({ success: true, message: "Fallback contact deleted" });
+    } catch (error) {
+      console.error("Delete fallback contact error:", error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  });
+
   // --- Company Routes ---
 
   // Helper to require company account

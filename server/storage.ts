@@ -52,6 +52,8 @@ export interface IStorage {
   createFallbackContact(contact: InsertFallbackContact): Promise<FallbackContact>;
   getFallbackContactsByAddressId(addressId: number): Promise<FallbackContact[]>;
   getFallbackContactById(id: number): Promise<FallbackContact | undefined>;
+  updateFallbackContact(id: number, updates: Partial<FallbackContact>): Promise<FallbackContact | undefined>;
+  deleteFallbackContact(id: number): Promise<boolean>;
   deleteFallbackContactsByAddressId(addressId: number): Promise<void>;
   deleteAddress(id: number): Promise<boolean>;
   clearPrimaryAddresses(userId: number): Promise<void>;
@@ -263,6 +265,20 @@ export class DatabaseStorage implements IStorage {
   async getFallbackContactById(id: number): Promise<FallbackContact | undefined> {
     const [contact] = await db.select().from(fallbackContacts).where(eq(fallbackContacts.id, id));
     return contact || undefined;
+  }
+
+  async updateFallbackContact(id: number, updates: Partial<FallbackContact>): Promise<FallbackContact | undefined> {
+    const [updated] = await db
+      .update(fallbackContacts)
+      .set(updates)
+      .where(eq(fallbackContacts.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteFallbackContact(id: number): Promise<boolean> {
+    const [deleted] = await db.delete(fallbackContacts).where(eq(fallbackContacts.id, id)).returning();
+    return !!deleted;
   }
 
   async deleteFallbackContactsByAddressId(addressId: number): Promise<void> {
