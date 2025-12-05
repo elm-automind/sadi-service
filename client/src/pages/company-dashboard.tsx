@@ -302,6 +302,16 @@ export default function CompanyDashboard() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/company/subscription"] });
+      
+      if (data.payment?.paymentUrl) {
+        toast({
+          title: t('company.redirectingToPayment'),
+          description: t('company.paymentPageOpening'),
+        });
+        window.location.href = data.payment.paymentUrl;
+        return;
+      }
+      
       toast({
         title: t('company.subscriptionUpdated'),
         description: t('company.planUpdatedSuccess'),

@@ -70,6 +70,9 @@ export const companySubscriptions = pgTable("company_subscriptions", {
   totalDueAmountBeforeVat: doublePrecision("total_due_amount_before_vat"),
   vatAmount: doublePrecision("vat_amount"),
   accountNumber: text("account_number"),
+  paymentUrl: text("payment_url"),
+  paymentRequestId: text("payment_request_id"),
+  paymentStatus: text("payment_status").default("pending"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -255,6 +258,9 @@ export const insertCompanySubscriptionSchema = createInsertSchema(companySubscri
   totalDueAmountBeforeVat: true,
   vatAmount: true,
   accountNumber: true,
+  paymentUrl: true,
+  paymentRequestId: true,
+  paymentStatus: true,
 });
 
 export const subscriptionFormSchema = z.object({

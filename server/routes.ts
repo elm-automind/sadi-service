@@ -5,6 +5,7 @@ import crypto from "crypto";
 import { Resend } from "resend";
 import { storage } from "./storage";
 import { generateInvoice } from "./billing";
+import { createPaymentRequest } from "./payment";
 import { 
   insertUserSchema, insertAddressSchema, insertFallbackContactSchema, 
   companyRegistrationSchema, companyAddressFormSchema, subscriptionFormSchema, driverFormSchema, bulkDriverSchema,
@@ -745,6 +746,24 @@ export async function registerRoutes(httpServer: Server, app: Express) {
         });
       }
       
+      // Create payment request using SADAD number and account number
+      let paymentUrl: string | undefined;
+      let paymentRequestId: string | undefined;
+      if (billingResult.sadadNumber && billingResult.accountNumber) {
+        const paymentResult = await createPaymentRequest(
+          billingResult.sadadNumber,
+          billingResult.accountNumber,
+          "en"
+        );
+        
+        if (!paymentResult.success) {
+          console.error("Payment API error:", paymentResult.error);
+        } else {
+          paymentUrl = paymentResult.paymentUrl;
+          paymentRequestId = paymentResult.paymentRequestId;
+        }
+      }
+      
       let result;
       if (existingSubscription) {
         result = await storage.updateCompanySubscription(req.companyProfile.id, {
@@ -755,18 +774,24 @@ export async function registerRoutes(httpServer: Server, app: Express) {
           totalDueAmountBeforeVat: billingResult.totalDueAmountBeforeVat,
           vatAmount: billingResult.vatAmount,
           accountNumber: billingResult.accountNumber,
+          paymentUrl,
+          paymentRequestId,
+          paymentStatus: "pending",
         });
       } else {
         result = await storage.createCompanySubscription({
           companyProfileId: req.companyProfile.id,
           pricingPlanId: subscriptionData.pricingPlanId,
           billingCycle: subscriptionData.billingCycle,
-          status: "active",
+          status: "pending",
           sadadNumber: billingResult.sadadNumber,
           totalDueAmount: billingResult.totalDueAmount,
           totalDueAmountBeforeVat: billingResult.totalDueAmountBeforeVat,
           vatAmount: billingResult.vatAmount,
           accountNumber: billingResult.accountNumber,
+          paymentUrl,
+          paymentRequestId,
+          paymentStatus: "pending",
         });
       }
       
@@ -776,6 +801,10 @@ export async function registerRoutes(httpServer: Server, app: Express) {
         invoice: {
           invoiceId: billingResult.invoiceId,
           message: billingResult.message,
+        },
+        payment: {
+          paymentUrl,
+          paymentRequestId,
         }
       });
     } catch (error) {
