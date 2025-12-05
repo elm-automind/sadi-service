@@ -97,7 +97,8 @@ function detectDriverIdFromContext(): string {
 }
 
 export default function AddressCapture() {
-  const { digitalId } = useParams<{ digitalId: string }>();
+  const params = useParams();
+  const digitalId = params.digitalId;
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [deviceInfo, setDeviceInfo] = useState<DeviceInfo | null>(null);
