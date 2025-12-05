@@ -1,5 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Home, LogOut } from "lucide-react";
 
@@ -8,6 +9,7 @@ interface PageNavigationProps {
 }
 
 export function PageNavigation({ className = "" }: PageNavigationProps) {
+  const { t } = useTranslation();
   const [location, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const { data: user, isError, isLoading } = useQuery<{ id: number } | null>({
@@ -44,18 +46,18 @@ export function PageNavigation({ className = "" }: PageNavigationProps) {
   return (
     <div className={`flex gap-2 ${className}`}>
       <Button variant="ghost" size="sm" className="gap-2" onClick={handleBack} data-testid="button-back">
-        <ArrowLeft className="w-4 h-4" /> Back
+        <ArrowLeft className="w-4 h-4 rtl:rotate-180" /> {t('common.back')}
       </Button>
       {!isOnDashboard && (
         <Link href={homeLink}>
           <Button variant="ghost" size="sm" className="gap-2" data-testid="button-home">
-            <Home className="w-4 h-4" /> Home
+            <Home className="w-4 h-4" /> {t('navigation.home')}
           </Button>
         </Link>
       )}
       {isLoggedIn && (
         <Button variant="ghost" size="sm" className="gap-2 text-destructive hover:text-destructive" onClick={handleLogout} data-testid="button-logout">
-          <LogOut className="w-4 h-4" /> Logout
+          <LogOut className="w-4 h-4" /> {t('auth.logout')}
         </Button>
       )}
     </div>
