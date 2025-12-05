@@ -202,6 +202,20 @@ export async function generateInvoice(
       console.warn("Could not parse billing API response as JSON:", parseError);
     }
 
+    // Check for errors in response body (API returns 200 but may have errors)
+    const bodyData = responseData.body as Record<string, unknown> | undefined;
+    const errors = bodyData?.errors as Array<{ key: string; message: string }> | undefined;
+    
+    if (errors && errors.length > 0) {
+      const errorMessage = errors.map(e => e.message).join(", ");
+      console.error(`Billing API returned errors: ${errorMessage}`);
+      return {
+        success: false,
+        error: errorMessage,
+        message: "Failed to generate invoice. Please check your billing credentials.",
+      };
+    }
+
     console.log(`Invoice generated successfully for ${companyInfo.companyName}`);
 
     // Extract billing data from nested response structure
