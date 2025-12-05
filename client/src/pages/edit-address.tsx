@@ -246,7 +246,7 @@ export default function EditAddress() {
       if (images.door) payload.photoDoor = images.door.dataUri;
       else if (removedImages.door) payload.photoDoor = null;
 
-      const res = await apiRequest("PUT", `/api/addresses/${addressId}`, payload);
+      const res = await apiRequest("PATCH", `/api/addresses/${addressId}`, payload);
       return await res.json();
     },
     onSuccess: (data) => {
