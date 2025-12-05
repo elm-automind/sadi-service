@@ -6,7 +6,7 @@ import { Resend } from "resend";
 import { storage } from "./storage";
 import { 
   insertUserSchema, insertAddressSchema, insertFallbackContactSchema, 
-  companyRegistrationSchema, companyAddressFormSchema, subscriptionFormSchema 
+  companyRegistrationSchema, companyAddressFormSchema, subscriptionFormSchema, driverFormSchema 
 } from "@shared/schema";
 import { calculateDistanceKm } from "@shared/utils";
 import { z } from "zod";
@@ -630,6 +630,141 @@ export async function registerRoutes(httpServer: Server, app: Express) {
       });
     } catch (error) {
       console.error("Get company profile error:", error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  });
+
+  // --- Company Driver Routes ---
+
+  // Get all company drivers
+  app.get("/api/company/drivers", requireCompanyAuth, async (req: any, res) => {
+    try {
+      const drivers = await storage.getCompanyDrivers(req.companyProfile.id);
+      res.json(drivers);
+    } catch (error) {
+      console.error("Get company drivers error:", error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  });
+
+  // Add a new driver
+  app.post("/api/company/drivers", requireCompanyAuth, async (req: any, res) => {
+    try {
+      const driverData = driverFormSchema.parse(req.body);
+      
+      // Check if driver ID already exists for this company
+      const existingDriver = await storage.getCompanyDriverByDriverId(req.companyProfile.id, driverData.driverId);
+      if (existingDriver) {
+        return res.status(400).json({ message: "A driver with this ID already exists" });
+      }
+      
+      const driver = await storage.createCompanyDriver({
+        companyProfileId: req.companyProfile.id,
+        driverId: driverData.driverId,
+        name: driverData.name,
+        phone: driverData.phone || null,
+        status: driverData.status || "active",
+      });
+      
+      res.json(driver);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Validation Error", errors: error.errors });
+      } else {
+        console.error("Create company driver error:", error);
+        res.status(500).json({ message: "Internal Server Error" });
+      }
+    }
+  });
+
+  // Update a driver
+  app.put("/api/company/drivers/:id", requireCompanyAuth, async (req: any, res) => {
+    try {
+      const driverId = parseInt(req.params.id);
+      if (isNaN(driverId)) {
+        return res.status(400).json({ message: "Invalid driver ID" });
+      }
+      
+      // Verify driver belongs to this company
+      const existingDriver = await storage.getCompanyDriverById(driverId);
+      if (!existingDriver || existingDriver.companyProfileId !== req.companyProfile.id) {
+        return res.status(404).json({ message: "Driver not found" });
+      }
+      
+      const driverData = driverFormSchema.partial().parse(req.body);
+      
+      // If changing driverId, check for duplicates
+      if (driverData.driverId && driverData.driverId !== existingDriver.driverId) {
+        const duplicate = await storage.getCompanyDriverByDriverId(req.companyProfile.id, driverData.driverId);
+        if (duplicate) {
+          return res.status(400).json({ message: "A driver with this ID already exists" });
+        }
+      }
+      
+      const updated = await storage.updateCompanyDriver(driverId, driverData);
+      res.json(updated);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Validation Error", errors: error.errors });
+      } else {
+        console.error("Update company driver error:", error);
+        res.status(500).json({ message: "Internal Server Error" });
+      }
+    }
+  });
+
+  // Delete a driver
+  app.delete("/api/company/drivers/:id", requireCompanyAuth, async (req: any, res) => {
+    try {
+      const driverId = parseInt(req.params.id);
+      if (isNaN(driverId)) {
+        return res.status(400).json({ message: "Invalid driver ID" });
+      }
+      
+      // Verify driver belongs to this company
+      const existingDriver = await storage.getCompanyDriverById(driverId);
+      if (!existingDriver || existingDriver.companyProfileId !== req.companyProfile.id) {
+        return res.status(404).json({ message: "Driver not found" });
+      }
+      
+      await storage.deleteCompanyDriver(driverId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete company driver error:", error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  });
+
+  // Validate a driver ID (public endpoint for delivery validation)
+  app.get("/api/validate-driver/:companyId/:driverId", async (req, res) => {
+    try {
+      const companyId = parseInt(req.params.companyId);
+      const { driverId } = req.params;
+      
+      if (isNaN(companyId)) {
+        return res.status(400).json({ message: "Invalid company ID" });
+      }
+      
+      const driver = await storage.getCompanyDriverByDriverId(companyId, driverId);
+      
+      if (!driver) {
+        return res.json({ valid: false, message: "Driver not found" });
+      }
+      
+      if (driver.status !== "active") {
+        return res.json({ valid: false, message: "Driver is not active", status: driver.status });
+      }
+      
+      res.json({ 
+        valid: true, 
+        driver: {
+          name: driver.name,
+          driverId: driver.driverId,
+          status: driver.status
+        }
+      });
+    } catch (error) {
+      console.error("Validate driver error:", error);
       res.status(500).json({ message: "Internal Server Error" });
     }
   });
