@@ -105,6 +105,30 @@ export interface IStorage {
     lng: number | null;
     textAddress: string | null;
   }[]>;
+
+  getDeliveryHotspots(companyName: string): Promise<{
+    points: {
+      lat: number;
+      lng: number;
+      addressDigitalId: string;
+      lookupCount: number;
+      completedCount: number;
+      failedCount: number;
+      avgLocationScore: number;
+      successRate: number;
+      lastEventAt: string | null;
+      textAddress: string | null;
+      intensity: number;
+    }[];
+    summary: {
+      totalLookups: number;
+      totalCompleted: number;
+      totalFailed: number;
+      avgSuccessRate: number;
+      avgLocationScore: number;
+      uniqueAddresses: number;
+    };
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -638,6 +662,213 @@ export class DatabaseStorage implements IStorage {
     }
 
     return results.sort((a, b) => b.totalDeliveries - a.totalDeliveries);
+  }
+
+  async getDeliveryHotspots(companyName: string): Promise<{
+    points: {
+      lat: number;
+      lng: number;
+      addressDigitalId: string;
+      lookupCount: number;
+      completedCount: number;
+      failedCount: number;
+      avgLocationScore: number;
+      successRate: number;
+      lastEventAt: string | null;
+      textAddress: string | null;
+      intensity: number;
+    }[];
+    summary: {
+      totalLookups: number;
+      totalCompleted: number;
+      totalFailed: number;
+      avgSuccessRate: number;
+      avgLocationScore: number;
+      uniqueAddresses: number;
+    };
+  }> {
+    const normalizedCompanyName = String(companyName).trim().toLowerCase();
+    
+    // Get all shipment lookups for this company (driver address access events)
+    const allLookups = await db.select().from(shipmentLookups);
+    const companyLookups = allLookups.filter(l => 
+      String(l.companyName).trim().toLowerCase() === normalizedCompanyName
+    );
+    
+    // Get all driver feedback for this company (completed deliveries)
+    const allFeedbacks = await db.select().from(driverFeedback);
+    const companyFeedbacks = allFeedbacks.filter(f => 
+      String(f.companyName).trim().toLowerCase() === normalizedCompanyName
+    );
+    
+    // Get all delivery outcomes for this company
+    const allOutcomes = await db.select().from(deliveryOutcomes);
+    const companyOutcomes = allOutcomes.filter(o => 
+      String(o.companyName).trim().toLowerCase() === normalizedCompanyName
+    );
+    
+    // Aggregate data by addressDigitalId
+    const addressMap = new Map<string, {
+      lookupCount: number;
+      completedCount: number;
+      failedCount: number;
+      locationScores: number[];
+      lastEventAt: Date | null;
+    }>();
+    
+    // Process lookups (address access events)
+    for (const lookup of companyLookups) {
+      if (!lookup.addressDigitalId) continue;
+      
+      const existing = addressMap.get(lookup.addressDigitalId) || {
+        lookupCount: 0,
+        completedCount: 0,
+        failedCount: 0,
+        locationScores: [],
+        lastEventAt: null,
+      };
+      
+      existing.lookupCount++;
+      
+      const lookupDate = lookup.createdAt ? new Date(lookup.createdAt) : null;
+      if (lookupDate && (!existing.lastEventAt || lookupDate > existing.lastEventAt)) {
+        existing.lastEventAt = lookupDate;
+      }
+      
+      addressMap.set(lookup.addressDigitalId, existing);
+    }
+    
+    // Process feedback (delivery completions with location scores)
+    for (const feedback of companyFeedbacks) {
+      if (!feedback.addressDigitalId) continue;
+      
+      const existing = addressMap.get(feedback.addressDigitalId) || {
+        lookupCount: 0,
+        completedCount: 0,
+        failedCount: 0,
+        locationScores: [],
+        lastEventAt: null,
+      };
+      
+      if (feedback.locationScore) {
+        existing.locationScores.push(feedback.locationScore);
+      }
+      
+      const feedbackDate = feedback.createdAt ? new Date(feedback.createdAt) : null;
+      if (feedbackDate && (!existing.lastEventAt || feedbackDate > existing.lastEventAt)) {
+        existing.lastEventAt = feedbackDate;
+      }
+      
+      addressMap.set(feedback.addressDigitalId, existing);
+    }
+    
+    // Process delivery outcomes (actual delivery results)
+    for (const outcome of companyOutcomes) {
+      if (!outcome.addressDigitalId) continue;
+      
+      const existing = addressMap.get(outcome.addressDigitalId) || {
+        lookupCount: 0,
+        completedCount: 0,
+        failedCount: 0,
+        locationScores: [],
+        lastEventAt: null,
+      };
+      
+      if (outcome.deliveryStatus === "delivered") {
+        existing.completedCount++;
+      } else if (outcome.deliveryStatus === "failed") {
+        existing.failedCount++;
+      }
+      
+      const outcomeDate = outcome.createdAt ? new Date(outcome.createdAt) : null;
+      if (outcomeDate && (!existing.lastEventAt || outcomeDate > existing.lastEventAt)) {
+        existing.lastEventAt = outcomeDate;
+      }
+      
+      addressMap.set(outcome.addressDigitalId, existing);
+    }
+    
+    // Build hotspot points with address coordinates
+    const points: {
+      lat: number;
+      lng: number;
+      addressDigitalId: string;
+      lookupCount: number;
+      completedCount: number;
+      failedCount: number;
+      avgLocationScore: number;
+      successRate: number;
+      lastEventAt: string | null;
+      textAddress: string | null;
+      intensity: number;
+    }[] = [];
+    
+    // Find max lookup count for intensity normalization
+    let maxLookupCount = 1;
+    for (const stats of Array.from(addressMap.values())) {
+      if (stats.lookupCount > maxLookupCount) maxLookupCount = stats.lookupCount;
+    }
+    
+    for (const [addressDigitalId, stats] of Array.from(addressMap.entries())) {
+      // Get address coordinates
+      const address = await db.select().from(addresses)
+        .where(eq(addresses.digitalId, addressDigitalId))
+        .then((rows: Address[]) => rows[0]);
+      
+      // Only include addresses with valid coordinates
+      if (!address || address.lat === null || address.lng === null) continue;
+      
+      const avgLocationScore = stats.locationScores.length > 0
+        ? stats.locationScores.reduce((a, b) => a + b, 0) / stats.locationScores.length
+        : 0;
+      
+      const totalDeliveries = stats.completedCount + stats.failedCount;
+      const successRate = totalDeliveries > 0
+        ? (stats.completedCount / totalDeliveries) * 100
+        : 0;
+      
+      // Calculate intensity based on lookup count (0-1 scale)
+      const intensity = stats.lookupCount / maxLookupCount;
+      
+      points.push({
+        lat: address.lat,
+        lng: address.lng,
+        addressDigitalId,
+        lookupCount: stats.lookupCount,
+        completedCount: stats.completedCount,
+        failedCount: stats.failedCount,
+        avgLocationScore: Math.round(avgLocationScore * 10) / 10,
+        successRate: Math.round(successRate * 10) / 10,
+        lastEventAt: stats.lastEventAt?.toISOString() || null,
+        textAddress: address.textAddress || null,
+        intensity: Math.round(intensity * 100) / 100,
+      });
+    }
+    
+    // Calculate summary stats
+    const totalLookups = points.reduce((sum, p) => sum + p.lookupCount, 0);
+    const totalCompleted = points.reduce((sum, p) => sum + p.completedCount, 0);
+    const totalFailed = points.reduce((sum, p) => sum + p.failedCount, 0);
+    
+    const totalDeliveries = totalCompleted + totalFailed;
+    const avgSuccessRate = totalDeliveries > 0 ? (totalCompleted / totalDeliveries) * 100 : 0;
+    
+    const allLocationScores = points.filter(p => p.avgLocationScore > 0).map(p => p.avgLocationScore);
+    const avgLocationScore = allLocationScores.length > 0
+      ? allLocationScores.reduce((a, b) => a + b, 0) / allLocationScores.length
+      : 0;
+    
+    return {
+      points: points.sort((a, b) => b.lookupCount - a.lookupCount),
+      summary: {
+        totalLookups,
+        totalCompleted,
+        totalFailed,
+        avgSuccessRate: Math.round(avgSuccessRate * 10) / 10,
+        avgLocationScore: Math.round(avgLocationScore * 10) / 10,
+        uniqueAddresses: points.length,
+      },
+    };
   }
 }
 

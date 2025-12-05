@@ -1047,6 +1047,20 @@ export async function registerRoutes(httpServer: Server, app: Express) {
     }
   });
 
+  // Get delivery hotspots for map visualization
+  app.get("/api/company/delivery-hotspots", requireCompanyAuth, async (req: any, res) => {
+    try {
+      if (!req.companyProfile?.companyName) {
+        return res.status(401).json({ message: "Company profile not found" });
+      }
+      const hotspots = await storage.getDeliveryHotspots(req.companyProfile.companyName);
+      res.json(hotspots);
+    } catch (error) {
+      console.error("Get delivery hotspots error:", error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  });
+
   // --- Public Address View Route (no auth required) ---
   app.get("/api/address/:digitalId", async (req, res) => {
     try {
