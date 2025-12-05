@@ -523,7 +523,11 @@ export class DatabaseStorage implements IStorage {
     successRate: number;
     avgLocationScore: number;
   }> {
-    const feedbacks = await db.select().from(driverFeedback).where(eq(driverFeedback.companyName, companyName));
+    const normalizedCompanyName = String(companyName).trim().toLowerCase();
+    const allFeedbacks = await db.select().from(driverFeedback);
+    const feedbacks = allFeedbacks.filter(f => 
+      String(f.companyName).trim().toLowerCase() === normalizedCompanyName
+    );
     
     const totalDeliveries = feedbacks.length;
     const successfulDeliveries = feedbacks.filter(f => f.deliveryStatus === "delivered").length;
@@ -556,7 +560,11 @@ export class DatabaseStorage implements IStorage {
     lng: number | null;
     textAddress: string | null;
   }[]> {
-    const feedbacks = await db.select().from(driverFeedback).where(eq(driverFeedback.companyName, companyName));
+    const normalizedCompanyName = String(companyName).trim().toLowerCase();
+    const allFeedbacks = await db.select().from(driverFeedback);
+    const feedbacks = allFeedbacks.filter(f => 
+      String(f.companyName).trim().toLowerCase() === normalizedCompanyName
+    );
     
     const addressMap = new Map<string, {
       totalDeliveries: number;
