@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { useLocation, useParams } from "wouter";
+import { useState } from "react";
+import { useParams } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -11,7 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
-import { MessageSquare, Star, MapPin, Package, CheckCircle2, AlertCircle } from "lucide-react";
+import { MessageSquare, Star, MapPin, Package, CheckCircle2, AlertCircle, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const feedbackSchema = z.object({
@@ -32,9 +32,9 @@ const customerBehaviorOptions = [
 
 export default function DriverFeedback() {
   const { id } = useParams<{ id: string }>();
-  const [, setLocation] = useLocation();
   const { toast } = useToast();
   const lookupId = parseInt(id || "0");
+  const [submitted, setSubmitted] = useState(false);
 
   const { data: lookupData, isLoading, error } = useQuery({
     queryKey: ["/api/driver/pending-lookup", lookupId],
@@ -75,11 +75,11 @@ export default function DriverFeedback() {
       return res.json();
     },
     onSuccess: () => {
+      setSubmitted(true);
       toast({
         title: "Feedback Submitted",
-        description: "Thank you for your feedback. You can now look up new addresses.",
+        description: "Thank you for your feedback!",
       });
-      setLocation("/driver");
     },
     onError: (error: Error) => {
       toast({
@@ -113,9 +113,29 @@ export default function DriverFeedback() {
               <p className="text-muted-foreground mb-4">
                 {error?.message || "This feedback request is no longer valid or feedback has already been submitted."}
               </p>
-              <Button onClick={() => setLocation("/driver")}>
-                Return to Lookup
-              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (submitted) {
+    return (
+      <div className="min-h-screen bg-background p-4">
+        <div className="max-w-md mx-auto mt-20">
+          <Card className="border-green-200 bg-green-50/50">
+            <CardContent className="pt-8 pb-8 text-center">
+              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <CheckCircle className="w-10 h-10 text-green-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-green-800 mb-3">Thank You!</h2>
+              <p className="text-green-700 mb-2">
+                Your feedback has been submitted successfully.
+              </p>
+              <p className="text-sm text-green-600">
+                Your input helps improve delivery accuracy for everyone.
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -251,6 +271,7 @@ export default function DriverFeedback() {
                   type="submit"
                   className="w-full"
                   disabled={submitMutation.isPending}
+                  data-testid="button-submit-feedback"
                 >
                   {submitMutation.isPending ? (
                     "Submitting..."

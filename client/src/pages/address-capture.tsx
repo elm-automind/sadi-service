@@ -3,15 +3,18 @@ import { useParams, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Spinner } from "@/components/ui/spinner";
-import { Package, User, Smartphone, Globe, MapPin, AlertCircle, CheckCircle } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
+import { Package, User, Smartphone, Globe, MapPin, AlertCircle, Phone, Clock, FileText, Image, Building2, DoorOpen, Home } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { AddressMap } from "@/components/address-map";
 
 const captureSchema = z.object({
   shipmentNumber: z.string().min(1, "Shipment number is required"),
@@ -225,99 +228,172 @@ export default function AddressCapture() {
   };
 
   if (addressData) {
+    const { address, user, fallbackContacts } = addressData;
+    
     return (
-      <div className="min-h-screen bg-background p-4">
-        <div className="max-w-lg mx-auto space-y-4">
-          <Card className="border-green-200 bg-green-50/50">
-            <CardHeader className="pb-2">
-              <div className="flex items-center gap-2 text-green-700">
-                <CheckCircle className="w-5 h-5" />
-                <CardTitle className="text-lg">Delivery Details</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                {addressData.address.label && (
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-muted-foreground" />
-                    <span className="font-semibold">{addressData.address.label}</span>
+      <div className="min-h-screen bg-muted/30 p-4 py-8">
+        <div className="max-w-2xl mx-auto space-y-4">
+          <Card className="shadow-xl border-border/60 overflow-hidden">
+            <div className="bg-gradient-to-r from-primary/10 to-blue-50 dark:from-primary/5 dark:to-blue-900/10 p-6 border-b border-border/40">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-2xl shrink-0 border-2 border-primary/30">
+                    {user.name.charAt(0).toUpperCase()}
                   </div>
-                )}
-                <p className="text-sm text-muted-foreground pl-6">{addressData.address.textAddress}</p>
-              </div>
-
-              <div className="border-t pt-4 space-y-2">
-                <h4 className="font-semibold flex items-center gap-2">
-                  <User className="w-4 h-4" />
-                  Customer
-                </h4>
-                <div className="grid gap-1 text-sm pl-6">
-                  <p><span className="text-muted-foreground">Name:</span> {addressData.user.name}</p>
-                  <p>
-                    <span className="text-muted-foreground">Phone:</span>{" "}
-                    <a href={`tel:${addressData.user.phone}`} className="text-primary hover:underline">
-                      {addressData.user.phone}
-                    </a>
-                  </p>
+                  <div>
+                    <h1 className="text-xl font-bold text-foreground">{user.name}</h1>
+                    <div className="flex items-center gap-2 text-muted-foreground text-sm mt-1">
+                      <Phone className="w-3 h-3" />
+                      <a href={`tel:${user.phone}`} className="hover:text-primary">
+                        {user.phone}
+                      </a>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Digital ID</p>
+                  <p className="text-lg font-mono font-bold text-primary tracking-widest">{digitalId}</p>
                 </div>
               </div>
+            </div>
 
-              {addressData.address.preferredTime && (
-                <div className="border-t pt-4">
-                  <p className="text-sm">
-                    <span className="text-muted-foreground">Preferred time:</span>{" "}
-                    {addressData.address.preferredTime}
-                    {addressData.address.preferredTimeSlot && ` (${addressData.address.preferredTimeSlot})`}
-                  </p>
-                </div>
-              )}
+            <CardContent className="p-0">
+              <Tabs defaultValue="location" className="w-full">
+                <TabsList className="w-full justify-start rounded-none border-b bg-transparent p-0 h-auto">
+                  <TabsTrigger 
+                    value="location" 
+                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent py-3 px-6"
+                  >
+                    <MapPin className="w-4 h-4 mr-2" /> Location
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="photos" 
+                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent py-3 px-6"
+                  >
+                    <Image className="w-4 h-4 mr-2" /> Photos
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="instructions" 
+                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent py-3 px-6"
+                  >
+                    <FileText className="w-4 h-4 mr-2" /> Instructions
+                  </TabsTrigger>
+                </TabsList>
 
-              {addressData.address.specialNote && (
-                <div className="border-t pt-4">
-                  <p className="text-sm font-medium mb-1">Special Notes:</p>
-                  <p className="text-sm bg-amber-50 p-3 rounded-lg border border-amber-200">
-                    {addressData.address.specialNote}
-                  </p>
-                </div>
-              )}
+                <TabsContent value="location" className="p-4 md:p-6 space-y-4 mt-0">
+                  <div className="rounded-lg overflow-hidden border border-border h-64">
+                    <AddressMap 
+                      readOnly 
+                      initialLat={address.lat ?? undefined} 
+                      initialLng={address.lng ?? undefined} 
+                    />
+                  </div>
 
-              {addressData.address.photoBuilding && (
-                <div className="border-t pt-4">
-                  <p className="text-sm font-medium mb-2">Building Photo:</p>
-                  <img 
-                    src={addressData.address.photoBuilding} 
-                    alt="Building" 
-                    className="rounded-lg max-h-40 object-cover w-full"
-                  />
-                </div>
-              )}
+                  <div className="flex items-start gap-3 p-4 bg-muted/50 rounded-lg border border-border/50">
+                    <MapPin className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+                    <div>
+                      <p className="font-medium text-foreground">{address.textAddress}</p>
+                      {address.lat && address.lng && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Coordinates: {address.lat.toFixed(6)}, {address.lng.toFixed(6)}
+                        </p>
+                      )}
+                    </div>
+                  </div>
 
-              {addressData.fallbackContacts.length > 0 && (
-                <div className="border-t pt-4">
-                  <p className="text-sm font-medium mb-2">Fallback Contacts:</p>
-                  <div className="space-y-2">
-                    {addressData.fallbackContacts.map((contact: any) => (
-                      <div key={contact.id} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg text-sm">
-                        <div>
-                          <p className="font-medium">{contact.name}</p>
-                          {contact.relationship && (
-                            <p className="text-xs text-muted-foreground">{contact.relationship}</p>
+                  {fallbackContacts && fallbackContacts.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">Alternative Contacts</p>
+                      {fallbackContacts.map((contact: any) => (
+                        <div key={contact.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border border-border/50">
+                          <div>
+                            <p className="font-medium">{contact.name}</p>
+                            {contact.relationship && (
+                              <p className="text-xs text-muted-foreground">{contact.relationship}</p>
+                            )}
+                          </div>
+                          <a href={`tel:${contact.phone}`} className="text-primary hover:underline flex items-center gap-1">
+                            <Phone className="w-3 h-3" />
+                            {contact.phone}
+                          </a>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="photos" className="p-4 md:p-6 mt-0">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {[
+                      { label: "Building View", icon: Building2, src: address.photoBuilding },
+                      { label: "Main Gate", icon: DoorOpen, src: address.photoGate },
+                      { label: "Flat Door", icon: Home, src: address.photoDoor }
+                    ].map((img, i) => (
+                      <div key={i} className="space-y-2">
+                        <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                          <img.icon className="w-4 h-4" /> {img.label}
+                        </p>
+                        <div className="aspect-video bg-muted rounded-lg flex items-center justify-center border border-border overflow-hidden">
+                          {img.src ? (
+                            <img 
+                              src={img.src} 
+                              alt={img.label}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="text-center text-muted-foreground">
+                              <Image className="w-8 h-8 mx-auto mb-1 opacity-30" />
+                              <p className="text-xs">No photo</p>
+                            </div>
                           )}
                         </div>
-                        <a href={`tel:${contact.phone}`} className="text-primary hover:underline">
-                          {contact.phone}
-                        </a>
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
+                </TabsContent>
+
+                <TabsContent value="instructions" className="p-4 md:p-6 space-y-4 mt-0">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 bg-muted/50 rounded-lg border border-border/50">
+                      <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-2">
+                        <Clock className="w-4 h-4" /> Preferred Time
+                      </div>
+                      <p className="font-medium text-foreground capitalize">
+                        {address.preferredTime || "Not specified"}
+                        {address.preferredTimeSlot && ` (${address.preferredTimeSlot})`}
+                      </p>
+                    </div>
+                    <div className="p-4 bg-muted/50 rounded-lg border border-border/50">
+                      <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-2">
+                        <Home className="w-4 h-4" /> If Not Home
+                      </div>
+                      <p className="font-medium text-foreground capitalize">
+                        {address.fallbackOption === "door" ? "Leave at door/reception" :
+                         address.fallbackOption === "neighbor" ? "Leave with neighbor" :
+                         address.fallbackOption === "call" ? "Call to reschedule" :
+                         address.fallbackOption === "security" ? "Leave with security" :
+                         address.fallbackOption || "Not specified"}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {address.specialNote && (
+                    <div className="p-4 bg-yellow-50 dark:bg-yellow-900/10 rounded-lg border border-yellow-200 dark:border-yellow-900/30">
+                      <div className="flex items-center gap-2 text-sm font-medium text-yellow-700 dark:text-yellow-400 mb-2">
+                        <FileText className="w-4 h-4" /> Special Notes
+                      </div>
+                      <p className="text-foreground">{address.specialNote}</p>
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
             </CardContent>
           </Card>
 
           <Button 
-            className="w-full"
+            className="w-full h-12 text-lg"
             onClick={() => setLocation(`/driver-feedback/${addressData.lookupId}`)}
+            data-testid="button-complete-delivery"
           >
             Complete Delivery & Submit Feedback
           </Button>
@@ -422,6 +498,7 @@ export default function AddressCapture() {
                   type="submit" 
                   className="w-full" 
                   disabled={lookupMutation.isPending || checkPendingMutation.isPending}
+                  data-testid="button-access-details"
                 >
                   {(lookupMutation.isPending || checkPendingMutation.isPending) ? (
                     <>
