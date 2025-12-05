@@ -23,6 +23,10 @@ localPort = 36427
 externalPort = 3001
 
 [[ports]]
+localPort = 38427
+externalPort = 3003
+
+[[ports]]
 localPort = 40375
 externalPort = 3002
 
@@ -62,8 +66,11 @@ expertMode = true
 [userenv]
 
 [userenv.shared]
-BILLING_API_URL = "https://billing-qa-api.apps.devocp4.elm.sa:443/billing/v3/api/invoice/generateinvoicewithcustomer"
+BILLING_API_URL = "https://elmx-bp-beta.api.elm.sa/billing/v3/api/invoice/generateinvoicewithcustomer"
 BILLING_PRODUCT_CODE = "812"
 BILLING_CLIENT_KEY = "909AA04B-1AD0-4063-9D73-424DBF7EC725"
-BILLING_APP_ID = "21ccb69a"
-BILLING_APP_KEY = "dcb299a8b0bf1418d3ad8b0ee1c0a139"
+BILLING_APP_ID = "a26c555d"
+BILLING_APP_KEY = "c440f95c0be4981f8c2d2a465e83edcb"
+PAYMENT_API_URL = "https://pg-beta.api.elm.sa/payment/api/product/createpaymentrequest"
+PAYMENT_APP_ID = "8ab5d791"
+PAYMENT_APP_KEY = "77a0e640a57cf7e166acfcb4645ddd8c"

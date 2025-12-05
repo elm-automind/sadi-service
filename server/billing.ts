@@ -75,7 +75,7 @@ export async function generateInvoice(
   planInfo: PlanInfo,
   billingCycle: "monthly" | "annual"
 ): Promise<BillingResult> {
-  const apiUrl = process.env.BILLING_API_URL;
+  const apiUrl = process.env.BILLING_API_URL || "https://elmx-bp-beta.api.elm.sa/billing/v3/api/invoice/generateinvoicewithcustomer";
   const productCode = process.env.BILLING_PRODUCT_CODE;
   const clientKey = process.env.BILLING_CLIENT_KEY;
   const appId = process.env.BILLING_APP_ID;

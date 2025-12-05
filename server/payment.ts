@@ -24,11 +24,11 @@ export async function createPaymentRequest(
   accountNumber: string,
   language: string = "en"
 ): Promise<PaymentResult> {
-  const apiUrl = process.env.PAYMENT_API_URL || "https://pgx-qa-api.apps.devocp4.elm.sa:443/payment/api/product/createpaymentrequest";
+  const apiUrl = process.env.PAYMENT_API_URL || "https://pg-beta.api.elm.sa/payment/api/product/createpaymentrequest";
   const productCode = process.env.BILLING_PRODUCT_CODE;
   const clientKey = process.env.BILLING_CLIENT_KEY;
-  const appId = process.env.BILLING_APP_ID;
-  const appKey = process.env.BILLING_APP_KEY;
+  const appId = process.env.PAYMENT_APP_ID || process.env.BILLING_APP_ID;
+  const appKey = process.env.PAYMENT_APP_KEY || process.env.BILLING_APP_KEY;
 
   if (!productCode || !clientKey || !appId || !appKey) {
     console.warn("Payment API credentials not configured, skipping payment request");
