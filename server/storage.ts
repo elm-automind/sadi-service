@@ -8,9 +8,10 @@ import {
   type CompanyDriver, type InsertCompanyDriver,
   type ShipmentLookup, type InsertShipmentLookup,
   type DriverFeedback, type InsertDriverFeedback,
+  type DeliveryOutcome, type InsertDeliveryOutcome,
   users, addresses, fallbackContacts, passwordResetOtps, companyProfiles,
   companyAddresses, pricingPlans, companySubscriptions, companyDrivers,
-  shipmentLookups, driverFeedback
+  shipmentLookups, driverFeedback, deliveryOutcomes
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, gt, lt, asc, desc } from "drizzle-orm";
@@ -73,9 +74,16 @@ export interface IStorage {
   getShipmentLookupById(id: number): Promise<ShipmentLookup | undefined>;
   getPendingFeedbackByDriver(driverId: string, companyName: string): Promise<ShipmentLookup | undefined>;
   updateShipmentLookupStatus(id: number, status: string): Promise<ShipmentLookup | undefined>;
+  updateShipmentLookupDeliveryStatus(id: number, deliveryStatus: string): Promise<ShipmentLookup | undefined>;
   
   createDriverFeedback(feedback: InsertDriverFeedback): Promise<DriverFeedback>;
   getDriverFeedbackByLookupId(shipmentLookupId: number): Promise<DriverFeedback | undefined>;
+  getDriverFeedbackByAddressDigitalId(addressDigitalId: string): Promise<DriverFeedback[]>;
+  getDriverFeedbackByDriverId(driverId: string): Promise<DriverFeedback[]>;
+
+  createDeliveryOutcome(outcome: InsertDeliveryOutcome): Promise<DeliveryOutcome>;
+  getDeliveryOutcomesByAddressDigitalId(addressDigitalId: string): Promise<DeliveryOutcome[]>;
+  getDeliveryOutcomesByDriverId(driverId: string): Promise<DeliveryOutcome[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -425,6 +433,39 @@ export class DatabaseStorage implements IStorage {
   async getDriverFeedbackByLookupId(shipmentLookupId: number): Promise<DriverFeedback | undefined> {
     const [feedback] = await db.select().from(driverFeedback).where(eq(driverFeedback.shipmentLookupId, shipmentLookupId));
     return feedback || undefined;
+  }
+
+  async getDriverFeedbackByAddressDigitalId(addressDigitalId: string): Promise<DriverFeedback[]> {
+    return await db.select().from(driverFeedback).where(eq(driverFeedback.addressDigitalId, addressDigitalId));
+  }
+
+  async getDriverFeedbackByDriverId(driverId: string): Promise<DriverFeedback[]> {
+    return await db.select().from(driverFeedback).where(eq(driverFeedback.driverId, driverId));
+  }
+
+  async updateShipmentLookupDeliveryStatus(id: number, deliveryStatus: string): Promise<ShipmentLookup | undefined> {
+    const [updated] = await db
+      .update(shipmentLookups)
+      .set({ deliveryStatus, deliveryCompletedAt: new Date() })
+      .where(eq(shipmentLookups.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async createDeliveryOutcome(insertOutcome: InsertDeliveryOutcome): Promise<DeliveryOutcome> {
+    const [outcome] = await db
+      .insert(deliveryOutcomes)
+      .values(insertOutcome)
+      .returning();
+    return outcome;
+  }
+
+  async getDeliveryOutcomesByAddressDigitalId(addressDigitalId: string): Promise<DeliveryOutcome[]> {
+    return await db.select().from(deliveryOutcomes).where(eq(deliveryOutcomes.addressDigitalId, addressDigitalId));
+  }
+
+  async getDeliveryOutcomesByDriverId(driverId: string): Promise<DeliveryOutcome[]> {
+    return await db.select().from(deliveryOutcomes).where(eq(deliveryOutcomes.driverId, driverId));
   }
 }
 

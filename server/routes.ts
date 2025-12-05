@@ -1050,6 +1050,7 @@ export async function registerRoutes(httpServer: Server, app: Express) {
         driverId: normalizedDriverId,
         companyName: normalizedCompanyName,
         addressId: address.id,
+        addressDigitalId: address.digitalId,
         status: "pending_feedback"
       });
 
@@ -1139,16 +1140,36 @@ export async function registerRoutes(httpServer: Server, app: Express) {
         return res.status(400).json({ message: "Feedback already submitted" });
       }
 
-      // Create feedback record
+      // Get the address digital ID from the lookup
+      const addressDigitalId = lookup.addressDigitalId || "";
+
+      // Create feedback record with denormalized driver and address info
       const feedback = await storage.createDriverFeedback({
         shipmentLookupId: lookupId,
+        driverId: lookup.driverId,
+        companyName: lookup.companyName,
+        addressDigitalId: addressDigitalId,
+        deliveryStatus: parsedFeedback.deliveryStatus,
         locationScore: parsedFeedback.locationScore,
         customerBehavior: parsedFeedback.customerBehavior,
         additionalNotes: parsedFeedback.additionalNotes || null
       });
 
-      // Update lookup status
+      // Update lookup status and delivery status
       await storage.updateShipmentLookupStatus(lookupId, "feedback_completed");
+      await storage.updateShipmentLookupDeliveryStatus(lookupId, parsedFeedback.deliveryStatus);
+
+      // Create delivery outcome record (especially important for failures)
+      await storage.createDeliveryOutcome({
+        shipmentLookupId: lookupId,
+        driverId: lookup.driverId,
+        companyName: lookup.companyName,
+        addressDigitalId: addressDigitalId,
+        deliveryStatus: parsedFeedback.deliveryStatus,
+        failureReason: parsedFeedback.failureReason || null,
+        failureDetails: parsedFeedback.additionalNotes || null,
+        attemptCount: 1
+      });
 
       res.json({
         success: true,

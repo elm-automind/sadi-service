@@ -15,12 +15,31 @@ import { MessageSquare, Star, MapPin, Package, CheckCircle2, AlertCircle, CheckC
 import { useToast } from "@/hooks/use-toast";
 
 const feedbackSchema = z.object({
+  deliveryStatus: z.enum(["delivered", "failed", "partial"], { required_error: "Please select delivery status" }),
   locationScore: z.number().min(1, "Please rate the location accuracy").max(5),
   customerBehavior: z.string().min(1, "Please describe customer behavior"),
+  failureReason: z.string().optional(),
   additionalNotes: z.string().optional(),
 });
 
 type FeedbackFormValues = z.infer<typeof feedbackSchema>;
+
+const deliveryStatusOptions = [
+  { value: "delivered", label: "Successfully Delivered", color: "text-green-600" },
+  { value: "partial", label: "Partially Delivered", color: "text-yellow-600" },
+  { value: "failed", label: "Failed to Deliver", color: "text-red-600" },
+];
+
+const failureReasonOptions = [
+  { value: "wrong_address", label: "Wrong/Incorrect Address" },
+  { value: "customer_unavailable", label: "Customer Not Available" },
+  { value: "access_denied", label: "Access Denied to Building/Area" },
+  { value: "dangerous_area", label: "Unsafe/Dangerous Area" },
+  { value: "address_not_found", label: "Address Not Found" },
+  { value: "weather_conditions", label: "Bad Weather Conditions" },
+  { value: "vehicle_issue", label: "Vehicle/Transport Issue" },
+  { value: "other", label: "Other Reason" },
+];
 
 const customerBehaviorOptions = [
   { value: "cooperative", label: "Cooperative - Easy to work with" },
@@ -52,11 +71,15 @@ export default function DriverFeedback() {
   const form = useForm<FeedbackFormValues>({
     resolver: zodResolver(feedbackSchema),
     defaultValues: {
+      deliveryStatus: undefined,
       locationScore: 0,
       customerBehavior: "",
+      failureReason: "",
       additionalNotes: "",
     },
   });
+
+  const deliveryStatus = form.watch("deliveryStatus");
 
   const submitMutation = useMutation({
     mutationFn: async (data: FeedbackFormValues) => {
@@ -179,6 +202,82 @@ export default function DriverFeedback() {
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="deliveryStatus"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Delivery Status</FormLabel>
+                      <FormDescription>Was the delivery successful?</FormDescription>
+                      <FormControl>
+                        <RadioGroup
+                          onValueChange={field.onChange}
+                          value={field.value}
+                          className="space-y-2 pt-2"
+                        >
+                          {deliveryStatusOptions.map((option) => (
+                            <Label
+                              key={option.value}
+                              htmlFor={`status-${option.value}`}
+                              className={`flex items-center space-x-3 p-3 rounded-lg border transition-all cursor-pointer ${
+                                field.value === option.value
+                                  ? "border-primary bg-primary/5"
+                                  : "border-muted hover:border-primary/50"
+                              }`}
+                              data-testid={`radio-status-${option.value}`}
+                            >
+                              <RadioGroupItem value={option.value} id={`status-${option.value}`} />
+                              <span className={`flex-1 font-medium ${option.color}`}>
+                                {option.label}
+                              </span>
+                            </Label>
+                          ))}
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {(deliveryStatus === "failed" || deliveryStatus === "partial") && (
+                  <FormField
+                    control={form.control}
+                    name="failureReason"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Reason for {deliveryStatus === "failed" ? "Failure" : "Partial Delivery"}</FormLabel>
+                        <FormDescription>What prevented complete delivery?</FormDescription>
+                        <FormControl>
+                          <RadioGroup
+                            onValueChange={field.onChange}
+                            value={field.value}
+                            className="space-y-2 pt-2"
+                          >
+                            {failureReasonOptions.map((option) => (
+                              <Label
+                                key={option.value}
+                                htmlFor={`failure-${option.value}`}
+                                className={`flex items-center space-x-3 p-3 rounded-lg border transition-all cursor-pointer ${
+                                  field.value === option.value
+                                    ? "border-red-400 bg-red-50 dark:bg-red-950/20"
+                                    : "border-muted hover:border-red-300"
+                                }`}
+                                data-testid={`radio-failure-${option.value}`}
+                              >
+                                <RadioGroupItem value={option.value} id={`failure-${option.value}`} />
+                                <span className="flex-1">
+                                  {option.label}
+                                </span>
+                              </Label>
+                            ))}
+                          </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
                 <FormField
                   control={form.control}
                   name="locationScore"

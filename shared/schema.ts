@@ -137,22 +137,57 @@ export const passwordResetOtps = pgTable("password_reset_otps", {
 export const shipmentLookupStatusEnum = ["pending_feedback", "feedback_completed"] as const;
 export type ShipmentLookupStatus = typeof shipmentLookupStatusEnum[number];
 
+export const deliveryStatusEnum = ["delivered", "failed", "partial"] as const;
+export type DeliveryStatus = typeof deliveryStatusEnum[number];
+
 export const shipmentLookups = pgTable("shipment_lookups", {
   id: serial("id").primaryKey(),
   shipmentNumber: text("shipment_number").notNull(),
   driverId: text("driver_id").notNull(),
   companyName: text("company_name").notNull(),
   addressId: integer("address_id").notNull().references(() => addresses.id),
+  addressDigitalId: text("address_digital_id").notNull(),
   status: text("status").notNull().default("pending_feedback"),
+  deliveryStatus: text("delivery_status"),
+  deliveryCompletedAt: timestamp("delivery_completed_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const driverFeedback = pgTable("driver_feedback", {
   id: serial("id").primaryKey(),
   shipmentLookupId: integer("shipment_lookup_id").notNull().references(() => shipmentLookups.id).unique(),
+  driverId: text("driver_id").notNull(),
+  companyName: text("company_name").notNull(),
+  addressDigitalId: text("address_digital_id").notNull(),
+  deliveryStatus: text("delivery_status").notNull(),
   locationScore: integer("location_score").notNull(),
   customerBehavior: text("customer_behavior").notNull(),
   additionalNotes: text("additional_notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const failureReasonEnum = [
+  "wrong_address", 
+  "customer_unavailable", 
+  "access_denied", 
+  "dangerous_area",
+  "address_not_found",
+  "weather_conditions",
+  "vehicle_issue",
+  "other"
+] as const;
+export type FailureReason = typeof failureReasonEnum[number];
+
+export const deliveryOutcomes = pgTable("delivery_outcomes", {
+  id: serial("id").primaryKey(),
+  shipmentLookupId: integer("shipment_lookup_id").notNull().references(() => shipmentLookups.id).unique(),
+  driverId: text("driver_id").notNull(),
+  companyName: text("company_name").notNull(),
+  addressDigitalId: text("address_digital_id").notNull(),
+  deliveryStatus: text("delivery_status").notNull(),
+  failureReason: text("failure_reason"),
+  failureDetails: text("failure_details"),
+  attemptCount: integer("attempt_count").default(1),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -287,7 +322,10 @@ export const insertShipmentLookupSchema = createInsertSchema(shipmentLookups).pi
   driverId: true,
   companyName: true,
   addressId: true,
+  addressDigitalId: true,
   status: true,
+  deliveryStatus: true,
+  deliveryCompletedAt: true,
 });
 
 export const shipmentLookupFormSchema = z.object({
@@ -299,15 +337,32 @@ export const shipmentLookupFormSchema = z.object({
 
 export const insertDriverFeedbackSchema = createInsertSchema(driverFeedback).pick({
   shipmentLookupId: true,
+  driverId: true,
+  companyName: true,
+  addressDigitalId: true,
+  deliveryStatus: true,
   locationScore: true,
   customerBehavior: true,
   additionalNotes: true,
 });
 
 export const driverFeedbackFormSchema = z.object({
+  deliveryStatus: z.enum(["delivered", "failed", "partial"], { required_error: "Please select delivery status" }),
   locationScore: z.number().min(1, "Location score is required").max(5, "Score must be between 1-5"),
   customerBehavior: z.string().min(1, "Customer behavior feedback is required"),
+  failureReason: z.string().optional(),
   additionalNotes: z.string().optional(),
+});
+
+export const insertDeliveryOutcomeSchema = createInsertSchema(deliveryOutcomes).pick({
+  shipmentLookupId: true,
+  driverId: true,
+  companyName: true,
+  addressDigitalId: true,
+  deliveryStatus: true,
+  failureReason: true,
+  failureDetails: true,
+  attemptCount: true,
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -335,3 +390,6 @@ export type InsertShipmentLookup = z.infer<typeof insertShipmentLookupSchema>;
 export type ShipmentLookup = typeof shipmentLookups.$inferSelect;
 export type InsertDriverFeedback = z.infer<typeof insertDriverFeedbackSchema>;
 export type DriverFeedback = typeof driverFeedback.$inferSelect;
+export type InsertDeliveryOutcome = z.infer<typeof insertDeliveryOutcomeSchema>;
+export type DeliveryOutcome = typeof deliveryOutcomes.$inferSelect;
+export type DriverFeedbackForm = z.infer<typeof driverFeedbackFormSchema>;
