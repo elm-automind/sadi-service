@@ -26,11 +26,10 @@ export async function createPaymentRequest(
 ): Promise<PaymentResult> {
   const apiUrl = process.env.PAYMENT_API_URL || "https://pg-beta.api.elm.sa/payment/api/product/createpaymentrequest";
   const productCode = process.env.BILLING_PRODUCT_CODE;
-  const clientKey = process.env.BILLING_CLIENT_KEY;
   const appId = process.env.PAYMENT_APP_ID || process.env.BILLING_APP_ID;
   const appKey = process.env.PAYMENT_APP_KEY || process.env.BILLING_APP_KEY;
 
-  if (!productCode || !clientKey || !appId || !appKey) {
+  if (!appId || !appKey) {
     console.warn("Payment API credentials not configured, skipping payment request");
     return {
       success: false,
@@ -70,17 +69,22 @@ export async function createPaymentRequest(
 
     let response: Response;
     try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        "MessageId": messageId,
+        "Timestamp": timestamp,
+        "app-id": appId,
+        "app-key": appKey,
+      };
+      
+      // Add optional headers if configured
+      if (productCode) {
+        headers["ProductCode"] = productCode;
+      }
+      
       response = await fetch(apiUrl, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "ProductCode": productCode,
-          "ClientKey": clientKey,
-          "MessageId": messageId,
-          "Timestamp": timestamp,
-          "app-id": appId,
-          "app-key": appKey,
-        },
+        headers,
         body: JSON.stringify(payload),
         signal: controller.signal,
       });

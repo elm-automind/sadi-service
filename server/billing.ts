@@ -77,11 +77,10 @@ export async function generateInvoice(
 ): Promise<BillingResult> {
   const apiUrl = process.env.BILLING_API_URL || "https://elmx-bp-beta.api.elm.sa/billing/v3/api/invoice/generateinvoicewithcustomer";
   const productCode = process.env.BILLING_PRODUCT_CODE;
-  const clientKey = process.env.BILLING_CLIENT_KEY;
   const appId = process.env.BILLING_APP_ID;
   const appKey = process.env.BILLING_APP_KEY;
 
-  if (!apiUrl || !productCode || !clientKey || !appId || !appKey) {
+  if (!appId || !appKey) {
     console.warn("Billing API credentials not configured, skipping invoice generation");
     return {
       success: true,
@@ -140,16 +139,21 @@ export async function generateInvoice(
 
     let response: Response;
     try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        "MessageId": messageId,
+        "app-id": appId,
+        "app-key": appKey,
+      };
+      
+      // Add optional headers if configured
+      if (productCode) {
+        headers["ProductCode"] = productCode;
+      }
+      
       response = await fetch(apiUrl, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "ProductCode": productCode,
-          "ClientKey": clientKey,
-          "MessageId": messageId,
-          "app-id": appId,
-          "app-key": appKey,
-        },
+        headers,
         body: JSON.stringify(payload),
         signal: controller.signal,
       });
