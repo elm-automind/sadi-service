@@ -2,8 +2,8 @@ import { useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 
-const INACTIVITY_TIMEOUT = 60 * 1000; // 1 minute
-const PING_INTERVAL = 30 * 1000; // Ping every 30 seconds when active
+const INACTIVITY_TIMEOUT = 20 * 60 * 1000; // 20 minutes
+const PING_INTERVAL = 60 * 1000; // Ping every 1 minute when active
 
 export function useSessionActivity(isLoggedIn: boolean) {
   const [, setLocation] = useLocation();

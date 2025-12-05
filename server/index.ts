@@ -26,10 +26,10 @@ app.use(
 
 app.use(express.urlencoded({ extended: false, limit: '15mb' }));
 
-// Session Setup with auto-logout after 1 minute of inactivity
+// Session Setup with auto-logout after 20 minutes of inactivity
 const SessionStore = MemoryStore(session);
 const sessionSecret = process.env.SESSION_SECRET || "dev-session-secret-change-in-production";
-const SESSION_TIMEOUT = 60 * 1000; // 1 minute inactivity timeout
+const SESSION_TIMEOUT = 20 * 60 * 1000; // 20 minutes inactivity timeout
 
 app.use(
   session({

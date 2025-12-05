@@ -83,11 +83,13 @@ export default function Payment() {
       <div className="min-h-screen bg-muted/30 flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
           <CardContent className="pt-8 text-center">
-            <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
+            <div className="w-20 h-20 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center mx-auto mb-6">
+              <CheckCircle className="w-12 h-12 text-green-600" />
+            </div>
             <h2 className="text-2xl font-bold text-foreground mb-2">{t('payment.success')}</h2>
-            <p className="text-muted-foreground mb-6">{t('payment.successMessage')}</p>
-            <Button onClick={handleReturnToDashboard} className="w-full" data-testid="button-return-dashboard">
-              {t('payment.returnToDashboard')}
+            <p className="text-muted-foreground mb-8">{t('payment.successMessage')}</p>
+            <Button onClick={handleReturnToDashboard} size="lg" className="w-full" data-testid="button-close-success">
+              {t('common.close')}
             </Button>
           </CardContent>
         </Card>
