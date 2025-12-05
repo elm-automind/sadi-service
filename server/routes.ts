@@ -735,28 +735,19 @@ export async function registerRoutes(httpServer: Server, app: Express) {
     }
   });
 
-  // Validate a driver ID (public endpoint for delivery validation)
-  app.get("/api/validate-driver/:companyId/:driverId", async (req, res) => {
+  // Validate a driver ID - used by company users to verify their own drivers
+  app.get("/api/company/drivers/validate/:driverId", requireCompanyAuth, async (req: any, res) => {
     try {
-      const companyId = parseInt(req.params.companyId);
       const { driverId } = req.params;
       
-      if (isNaN(companyId)) {
-        return res.status(400).json({ message: "Invalid company ID" });
-      }
-      
-      const driver = await storage.getCompanyDriverByDriverId(companyId, driverId);
+      const driver = await storage.getCompanyDriverByDriverId(req.companyProfile.id, driverId);
       
       if (!driver) {
-        return res.json({ valid: false, message: "Driver not found" });
-      }
-      
-      if (driver.status !== "active") {
-        return res.json({ valid: false, message: "Driver is not active", status: driver.status });
+        return res.json({ valid: false });
       }
       
       res.json({ 
-        valid: true, 
+        valid: driver.status === "active",
         driver: {
           name: driver.name,
           driverId: driver.driverId,
