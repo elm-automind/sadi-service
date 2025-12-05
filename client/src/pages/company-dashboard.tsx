@@ -1,15 +1,24 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { 
   Building2, LogOut, Package, Users, TrendingUp, 
-  BarChart3, MapPin, Settings
+  MapPin, CreditCard, Edit2, Check, X, Loader2
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface User {
   id: number;
@@ -19,9 +28,45 @@ interface User {
   name: string;
 }
 
+interface CompanyAddress {
+  id: number;
+  street: string;
+  district: string;
+  city: string;
+}
+
+interface PricingPlan {
+  id: number;
+  slug: string;
+  name: string;
+  monthlyPrice: number;
+  annualPrice: number;
+  features: string[];
+  isDefault: boolean;
+}
+
+interface CompanySubscription {
+  id: number;
+  pricingPlanId: number;
+  billingCycle: string;
+  status: string;
+}
+
+const addressFormSchema = z.object({
+  street: z.string().min(3, "Street is required"),
+  district: z.string().min(2, "District is required"),
+  city: z.string().min(2, "City is required"),
+});
+
+type AddressFormData = z.infer<typeof addressFormSchema>;
+
 export default function CompanyDashboard() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false);
+  const [isAnnual, setIsAnnual] = useState(false);
+  const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
 
   const { data: user, isLoading } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -29,6 +74,105 @@ export default function CompanyDashboard() {
       const res = await fetch("/api/user", { credentials: "include" });
       if (!res.ok) throw new Error("Not authenticated");
       return res.json();
+    },
+  });
+
+  const { data: companyAddress } = useQuery<CompanyAddress | null>({
+    queryKey: ["/api/company/address"],
+    queryFn: async () => {
+      const res = await fetch("/api/company/address", { credentials: "include" });
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: !!user && user.accountType === "company",
+  });
+
+  const { data: pricingPlans } = useQuery<PricingPlan[]>({
+    queryKey: ["/api/pricing-plans"],
+    queryFn: async () => {
+      const res = await fetch("/api/pricing-plans", { credentials: "include" });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!user && user.accountType === "company",
+  });
+
+  const { data: subscriptionData } = useQuery<{ subscription: CompanySubscription; plan: PricingPlan } | null>({
+    queryKey: ["/api/company/subscription"],
+    queryFn: async () => {
+      const res = await fetch("/api/company/subscription", { credentials: "include" });
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: !!user && user.accountType === "company",
+  });
+
+  const addressForm = useForm<AddressFormData>({
+    resolver: zodResolver(addressFormSchema),
+    defaultValues: {
+      street: "",
+      district: "",
+      city: "",
+    },
+  });
+
+  useEffect(() => {
+    if (companyAddress) {
+      addressForm.reset({
+        street: companyAddress.street,
+        district: companyAddress.district,
+        city: companyAddress.city,
+      });
+    }
+  }, [companyAddress]);
+
+  useEffect(() => {
+    if (subscriptionData) {
+      setSelectedPlanId(subscriptionData.subscription.pricingPlanId);
+      setIsAnnual(subscriptionData.subscription.billingCycle === "annual");
+    }
+  }, [subscriptionData]);
+
+  const addressMutation = useMutation({
+    mutationFn: async (data: AddressFormData) => {
+      const res = await apiRequest("PUT", "/api/company/address", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/company/address"] });
+      setIsAddressDialogOpen(false);
+      toast({
+        title: "Address Updated",
+        description: "Your company address has been saved.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to update address",
+      });
+    },
+  });
+
+  const subscriptionMutation = useMutation({
+    mutationFn: async (data: { pricingPlanId: number; billingCycle: string }) => {
+      const res = await apiRequest("POST", "/api/company/subscription", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/company/subscription"] });
+      toast({
+        title: "Subscription Updated",
+        description: "Your subscription plan has been updated.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to update subscription",
+      });
     },
   });
 
@@ -47,6 +191,29 @@ export default function CompanyDashboard() {
     setLocation("/");
   };
 
+  const handleAddressSubmit = (data: AddressFormData) => {
+    addressMutation.mutate(data);
+  };
+
+  const handleSelectPlan = (planId: number) => {
+    if (!pricingPlans || pricingPlans.length === 0) return;
+    setSelectedPlanId(planId);
+    subscriptionMutation.mutate({
+      pricingPlanId: planId,
+      billingCycle: isAnnual ? "annual" : "monthly",
+    });
+  };
+
+  const handleBillingToggle = (annual: boolean) => {
+    setIsAnnual(annual);
+    if (selectedPlanId && pricingPlans && pricingPlans.length > 0) {
+      subscriptionMutation.mutate({
+        pricingPlanId: selectedPlanId,
+        billingCycle: annual ? "annual" : "monthly",
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-muted/30 flex items-center justify-center">
@@ -56,6 +223,9 @@ export default function CompanyDashboard() {
   }
 
   if (!user) return null;
+
+  const currentPlan = subscriptionData?.plan;
+  const annualDiscount = 20;
 
   return (
     <div className="min-h-screen bg-muted/30 p-4 md:p-8">
@@ -139,73 +309,244 @@ export default function CompanyDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-primary" />
-                Delivery Overview
-              </CardTitle>
-              <CardDescription>
-                Your delivery statistics and performance
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <MapPin className="w-5 h-5 text-primary" />
+                    Company Address
+                  </CardTitle>
+                  <CardDescription>
+                    Your registered business address
+                  </CardDescription>
+                </div>
+                <Dialog open={isAddressDialogOpen} onOpenChange={setIsAddressDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" data-testid="button-edit-address">
+                      <Edit2 className="w-4 h-4 mr-2" />
+                      {companyAddress ? "Edit" : "Add"}
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>{companyAddress ? "Edit" : "Add"} Company Address</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={addressForm.handleSubmit(handleAddressSubmit)} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="street">Street</Label>
+                        <Input
+                          id="street"
+                          placeholder="Enter street address"
+                          {...addressForm.register("street")}
+                          data-testid="input-street"
+                        />
+                        {addressForm.formState.errors.street && (
+                          <p className="text-sm text-destructive">{addressForm.formState.errors.street.message}</p>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="district">District</Label>
+                        <Input
+                          id="district"
+                          placeholder="Enter district"
+                          {...addressForm.register("district")}
+                          data-testid="input-district"
+                        />
+                        {addressForm.formState.errors.district && (
+                          <p className="text-sm text-destructive">{addressForm.formState.errors.district.message}</p>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="city">City</Label>
+                        <Input
+                          id="city"
+                          placeholder="Enter city"
+                          {...addressForm.register("city")}
+                          data-testid="input-city"
+                        />
+                        {addressForm.formState.errors.city && (
+                          <p className="text-sm text-destructive">{addressForm.formState.errors.city.message}</p>
+                        )}
+                      </div>
+                      <div className="flex gap-2 justify-end">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setIsAddressDialogOpen(false)}
+                        >
+                          Cancel
+                        </Button>
+                        <Button type="submit" disabled={addressMutation.isPending} data-testid="button-save-address">
+                          {addressMutation.isPending ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Saving...
+                            </>
+                          ) : (
+                            "Save Address"
+                          )}
+                        </Button>
+                      </div>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="h-48 flex items-center justify-center text-muted-foreground">
-                <div className="text-center">
-                  <Package className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                  <p>No delivery data yet</p>
-                  <p className="text-sm">Start accepting deliveries to see statistics</p>
+              {companyAddress ? (
+                <div className="space-y-2">
+                  <div className="flex items-start gap-3 p-4 bg-muted/50 rounded-lg">
+                    <MapPin className="w-5 h-5 text-muted-foreground mt-0.5" />
+                    <div>
+                      <p className="font-medium text-foreground">{companyAddress.street}</p>
+                      <p className="text-sm text-muted-foreground">{companyAddress.district}</p>
+                      <p className="text-sm text-muted-foreground">{companyAddress.city}</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <MapPin className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                  <p>No address registered yet</p>
+                  <p className="text-sm">Add your company address to get started</p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Settings className="w-5 h-5 text-primary" />
-                Quick Actions
+                <CreditCard className="w-5 h-5 text-primary" />
+                Current Plan
               </CardTitle>
               <CardDescription>
-                Manage your company settings and operations
+                Your active subscription
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <Button variant="outline" className="w-full justify-start" disabled>
-                <Package className="w-4 h-4 mr-2" />
-                View Deliveries
-                <span className="ml-auto text-xs text-muted-foreground">Coming soon</span>
-              </Button>
-              <Button variant="outline" className="w-full justify-start" disabled>
-                <Users className="w-4 h-4 mr-2" />
-                Manage Customers
-                <span className="ml-auto text-xs text-muted-foreground">Coming soon</span>
-              </Button>
-              <Button variant="outline" className="w-full justify-start" disabled>
-                <MapPin className="w-4 h-4 mr-2" />
-                Route Planning
-                <span className="ml-auto text-xs text-muted-foreground">Coming soon</span>
-              </Button>
-              <Button variant="outline" className="w-full justify-start" disabled>
-                <Settings className="w-4 h-4 mr-2" />
-                Company Settings
-                <span className="ml-auto text-xs text-muted-foreground">Coming soon</span>
-              </Button>
+            <CardContent>
+              {currentPlan ? (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-4 bg-primary/5 rounded-lg border border-primary/20">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-lg">{currentPlan.name}</h3>
+                        <Badge variant="secondary">{subscriptionData?.subscription.billingCycle}</Badge>
+                      </div>
+                      <p className="text-2xl font-bold text-primary mt-1">
+                        ${subscriptionData?.subscription.billingCycle === "annual" ? currentPlan.annualPrice : currentPlan.monthlyPrice}
+                        <span className="text-sm font-normal text-muted-foreground">
+                          /{subscriptionData?.subscription.billingCycle === "annual" ? "year" : "month"}
+                        </span>
+                      </p>
+                    </div>
+                    <Check className="w-6 h-6 text-green-600" />
+                  </div>
+                  <div className="space-y-1">
+                    {currentPlan.features.slice(0, 3).map((feature, i) => (
+                      <p key={i} className="text-sm text-muted-foreground flex items-center gap-2">
+                        <Check className="w-4 h-4 text-green-600" />
+                        {feature}
+                      </p>
+                    ))}
+                    {currentPlan.features.length > 3 && (
+                      <p className="text-sm text-muted-foreground">+{currentPlan.features.length - 3} more features</p>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <CreditCard className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                  <p>No active subscription</p>
+                  <p className="text-sm">Select a plan below to get started</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
 
-        <Card className="bg-blue-50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800">
-          <CardContent className="p-6">
-            <div className="flex items-start gap-4">
-              <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-full">
-                <Building2 className="w-5 h-5 text-blue-600" />
-              </div>
+        <Card>
+          <CardHeader>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
-                <h3 className="font-semibold text-foreground">Welcome to your Company Dashboard</h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Your company account is ready. We're working on adding more features including 
-                  delivery management, route optimization, and customer tracking. Stay tuned!
-                </p>
+                <CardTitle className="flex items-center gap-2">
+                  <CreditCard className="w-5 h-5 text-primary" />
+                  Subscription Plans
+                </CardTitle>
+                <CardDescription>
+                  Choose the plan that fits your business needs
+                </CardDescription>
               </div>
+              <div className="flex items-center gap-3 p-2 bg-muted rounded-lg">
+                <span className={`text-sm ${!isAnnual ? 'font-semibold' : 'text-muted-foreground'}`}>Monthly</span>
+                <Switch
+                  checked={isAnnual}
+                  onCheckedChange={handleBillingToggle}
+                  data-testid="switch-billing-cycle"
+                />
+                <span className={`text-sm ${isAnnual ? 'font-semibold' : 'text-muted-foreground'}`}>
+                  Annual
+                  <Badge variant="secondary" className="ml-2 text-xs">Save {annualDiscount}%</Badge>
+                </span>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {pricingPlans?.map((plan) => {
+                const isSelected = selectedPlanId === plan.id;
+                const price = isAnnual ? plan.annualPrice : plan.monthlyPrice;
+                
+                return (
+                  <Card 
+                    key={plan.id} 
+                    className={`relative cursor-pointer transition-all hover:shadow-lg ${
+                      isSelected ? 'border-primary ring-2 ring-primary/20' : 'hover:border-primary/50'
+                    } ${plan.isDefault ? 'border-primary/50' : ''}`}
+                    onClick={() => handleSelectPlan(plan.id)}
+                    data-testid={`card-plan-${plan.slug}`}
+                  >
+                    {plan.isDefault && (
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                        <Badge className="bg-primary">Popular</Badge>
+                      </div>
+                    )}
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-lg flex items-center justify-between">
+                        {plan.name}
+                        {isSelected && <Check className="w-5 h-5 text-primary" />}
+                      </CardTitle>
+                      <div className="mt-2">
+                        <span className="text-3xl font-bold">${price}</span>
+                        <span className="text-muted-foreground">/{isAnnual ? 'year' : 'month'}</span>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <ul className="space-y-2 text-sm">
+                        {plan.features.map((feature, i) => (
+                          <li key={i} className="flex items-start gap-2">
+                            <Check className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />
+                            <span className="text-muted-foreground">{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <Button 
+                        className="w-full mt-4" 
+                        variant={isSelected ? "default" : "outline"}
+                        disabled={subscriptionMutation.isPending}
+                        data-testid={`button-select-${plan.slug}`}
+                      >
+                        {subscriptionMutation.isPending && selectedPlanId === plan.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : isSelected ? (
+                          "Current Plan"
+                        ) : (
+                          "Select Plan"
+                        )}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           </CardContent>
         </Card>

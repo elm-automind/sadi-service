@@ -2,10 +2,14 @@ import {
   type User, type InsertUser, type Address, type InsertAddress,
   type FallbackContact, type InsertFallbackContact, type PasswordResetOtp,
   type CompanyProfile, type InsertCompanyProfile,
-  users, addresses, fallbackContacts, passwordResetOtps, companyProfiles
+  type CompanyAddress, type InsertCompanyAddress,
+  type PricingPlan, type InsertPricingPlan,
+  type CompanySubscription, type InsertCompanySubscription,
+  users, addresses, fallbackContacts, passwordResetOtps, companyProfiles,
+  companyAddresses, pricingPlans, companySubscriptions
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, gt, lt } from "drizzle-orm";
+import { eq, and, gt, lt, asc } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -19,6 +23,17 @@ export interface IStorage {
   createCompanyProfile(profile: InsertCompanyProfile): Promise<CompanyProfile>;
   getCompanyProfileByUserId(userId: number): Promise<CompanyProfile | undefined>;
   getCompanyProfileByUnifiedNumber(unifiedNumber: string): Promise<CompanyProfile | undefined>;
+  
+  getCompanyAddressByProfileId(companyProfileId: number): Promise<CompanyAddress | undefined>;
+  createCompanyAddress(address: InsertCompanyAddress): Promise<CompanyAddress>;
+  updateCompanyAddress(companyProfileId: number, address: Partial<CompanyAddress>): Promise<CompanyAddress | undefined>;
+
+  getPricingPlans(): Promise<PricingPlan[]>;
+  getPricingPlanById(id: number): Promise<PricingPlan | undefined>;
+
+  getCompanySubscription(companyProfileId: number): Promise<CompanySubscription | undefined>;
+  createCompanySubscription(subscription: InsertCompanySubscription): Promise<CompanySubscription>;
+  updateCompanySubscription(companyProfileId: number, updates: Partial<CompanySubscription>): Promise<CompanySubscription | undefined>;
   
   createAddress(address: InsertAddress): Promise<Address>;
   getAddressById(id: number): Promise<Address | undefined>;
@@ -98,6 +113,59 @@ export class DatabaseStorage implements IStorage {
   async getCompanyProfileByUnifiedNumber(unifiedNumber: string): Promise<CompanyProfile | undefined> {
     const [profile] = await db.select().from(companyProfiles).where(eq(companyProfiles.unifiedNumber, unifiedNumber));
     return profile || undefined;
+  }
+
+  async getCompanyAddressByProfileId(companyProfileId: number): Promise<CompanyAddress | undefined> {
+    const [address] = await db.select().from(companyAddresses).where(eq(companyAddresses.companyProfileId, companyProfileId));
+    return address || undefined;
+  }
+
+  async createCompanyAddress(insertAddress: InsertCompanyAddress): Promise<CompanyAddress> {
+    const [address] = await db
+      .insert(companyAddresses)
+      .values(insertAddress)
+      .returning();
+    return address;
+  }
+
+  async updateCompanyAddress(companyProfileId: number, updates: Partial<CompanyAddress>): Promise<CompanyAddress | undefined> {
+    const [updated] = await db
+      .update(companyAddresses)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(companyAddresses.companyProfileId, companyProfileId))
+      .returning();
+    return updated || undefined;
+  }
+
+  async getPricingPlans(): Promise<PricingPlan[]> {
+    return await db.select().from(pricingPlans).where(eq(pricingPlans.isActive, true)).orderBy(asc(pricingPlans.sortOrder));
+  }
+
+  async getPricingPlanById(id: number): Promise<PricingPlan | undefined> {
+    const [plan] = await db.select().from(pricingPlans).where(eq(pricingPlans.id, id));
+    return plan || undefined;
+  }
+
+  async getCompanySubscription(companyProfileId: number): Promise<CompanySubscription | undefined> {
+    const [subscription] = await db.select().from(companySubscriptions).where(eq(companySubscriptions.companyProfileId, companyProfileId));
+    return subscription || undefined;
+  }
+
+  async createCompanySubscription(insertSubscription: InsertCompanySubscription): Promise<CompanySubscription> {
+    const [subscription] = await db
+      .insert(companySubscriptions)
+      .values(insertSubscription)
+      .returning();
+    return subscription;
+  }
+
+  async updateCompanySubscription(companyProfileId: number, updates: Partial<CompanySubscription>): Promise<CompanySubscription | undefined> {
+    const [updated] = await db
+      .update(companySubscriptions)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(companySubscriptions.companyProfileId, companyProfileId))
+      .returning();
+    return updated || undefined;
   }
 
   async createAddress(insertAddress: InsertAddress): Promise<Address> {

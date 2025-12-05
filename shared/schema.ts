@@ -28,6 +28,47 @@ export const companyProfiles = pgTable("company_profiles", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const companyAddresses = pgTable("company_addresses", {
+  id: serial("id").primaryKey(),
+  companyProfileId: integer("company_profile_id").notNull().references(() => companyProfiles.id).unique(),
+  street: text("street").notNull(),
+  district: text("district").notNull(),
+  city: text("city").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const billingCycleEnum = ["monthly", "annual"] as const;
+export type BillingCycle = typeof billingCycleEnum[number];
+
+export const subscriptionStatusEnum = ["active", "cancelled", "expired", "pending"] as const;
+export type SubscriptionStatus = typeof subscriptionStatusEnum[number];
+
+export const pricingPlans = pgTable("pricing_plans", {
+  id: serial("id").primaryKey(),
+  slug: text("slug").notNull().unique(),
+  name: text("name").notNull(),
+  monthlyPrice: doublePrecision("monthly_price").notNull(),
+  annualPrice: doublePrecision("annual_price").notNull(),
+  features: text("features").array().notNull(),
+  isDefault: boolean("is_default").default(false),
+  isActive: boolean("is_active").default(true),
+  sortOrder: integer("sort_order").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const companySubscriptions = pgTable("company_subscriptions", {
+  id: serial("id").primaryKey(),
+  companyProfileId: integer("company_profile_id").notNull().references(() => companyProfiles.id).unique(),
+  pricingPlanId: integer("pricing_plan_id").notNull().references(() => pricingPlans.id),
+  billingCycle: text("billing_cycle").notNull().default("monthly"),
+  status: text("status").notNull().default("active"),
+  startDate: timestamp("start_date").defaultNow(),
+  endDate: timestamp("end_date"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const addresses = pgTable("addresses", {
   id: serial("id").primaryKey(),
   digitalId: text("digital_id").notNull().unique(),
@@ -102,6 +143,42 @@ export const companyRegistrationSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
+export const insertCompanyAddressSchema = createInsertSchema(companyAddresses).pick({
+  companyProfileId: true,
+  street: true,
+  district: true,
+  city: true,
+});
+
+export const companyAddressFormSchema = z.object({
+  street: z.string().min(3, "Street is required"),
+  district: z.string().min(2, "District is required"),
+  city: z.string().min(2, "City is required"),
+});
+
+export const insertPricingPlanSchema = createInsertSchema(pricingPlans).pick({
+  slug: true,
+  name: true,
+  monthlyPrice: true,
+  annualPrice: true,
+  features: true,
+  isDefault: true,
+  isActive: true,
+  sortOrder: true,
+});
+
+export const insertCompanySubscriptionSchema = createInsertSchema(companySubscriptions).pick({
+  companyProfileId: true,
+  pricingPlanId: true,
+  billingCycle: true,
+  status: true,
+});
+
+export const subscriptionFormSchema = z.object({
+  pricingPlanId: z.number().min(1, "Please select a pricing plan"),
+  billingCycle: z.enum(billingCycleEnum),
+});
+
 export const insertAddressSchema = createInsertSchema(addresses).pick({
   digitalId: true,
   userId: true,
@@ -148,6 +225,14 @@ export type User = typeof users.$inferSelect;
 export type InsertCompanyProfile = z.infer<typeof insertCompanyProfileSchema>;
 export type CompanyProfile = typeof companyProfiles.$inferSelect;
 export type CompanyRegistration = z.infer<typeof companyRegistrationSchema>;
+export type InsertCompanyAddress = z.infer<typeof insertCompanyAddressSchema>;
+export type CompanyAddress = typeof companyAddresses.$inferSelect;
+export type CompanyAddressForm = z.infer<typeof companyAddressFormSchema>;
+export type InsertPricingPlan = z.infer<typeof insertPricingPlanSchema>;
+export type PricingPlan = typeof pricingPlans.$inferSelect;
+export type InsertCompanySubscription = z.infer<typeof insertCompanySubscriptionSchema>;
+export type CompanySubscription = typeof companySubscriptions.$inferSelect;
+export type SubscriptionForm = z.infer<typeof subscriptionFormSchema>;
 export type InsertAddress = z.infer<typeof insertAddressSchema>;
 export type Address = typeof addresses.$inferSelect;
 export type InsertFallbackContact = z.infer<typeof insertFallbackContactSchema>;

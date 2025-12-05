@@ -4,7 +4,10 @@ import bcrypt from "bcrypt";
 import crypto from "crypto";
 import { Resend } from "resend";
 import { storage } from "./storage";
-import { insertUserSchema, insertAddressSchema, insertFallbackContactSchema, companyRegistrationSchema } from "@shared/schema";
+import { 
+  insertUserSchema, insertAddressSchema, insertFallbackContactSchema, 
+  companyRegistrationSchema, companyAddressFormSchema, subscriptionFormSchema 
+} from "@shared/schema";
 import { calculateDistanceKm } from "@shared/utils";
 import { z } from "zod";
 
@@ -480,6 +483,155 @@ export async function registerRoutes(httpServer: Server, app: Express) {
       return res.status(404).json({ message: "Fallback contact not found" });
     }
     res.json(contact);
+  });
+
+  // --- Company Routes ---
+
+  // Helper to require company account
+  const requireCompanyAuth = async (req: any, res: any, next: any) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const user = await storage.getUser(req.session.userId);
+    if (!user || user.accountType !== "company") {
+      return res.status(403).json({ message: "Company account required" });
+    }
+    const companyProfile = await storage.getCompanyProfileByUserId(req.session.userId);
+    if (!companyProfile) {
+      return res.status(404).json({ message: "Company profile not found" });
+    }
+    req.companyProfile = companyProfile;
+    next();
+  };
+
+  // Get company address
+  app.get("/api/company/address", requireCompanyAuth, async (req: any, res) => {
+    try {
+      const address = await storage.getCompanyAddressByProfileId(req.companyProfile.id);
+      res.json(address || null);
+    } catch (error) {
+      console.error("Get company address error:", error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  });
+
+  // Create or update company address
+  app.put("/api/company/address", requireCompanyAuth, async (req: any, res) => {
+    try {
+      const addressData = companyAddressFormSchema.parse(req.body);
+      
+      const existingAddress = await storage.getCompanyAddressByProfileId(req.companyProfile.id);
+      
+      let result;
+      if (existingAddress) {
+        result = await storage.updateCompanyAddress(req.companyProfile.id, addressData);
+      } else {
+        result = await storage.createCompanyAddress({
+          companyProfileId: req.companyProfile.id,
+          ...addressData
+        });
+      }
+      
+      res.json(result);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Validation Error", errors: error.errors });
+      } else {
+        console.error("Update company address error:", error);
+        res.status(500).json({ message: "Internal Server Error" });
+      }
+    }
+  });
+
+  // Get all pricing plans
+  app.get("/api/pricing-plans", async (req, res) => {
+    try {
+      const plans = await storage.getPricingPlans();
+      res.json(plans);
+    } catch (error) {
+      console.error("Get pricing plans error:", error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  });
+
+  // Get company subscription
+  app.get("/api/company/subscription", requireCompanyAuth, async (req: any, res) => {
+    try {
+      const subscription = await storage.getCompanySubscription(req.companyProfile.id);
+      if (subscription) {
+        const plan = await storage.getPricingPlanById(subscription.pricingPlanId);
+        res.json({ subscription, plan });
+      } else {
+        res.json(null);
+      }
+    } catch (error) {
+      console.error("Get company subscription error:", error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  });
+
+  // Create or update company subscription
+  app.post("/api/company/subscription", requireCompanyAuth, async (req: any, res) => {
+    try {
+      const subscriptionData = subscriptionFormSchema.parse(req.body);
+      
+      // Verify plan exists
+      const plan = await storage.getPricingPlanById(subscriptionData.pricingPlanId);
+      if (!plan) {
+        return res.status(400).json({ message: "Invalid pricing plan" });
+      }
+      
+      const existingSubscription = await storage.getCompanySubscription(req.companyProfile.id);
+      
+      let result;
+      if (existingSubscription) {
+        result = await storage.updateCompanySubscription(req.companyProfile.id, {
+          pricingPlanId: subscriptionData.pricingPlanId,
+          billingCycle: subscriptionData.billingCycle,
+        });
+      } else {
+        result = await storage.createCompanySubscription({
+          companyProfileId: req.companyProfile.id,
+          pricingPlanId: subscriptionData.pricingPlanId,
+          billingCycle: subscriptionData.billingCycle,
+          status: "active",
+        });
+      }
+      
+      res.json({ subscription: result, plan });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Validation Error", errors: error.errors });
+      } else {
+        console.error("Update company subscription error:", error);
+        res.status(500).json({ message: "Internal Server Error" });
+      }
+    }
+  });
+
+  // Get company profile with address and subscription
+  app.get("/api/company/profile", requireCompanyAuth, async (req: any, res) => {
+    try {
+      const address = await storage.getCompanyAddressByProfileId(req.companyProfile.id);
+      const subscriptionData = await storage.getCompanySubscription(req.companyProfile.id);
+      let subscription = null;
+      let plan = null;
+      
+      if (subscriptionData) {
+        plan = await storage.getPricingPlanById(subscriptionData.pricingPlanId);
+        subscription = subscriptionData;
+      }
+      
+      res.json({
+        profile: req.companyProfile,
+        address,
+        subscription,
+        plan
+      });
+    } catch (error) {
+      console.error("Get company profile error:", error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
   });
 
   // --- Public Address View Route (no auth required) ---
