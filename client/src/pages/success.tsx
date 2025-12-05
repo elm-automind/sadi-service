@@ -133,8 +133,11 @@ export default function Success() {
                        <div key={i} className="space-y-1">
                          <div className="aspect-square bg-muted rounded-md flex items-center justify-center border border-border overflow-hidden relative group">
                            {img.src ? (
-                             // Mockup: just showing name if no URL logic yet, or valid url if implemented
-                             <div className="text-[10px] p-2 text-center break-words">{img.src}</div>
+                             <img 
+                               src={img.src} 
+                               alt={img.label}
+                               className="w-full h-full object-cover"
+                             />
                            ) : (
                              <span className="text-[10px] text-muted-foreground text-center p-1">No {img.label}</span>
                            )}
