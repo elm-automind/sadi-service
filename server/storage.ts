@@ -57,6 +57,9 @@ export interface IStorage {
   deleteFallbackContactsByAddressId(addressId: number): Promise<void>;
   deleteAddress(id: number): Promise<boolean>;
   clearPrimaryAddresses(userId: number): Promise<void>;
+  setDefaultAddress(userId: number, addressId: number): Promise<Address | undefined>;
+  clearDefaultFallbackContacts(addressId: number): Promise<void>;
+  setDefaultFallbackContact(addressId: number, contactId: number): Promise<FallbackContact | undefined>;
 
   createPasswordResetOtp(userId: number, email: string, otp: string, expiresAt: Date): Promise<PasswordResetOtp>;
   getValidOtp(email: string, otp: string): Promise<PasswordResetOtp | undefined>;
@@ -295,6 +298,33 @@ export class DatabaseStorage implements IStorage {
       .update(addresses)
       .set({ isPrimary: false })
       .where(eq(addresses.userId, userId));
+  }
+
+  async setDefaultAddress(userId: number, addressId: number): Promise<Address | undefined> {
+    await this.clearPrimaryAddresses(userId);
+    const [updated] = await db
+      .update(addresses)
+      .set({ isPrimary: true })
+      .where(and(eq(addresses.id, addressId), eq(addresses.userId, userId)))
+      .returning();
+    return updated || undefined;
+  }
+
+  async clearDefaultFallbackContacts(addressId: number): Promise<void> {
+    await db
+      .update(fallbackContacts)
+      .set({ isDefault: false })
+      .where(eq(fallbackContacts.addressId, addressId));
+  }
+
+  async setDefaultFallbackContact(addressId: number, contactId: number): Promise<FallbackContact | undefined> {
+    await this.clearDefaultFallbackContacts(addressId);
+    const [updated] = await db
+      .update(fallbackContacts)
+      .set({ isDefault: true })
+      .where(and(eq(fallbackContacts.id, contactId), eq(fallbackContacts.addressId, addressId)))
+      .returning();
+    return updated || undefined;
   }
 
   async createPasswordResetOtp(userId: number, email: string, otp: string, expiresAt: Date): Promise<PasswordResetOtp> {

@@ -119,6 +119,7 @@ export const fallbackContacts = pgTable("fallback_contacts", {
   photoGate: text("photo_gate"),
   photoDoor: text("photo_door"),
   specialNote: text("special_note"),
+  isDefault: boolean("is_default").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

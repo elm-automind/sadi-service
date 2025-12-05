@@ -581,6 +581,33 @@ export async function registerRoutes(httpServer: Server, app: Express) {
     }
   });
 
+  // Set default fallback contact for an address
+  app.post("/api/fallback-contact/:id/set-default", requireAuth, async (req: any, res) => {
+    try {
+      const contactId = parseInt(req.params.id);
+      if (isNaN(contactId)) {
+        return res.status(400).json({ message: "Invalid contact ID" });
+      }
+
+      const existingContact = await storage.getFallbackContactById(contactId);
+      if (!existingContact) {
+        return res.status(404).json({ message: "Fallback contact not found" });
+      }
+
+      // Verify the user owns the address this contact belongs to
+      const address = await storage.getAddressById(existingContact.addressId);
+      if (!address || address.userId !== req.session.userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const updated = await storage.setDefaultFallbackContact(existingContact.addressId, contactId);
+      res.json(updated);
+    } catch (error) {
+      console.error("Set default fallback error:", error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  });
+
   // --- Company Routes ---
 
   // Helper to require company account
