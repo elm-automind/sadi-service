@@ -133,18 +133,27 @@ const defaultIcon = L.icon({
   shadowSize: [41, 41],
 });
 
-const getHotspotIcon = (intensity: number, completedCount: number) => {
+const getHotspotIcon = (successRate: number, totalDeliveries: number) => {
   let color = "#3b82f6";
   let size = 20;
   
-  if (intensity >= 0.7) {
-    color = completedCount > 0 ? "#22c55e" : "#ef4444";
+  // Color based on success rate: green for high success, yellow for medium, red for high failure
+  if (successRate >= 70) {
+    color = "#22c55e"; // Green - good performance
+  } else if (successRate >= 40) {
+    color = "#eab308"; // Yellow - medium performance
+  } else if (totalDeliveries > 0) {
+    color = "#ef4444"; // Red - poor performance (high failure rate)
+  } else {
+    color = "#3b82f6"; // Blue - no deliveries yet, just lookups
+  }
+  
+  // Size based on total delivery volume
+  if (totalDeliveries >= 10) {
     size = 30;
-  } else if (intensity >= 0.4) {
-    color = completedCount > 0 ? "#84cc16" : "#f97316";
+  } else if (totalDeliveries >= 5) {
     size = 25;
   } else {
-    color = completedCount > 0 ? "#60a5fa" : "#a855f7";
     size = 20;
   }
   
@@ -165,10 +174,11 @@ const getHotspotIcon = (intensity: number, completedCount: number) => {
   });
 };
 
-const getIntensityKey = (intensity: number): { key: string; color: string } => {
-  if (intensity >= 0.7) return { key: "high", color: "text-red-600" };
-  if (intensity >= 0.4) return { key: "medium", color: "text-yellow-600" };
-  return { key: "low", color: "text-blue-600" };
+const getSuccessRateKey = (successRate: number, totalDeliveries: number): { key: string; color: string } => {
+  if (totalDeliveries === 0) return { key: "noDeliveries", color: "text-blue-600" };
+  if (successRate >= 70) return { key: "highSuccess", color: "text-green-600" };
+  if (successRate >= 40) return { key: "mediumSuccess", color: "text-yellow-600" };
+  return { key: "highFailure", color: "text-red-600" };
 };
 
 const getCreditScoreColor = (score: number): string => {
@@ -1098,67 +1108,75 @@ export default function CompanyDashboard() {
                       attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                       url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     />
-                    {deliveryHotspots.points.map((point) => (
-                      <Marker 
-                        key={point.addressDigitalId} 
-                        position={[point.lat, point.lng]}
-                        icon={getHotspotIcon(point.intensity, point.completedCount)}
-                      >
-                        <Popup>
-                          <div className="p-2 min-w-[200px]">
-                            <p className="font-semibold text-sm mb-1">{point.addressDigitalId}</p>
-                            <p className="text-xs text-muted-foreground mb-3">{point.textAddress || t("common.address")}</p>
-                            
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-between text-xs">
-                                <span className="text-muted-foreground">{t("dashboard.totalLookups")}:</span>
-                                <span className="font-semibold text-blue-600">{point.lookupCount}</span>
-                              </div>
-                              <div className="flex items-center justify-between text-xs">
-                                <span className="text-muted-foreground">{t("dashboard.completedDeliveries")}:</span>
-                                <span className="font-semibold text-green-600">{point.completedCount}</span>
-                              </div>
-                              <div className="flex items-center justify-between text-xs">
-                                <span className="text-muted-foreground">{t("dashboard.failedDeliveries")}:</span>
-                                <span className="font-semibold text-red-600">{point.failedCount}</span>
-                              </div>
-                              <div className="flex items-center justify-between text-xs">
-                                <span className="text-muted-foreground">{t("dashboard.successRate")}:</span>
-                                <span className="font-semibold">{point.successRate}%</span>
-                              </div>
-                              <div className="flex items-center justify-between text-xs">
-                                <span className="text-muted-foreground">{t("dashboard.intensity")}:</span>
-                                <span className={`font-semibold ${getIntensityKey(point.intensity).color}`}>
-                                  {t(`dashboard.${getIntensityKey(point.intensity).key}`)}
-                                </span>
-                              </div>
-                              {point.lastEventAt && (
-                                <div className="flex items-center justify-between text-xs pt-1 border-t">
-                                  <span className="text-muted-foreground">{t("dashboard.lastActivity")}:</span>
-                                  <span className="text-muted-foreground">{new Date(point.lastEventAt).toLocaleDateString()}</span>
+                    {deliveryHotspots.points.map((point) => {
+                      const totalDeliveries = point.completedCount + point.failedCount;
+                      const statusKey = getSuccessRateKey(point.successRate, totalDeliveries);
+                      return (
+                        <Marker 
+                          key={point.addressDigitalId} 
+                          position={[point.lat, point.lng]}
+                          icon={getHotspotIcon(point.successRate, totalDeliveries)}
+                        >
+                          <Popup>
+                            <div className="p-2 min-w-[200px]">
+                              <p className="font-semibold text-sm mb-1">{point.addressDigitalId}</p>
+                              <p className="text-xs text-muted-foreground mb-3">{point.textAddress || t("common.address")}</p>
+                              
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="text-muted-foreground">{t("dashboard.totalLookups")}:</span>
+                                  <span className="font-semibold text-blue-600">{point.lookupCount}</span>
                                 </div>
-                              )}
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="text-muted-foreground">{t("dashboard.completedDeliveries")}:</span>
+                                  <span className="font-semibold text-green-600">{point.completedCount}</span>
+                                </div>
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="text-muted-foreground">{t("dashboard.failedDeliveries")}:</span>
+                                  <span className="font-semibold text-red-600">{point.failedCount}</span>
+                                </div>
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="text-muted-foreground">{t("dashboard.successRate")}:</span>
+                                  <span className={`font-semibold ${statusKey.color}`}>{point.successRate}%</span>
+                                </div>
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="text-muted-foreground">{t("dashboard.status")}:</span>
+                                  <span className={`font-semibold ${statusKey.color}`}>
+                                    {t(`dashboard.${statusKey.key}`)}
+                                  </span>
+                                </div>
+                                {point.lastEventAt && (
+                                  <div className="flex items-center justify-between text-xs pt-1 border-t">
+                                    <span className="text-muted-foreground">{t("dashboard.lastActivity")}:</span>
+                                    <span className="text-muted-foreground">{new Date(point.lastEventAt).toLocaleDateString()}</span>
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        </Popup>
-                      </Marker>
-                    ))}
+                          </Popup>
+                        </Marker>
+                      );
+                    })}
                   </MapContainer>
                 </div>
 
                 {/* Legend */}
-                <div className="flex items-center justify-center gap-6 text-sm">
+                <div className="flex items-center justify-center gap-6 text-sm flex-wrap">
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 rounded-full bg-green-500 border-2 border-white shadow-sm"></div>
-                    <span className="text-muted-foreground">{t("dashboard.high")} + {t("dashboard.completedDeliveries")}</span>
+                    <span className="text-muted-foreground">{t("dashboard.highSuccess")}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-3.5 h-3.5 rounded-full bg-lime-500 border-2 border-white shadow-sm"></div>
-                    <span className="text-muted-foreground">{t("dashboard.medium")} + {t("dashboard.completedDeliveries")}</span>
+                    <div className="w-3.5 h-3.5 rounded-full bg-yellow-500 border-2 border-white shadow-sm"></div>
+                    <span className="text-muted-foreground">{t("dashboard.mediumSuccess")}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-red-500 border-2 border-white shadow-sm"></div>
+                    <span className="text-muted-foreground">{t("dashboard.highFailure")}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full bg-blue-400 border-2 border-white shadow-sm"></div>
-                    <span className="text-muted-foreground">{t("dashboard.low")} + {t("dashboard.completedDeliveries")}</span>
+                    <span className="text-muted-foreground">{t("dashboard.noDeliveries")}</span>
                   </div>
                 </div>
 
@@ -1170,48 +1188,52 @@ export default function CompanyDashboard() {
                       <TableHead>{t("dashboard.totalLookups")}</TableHead>
                       <TableHead>{t("dashboard.deliveries")}</TableHead>
                       <TableHead>{t("dashboard.successRate")}</TableHead>
-                      <TableHead>{t("dashboard.intensity")}</TableHead>
+                      <TableHead>{t("dashboard.status")}</TableHead>
                       <TableHead>{t("dashboard.lastActivity")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {deliveryHotspots.points.slice(0, 10).map((point) => (
-                      <TableRow key={point.addressDigitalId} data-testid={`row-hotspot-${point.addressDigitalId}`}>
-                        <TableCell className="font-mono font-medium">{point.addressDigitalId}</TableCell>
-                        <TableCell>
-                          <Badge variant="secondary" className="text-blue-600">
-                            {point.lookupCount} {t("dashboard.lookups")}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <CheckCircle2 className="w-4 h-4 text-green-600" />
-                            <span>{point.completedCount}</span>
-                            <AlertTriangle className="w-4 h-4 text-red-600 ml-2" />
-                            <span>{point.failedCount}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <span className={point.successRate >= 80 ? "text-green-600 font-semibold" : point.successRate >= 50 ? "text-yellow-600" : "text-red-600"}>
-                            {point.successRate}%
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <Badge 
-                            variant="outline" 
-                            className={getIntensityKey(point.intensity).color}
-                          >
-                            {t(`dashboard.${getIntensityKey(point.intensity).key}`)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground text-sm">
-                          {point.lastEventAt 
-                            ? new Date(point.lastEventAt).toLocaleDateString()
-                            : "-"
-                          }
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {deliveryHotspots.points.slice(0, 10).map((point) => {
+                      const totalDeliveries = point.completedCount + point.failedCount;
+                      const statusKey = getSuccessRateKey(point.successRate, totalDeliveries);
+                      return (
+                        <TableRow key={point.addressDigitalId} data-testid={`row-hotspot-${point.addressDigitalId}`}>
+                          <TableCell className="font-mono font-medium">{point.addressDigitalId}</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary" className="text-blue-600">
+                              {point.lookupCount} {t("dashboard.lookups")}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <CheckCircle2 className="w-4 h-4 text-green-600" />
+                              <span>{point.completedCount}</span>
+                              <AlertTriangle className="w-4 h-4 text-red-600 ml-2" />
+                              <span>{point.failedCount}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <span className={statusKey.color + " font-semibold"}>
+                              {point.successRate}%
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <Badge 
+                              variant="outline" 
+                              className={statusKey.color}
+                            >
+                              {t(`dashboard.${statusKey.key}`)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground text-sm">
+                            {point.lastEventAt 
+                              ? new Date(point.lastEventAt).toLocaleDateString()
+                              : "-"
+                            }
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
