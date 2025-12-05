@@ -3,7 +3,7 @@ import { useLocation, Link } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   MapPin, Plus, Clock, Users, LogOut, 
-  ChevronRight, QrCode, Eye, Edit, Home as HomeIcon,
+  ChevronRight, QrCode, Eye, Edit,
   UserPlus, Phone, Navigation, Calendar, Trash2
 } from "lucide-react";
 
@@ -147,16 +147,9 @@ export default function Dashboard() {
               <p className="text-sm text-muted-foreground">{user.email}</p>
             </div>
           </div>
-          <div className="flex gap-2">
-            <Link href="/">
-              <Button variant="ghost" size="sm">
-                <HomeIcon className="w-4 h-4 mr-2" /> Home
-              </Button>
-            </Link>
-            <Button variant="ghost" size="sm" onClick={handleLogout}>
-              <LogOut className="w-4 h-4 mr-2" /> Logout
-            </Button>
-          </div>
+          <Button variant="ghost" size="sm" onClick={handleLogout}>
+            <LogOut className="w-4 h-4 mr-2" /> Logout
+          </Button>
         </div>
 
         <Separator />
