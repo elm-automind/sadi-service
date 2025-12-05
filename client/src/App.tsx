@@ -13,6 +13,7 @@ import Success from "@/pages/success";
 import Login from "@/pages/login";
 import ResetPassword from "@/pages/reset-password";
 import AddAddress from "@/pages/add-address";
+import EditAddress from "@/pages/edit-address";
 import DeliveryPreferences from "@/pages/delivery-preferences";
 import ViewAddress from "@/pages/view-address";
 import Dashboard from "@/pages/dashboard";
@@ -34,6 +35,7 @@ function Router() {
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/company-dashboard" component={CompanyDashboard} />
       <Route path="/add-address" component={AddAddress} />
+      <Route path="/edit-address/:id" component={EditAddress} />
       <Route path="/preferences" component={DeliveryPreferences} />
       <Route path="/fallback-contact" component={FallbackContact} />
       <Route path="/view/:digitalId" component={ViewAddress} />

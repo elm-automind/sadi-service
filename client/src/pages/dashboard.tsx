@@ -314,6 +314,11 @@ export default function Dashboard() {
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        {address.label && (
+                          <span className="font-semibold text-sm text-foreground">
+                            {address.label}
+                          </span>
+                        )}
                         <span className="font-mono text-sm font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">
                           {address.digitalId}
                         </span>
