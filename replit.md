@@ -37,6 +37,16 @@ React Hook Form with Zod schema validation handles all form inputs. The `@hookfo
 - File upload with drag-and-drop using react-dropzone
 - QR code generation using react-qr-code for address sharing
 - Responsive design optimized for mobile and desktop
+- Internationalization (i18n) with support for English and Arabic languages
+- RTL (Right-to-Left) layout support for Arabic
+
+**Internationalization (i18n):**
+- react-i18next for translation management
+- i18next-browser-languagedetector for automatic language detection
+- Translation files located in `client/src/lib/locales/` (en.json, ar.json)
+- Language switcher component in the header for manual language selection
+- RTL CSS support in index.css with automatic document direction updates
+- Language preference persisted to localStorage
 
 ### Backend Architecture
 

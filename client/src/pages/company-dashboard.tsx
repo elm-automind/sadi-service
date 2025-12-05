@@ -4,10 +4,12 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useTranslation } from "react-i18next";
 import { 
   Building2, LogOut, Package, Users, TrendingUp, 
   MapPin, CreditCard, Edit2, Check, Loader2, Plus, Trash2, UserCog, Upload, Star, AlertTriangle, CheckCircle2
 } from "lucide-react";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -136,6 +138,7 @@ type AddressFormData = z.infer<typeof addressFormSchema>;
 type DriverFormData = z.infer<typeof driverFormSchema>;
 
 export default function CompanyDashboard() {
+  const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -537,9 +540,12 @@ export default function CompanyDashboard() {
               <p className="text-sm text-muted-foreground">{user.email}</p>
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={handleLogout} data-testid="button-logout">
-            <LogOut className="w-4 h-4 mr-2" /> Logout
-          </Button>
+          <div className="flex items-center gap-2 rtl-no-flip">
+            <LanguageSwitcher />
+            <Button variant="ghost" size="sm" onClick={handleLogout} data-testid="button-logout">
+              <LogOut className="w-4 h-4 me-2" /> {t('auth.logout')}
+            </Button>
+          </div>
         </div>
 
         <Separator />

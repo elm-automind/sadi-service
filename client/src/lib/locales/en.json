@@ -1,4 +1,14 @@
 {
+  "home": {
+    "secureDelivery": "Secure Delivery",
+    "description": "Register your profile and location for fast, accurate, and secure deliveries.",
+    "optimizedLogistics": "Optimized Logistics",
+    "preciseLocation": "Precise location mapping",
+    "visualVerification": "Visual Verification",
+    "photoConfirmation": "Photo-based address confirmation",
+    "startRegistration": "Start Registration",
+    "copyright": "Secure Logistics System. All rights reserved."
+  },
   "common": {
     "loading": "Loading...",
     "save": "Save",

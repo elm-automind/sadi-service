@@ -1,6 +1,7 @@
 import { useLocation, Link } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslation } from "react-i18next";
 import * as z from "zod";
 import { User, Lock, ArrowRight } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -12,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { LanguageSwitcher } from "@/components/language-switcher";
 
 const loginSchema = z.object({
   identifier: z.string().min(3, "Email or ID is required"),
@@ -21,6 +23,7 @@ const loginSchema = z.object({
 type LoginData = z.infer<typeof loginSchema>;
 
 export default function Login() {
+  const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -34,15 +37,13 @@ export default function Login() {
       return await res.json();
     },
     onSuccess: async (data) => {
-      // Reset and refetch user query to trigger session activity tracking
       await queryClient.resetQueries({ queryKey: ["/api/user"] });
       
       toast({
-        title: "Login Successful",
-        description: `Welcome back, ${data.user.name}`,
+        title: t('auth.loginSuccess'),
+        description: `${t('auth.welcomeBack')}, ${data.user.name}`,
       });
       
-      // Redirect to appropriate dashboard based on account type
       if (data.user.accountType === "company") {
         setLocation("/company-dashboard");
       } else {
@@ -52,8 +53,8 @@ export default function Login() {
     onError: (error: any) => {
       toast({
         variant: "destructive",
-        title: "Login Failed",
-        description: error.message || "Invalid credentials"
+        title: t('errors.somethingWentWrong'),
+        description: error.message || t('auth.invalidCredentials')
       });
     }
   });
@@ -64,23 +65,26 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-muted/30 p-4 flex items-center justify-center relative">
-      <PageNavigation className="absolute top-4 left-4" />
+      <PageNavigation className="absolute top-4 start-4" />
+      <div className="absolute top-4 end-4">
+        <LanguageSwitcher />
+      </div>
 
       <Card className="w-full max-w-md shadow-xl border-border/60 bg-card/95 backdrop-blur-sm">
         <CardHeader className="space-y-1 text-center">
-          <CardTitle className="text-2xl font-bold text-primary">Welcome Back</CardTitle>
-          <CardDescription>Enter your credentials to access your account</CardDescription>
+          <CardTitle className="text-2xl font-bold text-primary">{t('auth.welcomeBack')}</CardTitle>
+          <CardDescription>{t('auth.signInToContinue')}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="identifier">Email or National ID</Label>
+              <Label htmlFor="identifier">{t('auth.email')} / {t('auth.iqamaId')}</Label>
               <div className="relative">
-                <User className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                <User className="absolute start-3 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input 
                   id="identifier" 
-                  placeholder="name@example.com or ID" 
-                  className="pl-9"
+                  placeholder={`${t('auth.email')} / ${t('auth.iqamaId')}`}
+                  className="ps-9"
                   {...form.register("identifier")} 
                 />
               </div>
@@ -90,21 +94,21 @@ export default function Login() {
             </div>
 
             <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <Label htmlFor="password">Password</Label>
+              <div className="flex justify-between items-center gap-2">
+                <Label htmlFor="password">{t('auth.password')}</Label>
                 <Link href="/reset-password">
                   <Button variant="link" className="p-0 h-auto text-xs text-muted-foreground hover:text-primary">
-                    Forgot password?
+                    {t('auth.forgotPassword')}
                   </Button>
                 </Link>
               </div>
               <div className="relative">
-                <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Lock className="absolute start-3 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input 
                   id="password" 
                   type="password" 
                   placeholder="••••••" 
-                  className="pl-9"
+                  className="ps-9"
                   {...form.register("password")} 
                 />
               </div>
@@ -114,14 +118,14 @@ export default function Login() {
             </div>
 
             <Button type="submit" className="w-full mt-4" disabled={loginMutation.isPending}>
-              {loginMutation.isPending ? "Logging in..." : "Log In"} <ArrowRight className="ml-2 w-4 h-4" />
+              {loginMutation.isPending ? t('common.loading') : t('auth.login')} <ArrowRight className="ms-2 w-4 h-4 rtl:rotate-180" />
             </Button>
             
             <div className="text-center text-sm text-muted-foreground pt-4 border-t mt-4">
-              Don't have an account?{" "}
+              {t('auth.dontHaveAccount')}{" "}
               <Link href="/register-type">
                 <Button variant="link" className="p-0 h-auto font-medium text-primary">
-                  Register
+                  {t('auth.register')}
                 </Button>
               </Link>
             </div>

@@ -4,13 +4,15 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Truck, Package, User, Building2, MapPin, Phone, Mail, AlertCircle, Clock, Home, Users } from "lucide-react";
+import { Truck, Package, User, MapPin, Phone, Mail, AlertCircle, Clock, Home, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { LanguageSwitcher } from "@/components/language-switcher";
 
 const lookupSchema = z.object({
   shipmentNumber: z.string().min(1, "Shipment number is required"),
@@ -65,6 +67,7 @@ interface PendingFeedbackResult {
 }
 
 export default function DriverLookup() {
+  const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [addressResult, setAddressResult] = useState<AddressResult | null>(null);
@@ -114,8 +117,8 @@ export default function DriverLookup() {
       setAddressResult(data);
       setPendingFeedback(null);
       toast({
-        title: "Address Found",
-        description: "The delivery address has been retrieved successfully.",
+        title: t('driver.addressFound'),
+        description: t('driver.addressRetrieved'),
       });
     },
     onError: (error: any) => {
@@ -125,13 +128,13 @@ export default function DriverLookup() {
           pendingLookup: { id: error.pendingLookupId, shipmentNumber: "", addressLabel: "" }
         });
         toast({
-          title: "Feedback Required",
+          title: t('driver.feedbackRequired'),
           description: error.message,
           variant: "destructive",
         });
       } else {
         toast({
-          title: "Lookup Failed",
+          title: t('errors.somethingWentWrong'),
           description: error.message,
           variant: "destructive",
         });
@@ -148,8 +151,8 @@ export default function DriverLookup() {
       if (pendingCheck.hasPendingFeedback) {
         setPendingFeedback(pendingCheck);
         toast({
-          title: "Feedback Required",
-          description: "Please provide feedback for your previous delivery first.",
+          title: t('driver.feedbackRequired'),
+          description: t('driver.provideFeedbackFirst'),
           variant: "destructive",
         });
         return;
@@ -159,14 +162,14 @@ export default function DriverLookup() {
     } catch (error: any) {
       if (error.driverNotFound) {
         toast({
-          title: "Driver Not Found",
-          description: error.message || "Please verify your driver ID is registered with a company.",
+          title: t('driver.driverNotFound'),
+          description: error.message || t('driver.verifyDriverId'),
           variant: "destructive",
         });
       } else {
         toast({
-          title: "Error",
-          description: error.message || "Failed to verify driver",
+          title: t('common.error'),
+          description: error.message || t('errors.somethingWentWrong'),
           variant: "destructive",
         });
       }
@@ -187,22 +190,25 @@ export default function DriverLookup() {
 
   return (
     <div className="min-h-screen bg-background p-4">
+      <div className="absolute top-4 end-4">
+        <LanguageSwitcher />
+      </div>
       <div className="max-w-2xl mx-auto space-y-6">
         <div className="text-center space-y-2">
           <div className="mx-auto w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
             <Truck className="w-7 h-7" />
           </div>
-          <h1 className="text-2xl font-bold">Driver Address Lookup</h1>
-          <p className="text-muted-foreground">Enter shipment details to retrieve delivery address</p>
+          <h1 className="text-2xl font-bold">{t('driver.driverLookup')}</h1>
+          <p className="text-muted-foreground">{t('driver.enterShipmentDetails')}</p>
         </div>
 
         {pendingFeedback?.hasPendingFeedback && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription className="flex items-center justify-between">
-              <span>You have pending feedback for shipment {pendingFeedback.pendingLookup?.shipmentNumber || "previous delivery"}. Please submit feedback before looking up a new address.</span>
-              <Button variant="outline" size="sm" onClick={goToFeedback} className="ml-4">
-                Submit Feedback
+            <AlertDescription className="flex items-center justify-between gap-4 flex-wrap">
+              <span>{t('driver.provideFeedbackFirst')}</span>
+              <Button variant="outline" size="sm" onClick={goToFeedback}>
+                {t('driver.submitFeedback')}
               </Button>
             </AlertDescription>
           </Alert>
@@ -211,11 +217,11 @@ export default function DriverLookup() {
         {!addressResult && (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 rtl-no-flip">
                 <Package className="w-5 h-5" />
-                Shipment Details
+                {t('driver.shipmentNumber')}
               </CardTitle>
-              <CardDescription>Enter the required information to lookup the delivery address</CardDescription>
+              <CardDescription>{t('driver.enterShipmentDetails')}</CardDescription>
             </CardHeader>
             <CardContent>
               <Form {...form}>
@@ -225,7 +231,7 @@ export default function DriverLookup() {
                     name="shipmentNumber"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Shipment Number</FormLabel>
+                        <FormLabel>{t('driver.shipmentNumber')}</FormLabel>
                         <FormControl>
                           <Input placeholder="e.g., SHP-12345" {...field} />
                         </FormControl>
@@ -239,9 +245,9 @@ export default function DriverLookup() {
                     name="driverId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Driver ID</FormLabel>
+                        <FormLabel>{t('driver.driverId')}</FormLabel>
                         <FormControl>
-                          <Input placeholder="Your driver ID" {...field} />
+                          <Input placeholder={t('driver.driverId')} {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -253,7 +259,7 @@ export default function DriverLookup() {
                     name="digitalId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Address Digital ID</FormLabel>
+                        <FormLabel>{t('driver.digitalId')}</FormLabel>
                         <FormControl>
                           <Input placeholder="e.g., ABC12345" {...field} />
                         </FormControl>
@@ -267,7 +273,7 @@ export default function DriverLookup() {
                     className="w-full" 
                     disabled={lookupMutation.isPending || checkPendingMutation.isPending}
                   >
-                    {(lookupMutation.isPending || checkPendingMutation.isPending) ? "Looking up..." : "Lookup Address"}
+                    {(lookupMutation.isPending || checkPendingMutation.isPending) ? t('common.loading') : t('driver.lookupAddress')}
                   </Button>
                 </form>
               </Form>
@@ -277,17 +283,17 @@ export default function DriverLookup() {
 
         {addressResult && (
           <div className="space-y-4">
-            <Card className="border-green-200 bg-green-50/50">
+            <Card className="border-green-200 bg-green-50/50 dark:bg-green-900/10">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-green-700">
+                <CardTitle className="flex items-center gap-2 text-green-700 dark:text-green-400 rtl-no-flip">
                   <MapPin className="w-5 h-5" />
-                  Delivery Address
+                  {t('address.deliveryPreferences', 'Delivery Address')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   {addressResult.address.label && (
-                    <div className="flex items-center gap-2 text-sm">
+                    <div className="flex items-center gap-2 text-sm rtl-no-flip">
                       <Home className="w-4 h-4 text-muted-foreground" />
                       <span className="font-medium">{addressResult.address.label}</span>
                     </div>
@@ -296,22 +302,22 @@ export default function DriverLookup() {
                 </div>
 
                 <div className="border-t pt-4 space-y-2">
-                  <h4 className="font-semibold flex items-center gap-2">
+                  <h4 className="font-semibold flex items-center gap-2 rtl-no-flip">
                     <User className="w-4 h-4" />
-                    Customer Information
+                    {t('feedback.customerBehavior', 'Customer Information')}
                   </h4>
                   <div className="grid gap-2 text-sm">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 rtl-no-flip">
                       <User className="w-4 h-4 text-muted-foreground" />
                       <span>{addressResult.user.name}</span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 rtl-no-flip">
                       <Phone className="w-4 h-4 text-muted-foreground" />
                       <a href={`tel:${addressResult.user.phone}`} className="text-primary hover:underline">
                         {addressResult.user.phone}
                       </a>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 rtl-no-flip">
                       <Mail className="w-4 h-4 text-muted-foreground" />
                       <span>{addressResult.user.email}</span>
                     </div>
@@ -320,12 +326,12 @@ export default function DriverLookup() {
 
                 {addressResult.address.preferredTime && (
                   <div className="border-t pt-4">
-                    <h4 className="font-semibold flex items-center gap-2 mb-2">
+                    <h4 className="font-semibold flex items-center gap-2 mb-2 rtl-no-flip">
                       <Clock className="w-4 h-4" />
-                      Delivery Preferences
+                      {t('address.deliveryPreferences')}
                     </h4>
                     <p className="text-sm text-muted-foreground">
-                      Preferred time: {addressResult.address.preferredTime}
+                      {t('address.preferredTime')}: {addressResult.address.preferredTime}
                       {addressResult.address.preferredTimeSlot && ` (${addressResult.address.preferredTimeSlot})`}
                     </p>
                   </div>
@@ -333,8 +339,8 @@ export default function DriverLookup() {
 
                 {addressResult.address.specialNote && (
                   <div className="border-t pt-4">
-                    <h4 className="font-semibold mb-2">Special Notes</h4>
-                    <p className="text-sm text-muted-foreground bg-amber-50 p-3 rounded-lg border border-amber-200">
+                    <h4 className="font-semibold mb-2">{t('address.specialNote')}</h4>
+                    <p className="text-sm text-muted-foreground bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg border border-amber-200 dark:border-amber-700">
                       {addressResult.address.specialNote}
                     </p>
                   </div>
@@ -342,7 +348,7 @@ export default function DriverLookup() {
 
                 {addressResult.address.photoBuilding && (
                   <div className="border-t pt-4">
-                    <h4 className="font-semibold mb-2">Building Photo</h4>
+                    <h4 className="font-semibold mb-2">{t('address.buildingPhoto')}</h4>
                     <img 
                       src={addressResult.address.photoBuilding} 
                       alt="Building" 
@@ -356,16 +362,16 @@ export default function DriverLookup() {
             {addressResult.fallbackContacts.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2 rtl-no-flip">
                     <Users className="w-5 h-5" />
-                    Fallback Contacts
+                    {t('address.fallbackContacts')}
                   </CardTitle>
-                  <CardDescription>Alternative contacts if customer is unavailable</CardDescription>
+                  <CardDescription>{t('address.fallbackContacts')}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     {addressResult.fallbackContacts.map((contact) => (
-                      <div key={contact.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                      <div key={contact.id} className="flex items-center justify-between gap-4 p-3 bg-muted/50 rounded-lg flex-wrap">
                         <div>
                           <p className="font-medium">{contact.name}</p>
                           {contact.relationship && (
@@ -382,7 +388,7 @@ export default function DriverLookup() {
               </Card>
             )}
 
-            <div className="flex gap-3">
+            <div className="flex gap-3 flex-wrap">
               <Button 
                 variant="outline" 
                 className="flex-1"
@@ -391,13 +397,13 @@ export default function DriverLookup() {
                   form.reset();
                 }}
               >
-                New Lookup
+                {t('driver.lookupAddress', 'New Lookup')}
               </Button>
               <Button 
                 className="flex-1"
                 onClick={goToFeedbackForCurrent}
               >
-                Complete & Submit Feedback
+                {t('driver.submitFeedback')}
               </Button>
             </div>
           </div>

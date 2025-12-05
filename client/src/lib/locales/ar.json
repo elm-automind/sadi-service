@@ -1,4 +1,14 @@
 {
+  "home": {
+    "secureDelivery": "توصيل آمن",
+    "description": "سجّل ملفك الشخصي وموقعك للحصول على توصيلات سريعة ودقيقة وآمنة.",
+    "optimizedLogistics": "خدمات لوجستية متقدمة",
+    "preciseLocation": "تحديد الموقع بدقة",
+    "visualVerification": "تحقق بصري",
+    "photoConfirmation": "تأكيد العنوان بالصور",
+    "startRegistration": "ابدأ التسجيل",
+    "copyright": "نظام اللوجستيات الآمنة. جميع الحقوق محفوظة."
+  },
   "common": {
     "loading": "جاري التحميل...",
     "save": "حفظ",

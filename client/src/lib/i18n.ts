@@ -10,6 +10,13 @@ const resources = {
   ar: { translation: ar },
 };
 
+const updateDocumentDirection = (lng: string) => {
+  const dir = lng === 'ar' ? 'rtl' : 'ltr';
+  document.documentElement.dir = dir;
+  document.documentElement.lang = lng;
+  document.body.classList.toggle('rtl', lng === 'ar');
+};
+
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)
@@ -23,6 +30,11 @@ i18n
       order: ['localStorage', 'navigator'],
       caches: ['localStorage'],
     },
+  })
+  .then(() => {
+    updateDocumentDirection(i18n.language);
   });
+
+i18n.on('languageChanged', updateDocumentDirection);
 
 export default i18n;

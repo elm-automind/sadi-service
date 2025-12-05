@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { useLocation, Link } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { 
   MapPin, Plus, Clock, Users, LogOut, 
   ChevronRight, QrCode, Eye, Edit,
   UserPlus, Phone, Navigation, Calendar, Trash2, Star
 } from "lucide-react";
+import { LanguageSwitcher } from "@/components/language-switcher";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -31,6 +33,7 @@ interface UserWithAddresses extends User {
 }
 
 export default function Dashboard() {
+  const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -225,9 +228,12 @@ export default function Dashboard() {
               <p className="text-sm text-muted-foreground">{user.email}</p>
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={handleLogout}>
-            <LogOut className="w-4 h-4 mr-2" /> Logout
-          </Button>
+          <div className="flex items-center gap-2 rtl-no-flip">
+            <LanguageSwitcher />
+            <Button variant="ghost" size="sm" onClick={handleLogout}>
+              <LogOut className="w-4 h-4 me-2" /> {t('auth.logout')}
+            </Button>
+          </div>
         </div>
 
         <Separator />
