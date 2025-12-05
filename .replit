@@ -57,3 +57,13 @@ waitForPort = 5000
 [agent]
 mockupState = "FULLSTACK"
 integrations = ["javascript_database:1.0.0"]
+expertMode = true
+
+[userenv]
+
+[userenv.shared]
+BILLING_API_URL = "https://billing-qa-api.apps.devocp4.elm.sa:443/billing/v3/api/invoice/generateinvoicewithcustomer"
+BILLING_PRODUCT_CODE = "812"
+BILLING_CLIENT_KEY = "909AA04B-1AD0-4063-9D73-424DBF7EC725"
+BILLING_APP_ID = "21ccb69a"
+BILLING_APP_KEY = "dcb299a8b0bf1418d3ad8b0ee1c0a139"

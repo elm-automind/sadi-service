@@ -4,6 +4,7 @@ import bcrypt from "bcrypt";
 import crypto from "crypto";
 import { Resend } from "resend";
 import { storage } from "./storage";
+import { generateInvoice } from "./billing";
 import { 
   insertUserSchema, insertAddressSchema, insertFallbackContactSchema, 
   companyRegistrationSchema, companyAddressFormSchema, subscriptionFormSchema, driverFormSchema, bulkDriverSchema,
@@ -708,6 +709,42 @@ export async function registerRoutes(httpServer: Server, app: Express) {
       
       const existingSubscription = await storage.getCompanySubscription(req.companyProfile.id);
       
+      // Get company address for invoice
+      const companyAddress = await storage.getCompanyAddressByProfileId(req.companyProfile.id);
+      
+      // Get user info for invoice
+      const user = await storage.getUser(req.session.userId);
+      
+      // Generate invoice via billing API
+      const billingResult = await generateInvoice(
+        {
+          companyName: req.companyProfile.companyName,
+          unifiedNumber: req.companyProfile.unifiedNumber,
+          email: user?.email || "",
+          phone: user?.phone || "",
+        },
+        companyAddress ? {
+          street: companyAddress.street,
+          district: companyAddress.district,
+          city: companyAddress.city,
+        } : null,
+        {
+          name: plan.name,
+          slug: plan.slug,
+          monthlyPrice: plan.monthlyPrice,
+          annualPrice: plan.annualPrice,
+        },
+        subscriptionData.billingCycle as "monthly" | "annual"
+      );
+      
+      if (!billingResult.success) {
+        console.error("Billing API error:", billingResult.error);
+        return res.status(500).json({ 
+          message: "Failed to generate invoice. Please try again later.",
+          error: billingResult.error 
+        });
+      }
+      
       let result;
       if (existingSubscription) {
         result = await storage.updateCompanySubscription(req.companyProfile.id, {
@@ -723,7 +760,14 @@ export async function registerRoutes(httpServer: Server, app: Express) {
         });
       }
       
-      res.json({ subscription: result, plan });
+      res.json({ 
+        subscription: result, 
+        plan,
+        invoice: {
+          invoiceId: billingResult.invoiceId,
+          message: billingResult.message,
+        }
+      });
     } catch (error) {
       if (error instanceof z.ZodError) {
         res.status(400).json({ message: "Validation Error", errors: error.errors });
