@@ -579,6 +579,9 @@
     "securePayment": "Secure Payment Gateway",
     "securePaymentDesc": "Complete your payment securely using the form below.",
     "loadingPaymentPage": "Loading payment page...",
-    "securityNote": "Your payment is secured with industry-standard encryption. We do not store your card details."
+    "securityNote": "Your payment is secured with industry-standard encryption. We do not store your card details.",
+    "completedPayment": "Already completed your payment?",
+    "completedPaymentDesc": "If you see a success message in the payment window above, click here to continue.",
+    "confirmPayment": "I've Completed Payment"
   }
 }

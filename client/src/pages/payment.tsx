@@ -162,7 +162,7 @@ export default function Payment() {
               <iframe
                 src={paymentUrl}
                 className="w-full border-0"
-                style={{ minHeight: "600px", height: "calc(100vh - 250px)" }}
+                style={{ minHeight: "600px", height: "calc(100vh - 300px)" }}
                 title="Payment Gateway"
                 sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation"
                 data-testid="iframe-payment"
@@ -173,6 +173,27 @@ export default function Payment() {
                 <p className="text-muted-foreground mt-2">{t('payment.loadingPaymentPage')}</p>
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Manual confirmation button */}
+        <Card className="mt-4">
+          <CardContent className="py-4">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="text-center sm:text-left">
+                <p className="text-sm font-medium text-foreground">{t('payment.completedPayment')}</p>
+                <p className="text-xs text-muted-foreground">{t('payment.completedPaymentDesc')}</p>
+              </div>
+              <Button 
+                onClick={() => setPaymentStatus("success")} 
+                variant="default"
+                className="w-full sm:w-auto"
+                data-testid="button-confirm-payment"
+              >
+                <CheckCircle className="w-4 h-4 mr-2" />
+                {t('payment.confirmPayment')}
+              </Button>
+            </div>
           </CardContent>
         </Card>
         
