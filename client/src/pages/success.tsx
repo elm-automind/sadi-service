@@ -4,8 +4,9 @@ import QRCode from "react-qr-code";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Phone, MapPin, CheckCircle2, Home, QrCode, Download, Share2, Plus, ArrowLeft } from "lucide-react";
+import { Phone, MapPin, CheckCircle2, QrCode, Download, Share2, Plus } from "lucide-react";
 import { AddressMap } from "@/components/address-map";
+import { PageNavigation } from "@/components/page-navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery } from "@tanstack/react-query";
 import type { User, Address } from "@shared/schema";
@@ -39,16 +40,7 @@ export default function Success() {
   if (!currentAddress) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 relative">
-        <div className="absolute top-4 left-4 flex gap-2">
-          <Button variant="ghost" size="sm" className="gap-2" onClick={() => window.history.back()}>
-            <ArrowLeft className="w-4 h-4" /> Back
-          </Button>
-          <Link href="/">
-            <Button variant="ghost" size="sm" className="gap-2">
-              <Home className="w-4 h-4" /> Home
-            </Button>
-          </Link>
-        </div>
+        <PageNavigation className="absolute top-4 left-4" />
         
         <p>No address found.</p>
         <Link href="/add-address"><Button className="mt-4">Add Address</Button></Link>
@@ -62,16 +54,7 @@ export default function Success() {
 
   return (
     <div className="min-h-screen bg-muted/30 p-4 flex items-center justify-center py-10 relative">
-      <div className="absolute top-4 left-4 flex gap-2">
-        <Button variant="ghost" size="sm" className="gap-2" onClick={() => window.history.back()}>
-          <ArrowLeft className="w-4 h-4" /> Back
-        </Button>
-        <Link href="/">
-          <Button variant="ghost" size="sm" className="gap-2">
-            <Home className="w-4 h-4" /> Home
-          </Button>
-        </Link>
-      </div>
+      <PageNavigation className="absolute top-4 left-4" />
       
       <Card className="w-full max-w-lg shadow-lg border-border/60 overflow-hidden">
         <div className="bg-green-50 dark:bg-green-900/10 p-6 text-center border-b border-green-100 dark:border-green-900/30">
@@ -213,18 +196,10 @@ export default function Success() {
               </TabsContent>
             </Tabs>
             
-            <div className="pt-6 mt-2 border-t border-border/40 grid grid-cols-3 gap-3">
-              <Button className="w-full" variant="ghost" onClick={() => window.history.back()}>
-                <ArrowLeft className="w-4 h-4 mr-2" /> Back
-              </Button>
-              <Link href="/">
-                <Button className="w-full" variant="ghost">
-                  <Home className="w-4 h-4 mr-2" /> Home
-                </Button>
-              </Link>
-              <Link href="/register">
-                <Button className="w-full" variant="outline">
-                  <Plus className="w-4 h-4 mr-2" /> Add Another
+            <div className="pt-6 mt-2 border-t border-border/40 flex justify-center">
+              <Link href="/add-address">
+                <Button variant="outline">
+                  <Plus className="w-4 h-4 mr-2" /> Add Another Address
                 </Button>
               </Link>
             </div>

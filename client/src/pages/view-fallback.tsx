@@ -6,9 +6,10 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { 
   Phone, MapPin, User, Clock, FileText, Home, Building2, DoorOpen, 
-  Image, Users, Navigation, Calendar, AlertCircle, ArrowLeft, DollarSign
+  Image, Users, Navigation, Calendar, AlertCircle, DollarSign, ArrowLeft
 } from "lucide-react";
 import { AddressMap } from "@/components/address-map";
+import { PageNavigation } from "@/components/page-navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { FallbackContact } from "@shared/schema";
 
@@ -36,16 +37,7 @@ export default function ViewFallback() {
   if (error || !contact) {
     return (
       <div className="min-h-screen bg-muted/30 flex items-center justify-center p-4 relative">
-        <div className="absolute top-4 left-4 flex gap-2">
-          <Button variant="ghost" size="sm" className="gap-2" onClick={() => window.history.back()}>
-            <ArrowLeft className="w-4 h-4" /> Back
-          </Button>
-          <Link href="/">
-            <Button variant="ghost" size="sm" className="gap-2">
-              <Home className="w-4 h-4" /> Home
-            </Button>
-          </Link>
-        </div>
+        <PageNavigation className="absolute top-4 left-4" />
         
         <Card className="w-full max-w-md p-8 text-center">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -67,16 +59,7 @@ export default function ViewFallback() {
 
   return (
     <div className="min-h-screen bg-muted/30 p-4 flex items-center justify-center py-8 relative">
-      <div className="absolute top-4 left-4 flex gap-2">
-        <Button variant="ghost" size="sm" className="gap-2" onClick={() => window.history.back()}>
-          <ArrowLeft className="w-4 h-4" /> Back
-        </Button>
-        <Link href="/">
-          <Button variant="ghost" size="sm" className="gap-2">
-            <Home className="w-4 h-4" /> Home
-          </Button>
-        </Link>
-      </div>
+      <PageNavigation className="absolute top-4 left-4" />
       
       <Card className="w-full max-w-2xl shadow-xl border-border/60 overflow-hidden">
         {/* Header */}

@@ -1,9 +1,12 @@
 import type { Express } from "express";
 import { type Server } from "http";
+import bcrypt from "bcrypt";
 import { storage } from "./storage";
 import { insertUserSchema, insertAddressSchema, insertFallbackContactSchema } from "@shared/schema";
 import { calculateDistanceKm } from "@shared/utils";
 import { z } from "zod";
+
+const SALT_ROUNDS = 10;
 
 const MAX_FREE_DISTANCE_KM = 3;
 
@@ -40,8 +43,9 @@ export async function registerRoutes(httpServer: Server, app: Express) {
       const existingPhone = await storage.getUserByPhone(userData.phone);
       if (existingPhone) return res.status(400).json({ message: "Phone already registered" });
 
-      // 3. Create User
-      const newUser = await storage.createUser(userData);
+      // 3. Hash password and create User
+      const hashedPassword = await bcrypt.hash(userData.password, SALT_ROUNDS);
+      const newUser = await storage.createUser({ ...userData, password: hashedPassword });
 
       // 4. Create Address if provided
       let newAddress = null;
@@ -77,8 +81,13 @@ export async function registerRoutes(httpServer: Server, app: Express) {
     let user = await storage.getUserByEmail(identifier);
     if (!user) user = await storage.getUserByIqama(identifier);
     
-    // Verify
-    if (!user || user.password !== password) {
+    // Verify password using bcrypt
+    if (!user) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+    
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 

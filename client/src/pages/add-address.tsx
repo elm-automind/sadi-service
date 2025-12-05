@@ -6,11 +6,12 @@ import * as z from "zod";
 import { useDropzone } from "react-dropzone";
 import { 
   MapPin, Camera, CheckCircle2, 
-  Upload, Home, X, ArrowLeft
+  Upload, X
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
+import { PageNavigation } from "@/components/page-navigation";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -230,16 +231,7 @@ export default function AddAddress() {
 
   return (
     <div className="min-h-screen bg-muted/30 p-3 md:p-8 flex justify-center items-start pt-6 md:pt-20 relative">
-      <div className="absolute top-4 left-4 flex gap-2">
-        <Button variant="ghost" size="sm" className="gap-2" onClick={() => window.history.back()}>
-          <ArrowLeft className="w-4 h-4" /> Back
-        </Button>
-        <Link href="/">
-          <Button variant="ghost" size="sm" className="gap-2">
-            <Home className="w-4 h-4" /> Home
-          </Button>
-        </Link>
-      </div>
+      <PageNavigation className="absolute top-4 left-4" />
 
       <Card className="w-full max-w-3xl shadow-xl border-border/60 bg-card/95 backdrop-blur-sm">
         <CardHeader className="border-b border-border/40 pb-4 md:pb-6">

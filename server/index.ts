@@ -27,9 +27,10 @@ app.use(express.urlencoded({ extended: false, limit: '15mb' }));
 
 // Session Setup
 const SessionStore = MemoryStore(session);
+const sessionSecret = process.env.SESSION_SECRET || "dev-session-secret-change-in-production";
 app.use(
   session({
-    secret: "my-secret-key", // In prod, use env var
+    secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
     store: new SessionStore({

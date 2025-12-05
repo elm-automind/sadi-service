@@ -6,12 +6,13 @@ import * as z from "zod";
 import { useDropzone } from "react-dropzone";
 import { 
   MapPin, Camera, CheckCircle2, ChevronRight, ChevronLeft, 
-  Upload, Home, Users, Phone, User as UserIcon, AlertTriangle,
-  Calendar, Clock, DollarSign, Info, X, ArrowLeft
+  Upload, Users, Phone, User as UserIcon, AlertTriangle,
+  Calendar, Clock, DollarSign, Info, X
 } from "lucide-react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
+import { PageNavigation } from "@/components/page-navigation";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -135,6 +136,7 @@ export default function FallbackContact() {
   const [step, setStep] = useState(1);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   const [images, setImages] = useState<{
     building?: ProcessedImage;
@@ -276,14 +278,15 @@ export default function FallbackContact() {
       const res = await apiRequest("POST", "/api/fallback-contacts", payload);
       return await res.json();
     },
-    onSuccess: () => {
+    onSuccess: (newContact) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       toast({
         title: "Fallback Contact Added!",
         description: isOverMaxDistance 
           ? "Your backup contact has been saved with scheduled delivery."
           : "Your backup contact has been saved.",
       });
-      setLocation("/dashboard");
+      setLocation(`/view-fallback/${newContact.id}`);
     },
     onError: (error: any) => {
       toast({
@@ -348,7 +351,9 @@ export default function FallbackContact() {
 
   if (user.addresses.length === 0) {
     return (
-      <div className="min-h-screen bg-muted/30 p-4 flex items-center justify-center">
+      <div className="min-h-screen bg-muted/30 p-4 flex items-center justify-center relative">
+        <PageNavigation className="absolute top-4 left-4" />
+        
         <Card className="w-full max-w-md p-8 text-center">
           <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
           <h2 className="text-xl font-bold mb-2">Add an Address First</h2>
@@ -363,16 +368,7 @@ export default function FallbackContact() {
 
   return (
     <div className="min-h-screen bg-muted/30 p-3 md:p-8 flex justify-center items-start pt-6 md:pt-12 relative">
-      <div className="absolute top-4 left-4 flex gap-2">
-        <Button variant="ghost" size="sm" className="gap-2" onClick={() => window.history.back()}>
-          <ArrowLeft className="w-4 h-4" /> Back
-        </Button>
-        <Link href="/">
-          <Button variant="ghost" size="sm" className="gap-2">
-            <Home className="w-4 h-4" /> Home
-          </Button>
-        </Link>
-      </div>
+      <PageNavigation className="absolute top-4 left-4" />
 
       <Card className="w-full max-w-2xl shadow-xl border-border/60 bg-card/95 backdrop-blur-sm">
         <CardHeader className="border-b border-border/40 pb-4">
