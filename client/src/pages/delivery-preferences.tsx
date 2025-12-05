@@ -19,7 +19,7 @@ import { apiRequest } from "@/lib/queryClient";
 
 const TIME_SLOTS = {
   morning: {
-    label: "Morning",
+    labelKey: "delivery.morning",
     icon: Sun,
     color: "text-amber-600",
     bgColor: "bg-amber-50 dark:bg-amber-900/30",
@@ -28,14 +28,14 @@ const TIME_SLOTS = {
     borderColor: "border-amber-300 dark:border-amber-700",
     hoverBg: "hover:bg-amber-100 dark:hover:bg-amber-900/50",
     slots: [
-      { value: "8am-9am", label: "8:00 AM - 9:00 AM" },
-      { value: "9am-10am", label: "9:00 AM - 10:00 AM" },
-      { value: "10am-11am", label: "10:00 AM - 11:00 AM" },
-      { value: "11am-12pm", label: "11:00 AM - 12:00 PM" },
+      { value: "8am-9am", label: "8:00 - 9:00" },
+      { value: "9am-10am", label: "9:00 - 10:00" },
+      { value: "10am-11am", label: "10:00 - 11:00" },
+      { value: "11am-12pm", label: "11:00 - 12:00" },
     ]
   },
   afternoon: {
-    label: "Afternoon",
+    labelKey: "delivery.afternoon",
     icon: Sunset,
     color: "text-orange-600",
     bgColor: "bg-orange-50 dark:bg-orange-900/30",
@@ -44,13 +44,13 @@ const TIME_SLOTS = {
     borderColor: "border-orange-300 dark:border-orange-700",
     hoverBg: "hover:bg-orange-100 dark:hover:bg-orange-900/50",
     slots: [
-      { value: "12pm-2pm", label: "12:00 PM - 2:00 PM" },
-      { value: "2pm-4pm", label: "2:00 PM - 4:00 PM" },
-      { value: "4pm-6pm", label: "4:00 PM - 6:00 PM" },
+      { value: "12pm-2pm", label: "12:00 - 14:00" },
+      { value: "2pm-4pm", label: "14:00 - 16:00" },
+      { value: "4pm-6pm", label: "16:00 - 18:00" },
     ]
   },
   evening: {
-    label: "Evening",
+    labelKey: "delivery.evening",
     icon: Moon,
     color: "text-indigo-600",
     bgColor: "bg-indigo-50 dark:bg-indigo-900/30",
@@ -59,20 +59,24 @@ const TIME_SLOTS = {
     borderColor: "border-indigo-300 dark:border-indigo-700",
     hoverBg: "hover:bg-indigo-100 dark:hover:bg-indigo-900/50",
     slots: [
-      { value: "6pm-7pm", label: "6:00 PM - 7:00 PM" },
-      { value: "7pm-8pm", label: "7:00 PM - 8:00 PM" },
-      { value: "8pm-9pm", label: "8:00 PM - 9:00 PM" },
+      { value: "6pm-7pm", label: "18:00 - 19:00" },
+      { value: "7pm-8pm", label: "19:00 - 20:00" },
+      { value: "8pm-9pm", label: "20:00 - 21:00" },
     ]
   }
 };
 
-const preferencesSchema = z.object({
-  preferredTime: z.string().min(1, "Please select a time period"),
+const createPreferencesSchema = (t: (key: string) => string) => z.object({
+  preferredTime: z.string().min(1, t('delivery.selectTimePeriod')),
   preferredTimeSlot: z.string().optional(),
   specialNote: z.string().optional(),
 });
 
-type PreferencesData = z.infer<typeof preferencesSchema>;
+type PreferencesData = {
+  preferredTime: string;
+  preferredTimeSlot?: string;
+  specialNote?: string;
+};
 
 interface UserWithAddresses extends User {
   addresses: Address[];
@@ -85,6 +89,8 @@ export default function DeliveryPreferences() {
   const queryClient = useQueryClient();
   const [activeAddressId, setActiveAddressId] = useState<number | null>(null);
 
+  const preferencesSchema = createPreferencesSchema(t);
+  
   const form = useForm<PreferencesData>({
     resolver: zodResolver(preferencesSchema),
     defaultValues: {
@@ -253,9 +259,9 @@ export default function DeliveryPreferences() {
                       <div className={`p-3 ${period.bgColor} border-b ${period.borderColor}`}>
                         <div className="flex items-center gap-2">
                           <Icon className={`w-5 h-5 ${period.color}`} />
-                          <span className={`font-semibold ${period.color}`}>{period.label}</span>
+                          <span className={`font-semibold ${period.color}`}>{t(period.labelKey)}</span>
                           {isPeriodActive && (
-                            <Check className={`w-4 h-4 ml-auto ${period.color}`} />
+                            <Check className={`w-4 h-4 ms-auto ${period.color}`} />
                           )}
                         </div>
                       </div>

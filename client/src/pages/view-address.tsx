@@ -139,9 +139,9 @@ export default function ViewAddress() {
             <TabsContent value="photos" className="p-4 md:p-6 mt-0">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {[
-                  { label: t('register.building'), icon: Building2, src: address.photoBuilding },
-                  { label: t('register.mainGate'), icon: DoorOpen, src: address.photoGate },
-                  { label: t('register.flatDoor'), icon: Home, src: address.photoDoor }
+                  { label: t('viewAddress.buildingView'), icon: Building2, src: address.photoBuilding },
+                  { label: t('viewAddress.mainGate'), icon: DoorOpen, src: address.photoGate },
+                  { label: t('viewAddress.flatDoor'), icon: Home, src: address.photoDoor }
                 ].map((img, i) => (
                   <div key={i} className="space-y-2">
                     <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
@@ -157,7 +157,7 @@ export default function ViewAddress() {
                       ) : (
                         <div className="text-center text-muted-foreground">
                           <Image className="w-8 h-8 mx-auto mb-1 opacity-30" />
-                          <p className="text-xs">{t('success.noPhoto')}</p>
+                          <p className="text-xs">{t('viewAddress.noPhoto')}</p>
                         </div>
                       )}
                     </div>

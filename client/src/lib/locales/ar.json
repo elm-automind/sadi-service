@@ -352,9 +352,11 @@
     "emailInvalid": "عنوان البريد الإلكتروني غير صالح",
     "passwordRequired": "كلمة المرور مطلوبة",
     "passwordMinLength": "يجب أن تكون كلمة المرور 6 أحرف على الأقل",
+    "passwordsDoNotMatch": "كلمات المرور غير متطابقة",
     "phoneRequired": "رقم الهاتف مطلوب",
     "nameRequired": "الاسم مطلوب",
-    "fieldRequired": "هذا الحقل مطلوب"
+    "fieldRequired": "هذا الحقل مطلوب",
+    "addressMinLength": "يرجى تقديم عنوان مفصل (10 أحرف كحد أدنى)"
   },
   "errors": {
     "somethingWentWrong": "حدث خطأ ما",
@@ -484,6 +486,10 @@
     "specialInstructions": "تعليمات التوصيل الخاصة",
     "specialNotePlaceholder": "مثال: اضغط الجرس مرتين، اترك في الاستقبال إذا لم أكن موجوداً، اتصل قبل الوصول...",
     "voiceInputHint": "اضغط على أيقونة الميكروفون لاستخدام الإدخال الصوتي.",
-    "savePreferences": "حفظ التفضيلات"
+    "savePreferences": "حفظ التفضيلات",
+    "morning": "صباحاً",
+    "afternoon": "ظهراً",
+    "evening": "مساءً",
+    "selectTimePeriod": "يرجى اختيار فترة زمنية"
   }
 }

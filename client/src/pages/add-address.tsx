@@ -24,14 +24,19 @@ import { apiRequest } from "@/lib/queryClient";
 import { processImage, revokePreviewUrl, type ProcessedImage } from "@/lib/image";
 import { LanguageSwitcher } from "@/components/language-switcher";
 
-const addressSchema = z.object({
+const createAddressSchema = (t: (key: string) => string) => z.object({
   label: z.string().optional(),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
-  textAddress: z.string().min(10, "Please provide a detailed address (min 10 chars)"),
+  textAddress: z.string().min(10, t('validation.addressMinLength')),
 });
 
-type AddressData = z.infer<typeof addressSchema>;
+type AddressData = {
+  label?: string;
+  latitude?: number;
+  longitude?: number;
+  textAddress: string;
+};
 
 interface FileUploadBoxProps {
   label: string;
@@ -175,6 +180,8 @@ export default function AddAddress() {
     };
   }, []);
 
+  const addressSchema = createAddressSchema(t);
+  
   const form = useForm<AddressData>({
     resolver: zodResolver(addressSchema),
     defaultValues: {

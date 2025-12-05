@@ -17,20 +17,20 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { LanguageSwitcher } from "@/components/language-switcher";
 
-const emailSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
+const createEmailSchema = (t: (key: string) => string) => z.object({
+  email: z.string().email(t('validation.emailInvalid')),
 });
 
-const resetSchema = z.object({
-  password: z.string().min(6, "Password must be at least 6 characters"),
-  confirmPassword: z.string().min(6, "Please confirm your password"),
+const createResetSchema = (t: (key: string) => string) => z.object({
+  password: z.string().min(6, t('validation.passwordMinLength')),
+  confirmPassword: z.string().min(6, t('validation.passwordRequired')),
 }).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords do not match",
+  message: t('validation.passwordsDoNotMatch'),
   path: ["confirmPassword"],
 });
 
-type EmailData = z.infer<typeof emailSchema>;
-type ResetData = z.infer<typeof resetSchema>;
+type EmailData = { email: string };
+type ResetData = { password: string; confirmPassword: string };
 
 type Step = 'email' | 'otp' | 'password' | 'success';
 
@@ -42,6 +42,9 @@ export default function ResetPassword() {
   const [otp, setOtp] = useState('');
   const { toast } = useToast();
 
+  const emailSchema = createEmailSchema(t);
+  const resetSchema = createResetSchema(t);
+  
   const emailForm = useForm<EmailData>({
     resolver: zodResolver(emailSchema),
   });

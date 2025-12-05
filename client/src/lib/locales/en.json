@@ -352,9 +352,11 @@
     "emailInvalid": "Invalid email address",
     "passwordRequired": "Password is required",
     "passwordMinLength": "Password must be at least 6 characters",
+    "passwordsDoNotMatch": "Passwords do not match",
     "phoneRequired": "Phone number is required",
     "nameRequired": "Name is required",
-    "fieldRequired": "This field is required"
+    "fieldRequired": "This field is required",
+    "addressMinLength": "Please provide a detailed address (min 10 characters)"
   },
   "errors": {
     "somethingWentWrong": "Something went wrong",
@@ -484,6 +486,10 @@
     "specialInstructions": "Special Delivery Instructions",
     "specialNotePlaceholder": "e.g., Ring the doorbell twice, leave at reception if not home, call before arriving...",
     "voiceInputHint": "Tap the microphone icon to use voice input for hands-free typing.",
-    "savePreferences": "Save Preferences"
+    "savePreferences": "Save Preferences",
+    "morning": "Morning",
+    "afternoon": "Afternoon",
+    "evening": "Evening",
+    "selectTimePeriod": "Please select a time period"
   }
 }
