@@ -43,6 +43,7 @@ export interface IStorage {
   getCompanyDrivers(companyProfileId: number): Promise<CompanyDriver[]>;
   getCompanyDriverById(id: number): Promise<CompanyDriver | undefined>;
   getCompanyDriverByDriverId(companyProfileId: number, driverId: string): Promise<CompanyDriver | undefined>;
+  getDriverWithCompanyName(driverId: string): Promise<{ driver: CompanyDriver; companyName: string } | undefined>;
   createCompanyDriver(driver: InsertCompanyDriver): Promise<CompanyDriver>;
   updateCompanyDriver(id: number, updates: Partial<CompanyDriver>): Promise<CompanyDriver | undefined>;
   deleteCompanyDriver(id: number): Promise<boolean>;
@@ -237,6 +238,33 @@ export class DatabaseStorage implements IStorage {
       )
     );
     return driver || undefined;
+  }
+
+  async getDriverWithCompanyName(driverId: string): Promise<{ driver: CompanyDriver; companyName: string } | undefined> {
+    const normalizedDriverId = String(driverId).trim().toLowerCase();
+    
+    const allDrivers = await db.select().from(companyDrivers);
+    const driver = allDrivers.find(d => 
+      String(d.driverId).trim().toLowerCase() === normalizedDriverId && 
+      d.status === "active"
+    );
+    
+    if (!driver) {
+      return undefined;
+    }
+    
+    const [profile] = await db.select().from(companyProfiles).where(
+      eq(companyProfiles.id, driver.companyProfileId)
+    );
+    
+    if (!profile) {
+      return undefined;
+    }
+    
+    return {
+      driver,
+      companyName: profile.companyName
+    };
   }
 
   async createCompanyDriver(insertDriver: InsertCompanyDriver): Promise<CompanyDriver> {

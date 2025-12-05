@@ -1000,17 +1000,28 @@ export async function registerRoutes(httpServer: Server, app: Express) {
   // Check if driver has pending feedback before allowing new lookup
   app.post("/api/driver/check-pending-feedback", async (req, res) => {
     try {
-      const { driverId, companyName } = req.body;
+      const { driverId } = req.body;
       
-      if (!driverId || !companyName) {
-        return res.status(400).json({ message: "Driver ID and company name are required" });
+      if (!driverId) {
+        return res.status(400).json({ message: "Driver ID is required" });
       }
 
+      const normalizedDriverId = String(driverId).trim();
+      
+      // Look up driver by ID to get the company name from database
+      const driverWithCompany = await storage.getDriverWithCompanyName(normalizedDriverId);
+      
+      if (!driverWithCompany) {
+        return res.status(404).json({ 
+          message: "Driver ID not found. Please verify your driver ID is registered with a company.",
+          driverNotFound: true
+        });
+      }
+      
+      const verifiedCompanyName = driverWithCompany.companyName;
+
       // Storage layer handles normalization (case-insensitive comparison)
-      const pendingLookup = await storage.getPendingFeedbackByDriver(
-        String(driverId).trim(),
-        String(companyName).trim()
-      );
+      const pendingLookup = await storage.getPendingFeedbackByDriver(normalizedDriverId, verifiedCompanyName);
       
       if (pendingLookup) {
         // Get the address for context
@@ -1021,11 +1032,12 @@ export async function registerRoutes(httpServer: Server, app: Express) {
             id: pendingLookup.id,
             shipmentNumber: pendingLookup.shipmentNumber,
             addressLabel: address?.label || "Previous delivery"
-          }
+          },
+          companyName: verifiedCompanyName
         });
       }
       
-      res.json({ hasPendingFeedback: false });
+      res.json({ hasPendingFeedback: false, companyName: verifiedCompanyName });
     } catch (error) {
       console.error("Check pending feedback error:", error);
       res.status(500).json({ message: "Internal Server Error" });
@@ -1037,12 +1049,23 @@ export async function registerRoutes(httpServer: Server, app: Express) {
     try {
       const lookupData = shipmentLookupFormSchema.parse(req.body);
       
-      // Normalize inputs for consistent storage and comparison
+      // Normalize driver ID for lookup
       const normalizedDriverId = String(lookupData.driverId).trim();
-      const normalizedCompanyName = String(lookupData.companyName).trim();
+      
+      // Look up driver by ID to get the company name from database
+      const driverWithCompany = await storage.getDriverWithCompanyName(normalizedDriverId);
+      
+      if (!driverWithCompany) {
+        return res.status(404).json({ 
+          message: "Driver ID not found. Please verify your driver ID is registered with a company." 
+        });
+      }
+      
+      // Use the company name from the database, not from user input
+      const verifiedCompanyName = driverWithCompany.companyName;
       
       // Check for pending feedback first (case-insensitive comparison in storage)
-      const pendingLookup = await storage.getPendingFeedbackByDriver(normalizedDriverId, normalizedCompanyName);
+      const pendingLookup = await storage.getPendingFeedbackByDriver(normalizedDriverId, verifiedCompanyName);
       
       if (pendingLookup) {
         return res.status(403).json({
@@ -1068,17 +1091,17 @@ export async function registerRoutes(httpServer: Server, app: Express) {
       // Get fallback contacts for this address
       const fallbackContacts = await storage.getFallbackContactsByAddressId(address.id);
 
-      // Create shipment lookup record with normalized values
+      // Create shipment lookup record with verified company name from database
       const shipmentLookup = await storage.createShipmentLookup({
         shipmentNumber: String(lookupData.shipmentNumber).trim(),
         driverId: normalizedDriverId,
-        companyName: normalizedCompanyName,
+        companyName: verifiedCompanyName,
         addressId: address.id,
         addressDigitalId: address.digitalId,
         status: "pending_feedback"
       });
 
-      // Return address details with user info
+      // Return address details with user info and verified company name
       res.json({
         lookupId: shipmentLookup.id,
         address,
@@ -1087,7 +1110,8 @@ export async function registerRoutes(httpServer: Server, app: Express) {
           phone: user.phone,
           email: user.email
         },
-        fallbackContacts
+        fallbackContacts,
+        companyName: verifiedCompanyName
       });
     } catch (error) {
       if (error instanceof z.ZodError) {

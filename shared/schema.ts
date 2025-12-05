@@ -331,7 +331,6 @@ export const insertShipmentLookupSchema = createInsertSchema(shipmentLookups).pi
 export const shipmentLookupFormSchema = z.object({
   shipmentNumber: z.string().min(1, "Shipment number is required"),
   driverId: z.string().min(1, "Driver ID is required"),
-  companyName: z.string().min(1, "Company name is required"),
   digitalId: z.string().min(1, "Digital ID is required"),
 });
 

@@ -15,7 +15,6 @@ import { useToast } from "@/hooks/use-toast";
 const lookupSchema = z.object({
   shipmentNumber: z.string().min(1, "Shipment number is required"),
   driverId: z.string().min(1, "Driver ID is required"),
-  companyName: z.string().min(1, "Company name is required"),
   digitalId: z.string().min(1, "Digital ID is required"),
 });
 
@@ -51,6 +50,7 @@ interface AddressResult {
     textAddress: string | null;
     isDefault: boolean | null;
   }>;
+  companyName?: string;
 }
 
 interface PendingFeedbackResult {
@@ -60,6 +60,8 @@ interface PendingFeedbackResult {
     shipmentNumber: string;
     addressLabel: string;
   };
+  companyName?: string;
+  driverNotFound?: boolean;
 }
 
 export default function DriverLookup() {
@@ -73,19 +75,21 @@ export default function DriverLookup() {
     defaultValues: {
       shipmentNumber: "",
       driverId: "",
-      companyName: "",
       digitalId: "",
     },
   });
 
   const checkPendingMutation = useMutation({
-    mutationFn: async (data: { driverId: string; companyName: string }) => {
+    mutationFn: async (data: { driverId: string }) => {
       const res = await fetch("/api/driver/check-pending-feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-      if (!res.ok) throw new Error("Failed to check pending feedback");
+      if (!res.ok) {
+        const error = await res.json();
+        throw { ...error, status: res.status };
+      }
       return res.json() as Promise<PendingFeedbackResult>;
     },
   });
@@ -136,22 +140,37 @@ export default function DriverLookup() {
   });
 
   const onSubmit = async (data: LookupFormValues) => {
-    const pendingCheck = await checkPendingMutation.mutateAsync({
-      driverId: data.driverId,
-      companyName: data.companyName,
-    });
-
-    if (pendingCheck.hasPendingFeedback) {
-      setPendingFeedback(pendingCheck);
-      toast({
-        title: "Feedback Required",
-        description: "Please provide feedback for your previous delivery first.",
-        variant: "destructive",
+    try {
+      const pendingCheck = await checkPendingMutation.mutateAsync({
+        driverId: data.driverId,
       });
-      return;
-    }
 
-    lookupMutation.mutate(data);
+      if (pendingCheck.hasPendingFeedback) {
+        setPendingFeedback(pendingCheck);
+        toast({
+          title: "Feedback Required",
+          description: "Please provide feedback for your previous delivery first.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      lookupMutation.mutate(data);
+    } catch (error: any) {
+      if (error.driverNotFound) {
+        toast({
+          title: "Driver Not Found",
+          description: error.message || "Please verify your driver ID is registered with a company.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to verify driver",
+          variant: "destructive",
+        });
+      }
+    }
   };
 
   const goToFeedback = () => {
@@ -223,20 +242,6 @@ export default function DriverLookup() {
                         <FormLabel>Driver ID</FormLabel>
                         <FormControl>
                           <Input placeholder="Your driver ID" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="companyName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Company Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Your company name" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
