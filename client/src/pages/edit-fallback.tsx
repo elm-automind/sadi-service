@@ -4,6 +4,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useDropzone } from "react-dropzone";
+import { useTranslation } from "react-i18next";
 import { 
   MapPin, Camera, CheckCircle2, ChevronRight, ChevronLeft, 
   Upload, Users, Phone, User as UserIcon, AlertTriangle,
@@ -132,6 +133,7 @@ const TIME_SLOTS = [
 ];
 
 export default function EditFallback() {
+  const { t } = useTranslation();
   const params = useParams<{ id: string }>();
   const contactId = parseInt(params.id || "0");
   const [, setLocation] = useLocation();

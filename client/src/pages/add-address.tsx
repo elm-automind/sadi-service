@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useLocation, Link } from "wouter";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslation } from "react-i18next";
 import * as z from "zod";
 import { useDropzone } from "react-dropzone";
 import { 
@@ -21,8 +22,8 @@ import { VoiceInput } from "@/components/voice-input";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { processImage, revokePreviewUrl, type ProcessedImage } from "@/lib/image";
+import { LanguageSwitcher } from "@/components/language-switcher";
 
-// --- Schema ---
 const addressSchema = z.object({
   label: z.string().optional(),
   latitude: z.number().optional(),
@@ -39,9 +40,10 @@ interface FileUploadBoxProps {
   processedImage: ProcessedImage | null;
   onRemove: () => void;
   isProcessing?: boolean;
+  t: (key: string) => string;
 }
 
-const FileUploadBox = ({ label, icon: Icon, onDrop, processedImage, onRemove, isProcessing }: FileUploadBoxProps) => {
+const FileUploadBox = ({ label, icon: Icon, onDrop, processedImage, onRemove, isProcessing, t }: FileUploadBoxProps) => {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
     onDrop,
     maxFiles: 1,
@@ -65,13 +67,14 @@ const FileUploadBox = ({ label, icon: Icon, onDrop, processedImage, onRemove, is
               e.stopPropagation();
               onRemove();
             }}
-            className="absolute top-1 right-1 p-1 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-md transition-colors"
+            className="absolute top-1 end-1 p-1 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-md transition-colors"
             data-testid={`remove-${label.toLowerCase().replace(' ', '-')}`}
           >
             <X className="w-3 h-3" />
           </button>
-          <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[10px] p-1 text-center truncate">
-            {processedImage.originalName}
+          <div {...getRootProps()} className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[10px] p-1 text-center cursor-pointer hover:bg-black/70">
+            <input {...getInputProps()} />
+            {t('common.clickToReplace')}
           </div>
         </div>
       ) : (
@@ -88,7 +91,7 @@ const FileUploadBox = ({ label, icon: Icon, onDrop, processedImage, onRemove, is
           {isProcessing ? (
             <>
               <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-              <p className="text-xs text-muted-foreground">Compressing...</p>
+              <p className="text-xs text-muted-foreground">{t('common.compressing')}</p>
             </>
           ) : (
             <>
@@ -96,7 +99,7 @@ const FileUploadBox = ({ label, icon: Icon, onDrop, processedImage, onRemove, is
                 <Icon className="w-4 h-4 md:w-5 md:h-5 text-muted-foreground" />
               </div>
               <p className="text-xs text-muted-foreground">
-                {isDragActive ? "Drop here" : "Tap to upload"}
+                {isDragActive ? t('common.dropHere') : t('common.tapToUpload')}
               </p>
             </>
           )}
@@ -107,6 +110,7 @@ const FileUploadBox = ({ label, icon: Icon, onDrop, processedImage, onRemove, is
 };
 
 export default function AddAddress() {
+  const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -117,7 +121,6 @@ export default function AddAddress() {
     door?: ProcessedImage;
   }>({});
   
-  // Track images in ref for cleanup on unmount
   const imagesRef = useRef(images);
   useEffect(() => {
     imagesRef.current = images;
@@ -136,7 +139,6 @@ export default function AddAddress() {
     try {
       const processed = await processImage(files[0]);
       setImages(p => {
-        // Revoke existing preview URL before replacing
         if (p[type]) {
           revokePreviewUrl(p[type]!.previewUrl);
         }
@@ -145,8 +147,8 @@ export default function AddAddress() {
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Image Error",
-        description: "Failed to process image. Please try again."
+        title: t('register.imageError'),
+        description: t('register.imageProcessingFailed')
       });
     } finally {
       setProcessing(p => ({ ...p, [type]: false }));
@@ -167,7 +169,6 @@ export default function AddAddress() {
 
   useEffect(() => {
     return () => {
-      // Use ref to get latest images on unmount
       Object.values(imagesRef.current).forEach(img => {
         if (img) revokePreviewUrl(img.previewUrl);
       });
@@ -182,13 +183,11 @@ export default function AddAddress() {
     }
   });
 
-  // Check Auth
   const { data: user, isLoading } = useQuery({
     queryKey: ["/api/user"],
     retry: false,
   });
 
-  // Redirect if not logged in
   if (!isLoading && !user) {
     setLocation("/login");
   }
@@ -209,19 +208,17 @@ export default function AddAddress() {
     },
     onSuccess: (data) => {
        toast({
-        title: "Address Added!",
-        description: `Digital ID ${data.digitalId} created successfully.`,
+        title: t('address.addressAdded'),
+        description: t('address.digitalIdCreated', { digitalId: data.digitalId }),
       });
-      // Invalidate user query to refresh dashboard list
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-      // Navigate to view the new address
       setLocation(`/view/${data.digitalId}`);
     },
     onError: (error: any) => {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: error.message || "Failed to add address"
+        title: t('errors.somethingWentWrong'),
+        description: error.message || t('errors.somethingWentWrong')
       });
     }
   });
@@ -230,40 +227,41 @@ export default function AddAddress() {
     addressMutation.mutate(data);
   };
 
-  if (isLoading) return <div className="flex justify-center p-8">Loading...</div>;
+  if (isLoading) return <div className="flex justify-center p-8">{t('common.loading')}</div>;
 
   return (
     <div className="min-h-screen bg-muted/30 p-3 md:p-8 flex justify-center items-start pt-6 md:pt-20 relative">
-      <PageNavigation className="absolute top-4 left-4" />
+      <PageNavigation className="absolute top-4 start-4" />
+      <div className="absolute top-4 end-4">
+        <LanguageSwitcher />
+      </div>
 
       <Card className="w-full max-w-3xl shadow-xl border-border/60 bg-card/95 backdrop-blur-sm">
         <CardHeader className="border-b border-border/40 pb-4 md:pb-6">
           <div>
-            <CardTitle className="text-xl md:text-2xl font-bold text-primary">Add New Address</CardTitle>
-            <CardDescription className="text-xs md:text-sm">Register a new location for your deliveries.</CardDescription>
+            <CardTitle className="text-xl md:text-2xl font-bold text-primary">{t('address.addNewAddress')}</CardTitle>
+            <CardDescription className="text-xs md:text-sm">{t('address.registerNewLocation')}</CardDescription>
           </div>
         </CardHeader>
 
         <CardContent className="p-4 md:p-6">
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <div className="space-y-6 md:space-y-8">
-              {/* Address Label */}
               <div className="space-y-2">
-                <Label htmlFor="label">Address Name</Label>
+                <Label htmlFor="label">{t('register.addressName')}</Label>
                 <Input 
                   id="label"
-                  placeholder="e.g., Home, Office, Parents House..."
+                  placeholder={t('register.addressNamePlaceholder')}
                   {...form.register("label")}
                   data-testid="input-address-label"
                 />
-                <p className="text-xs text-muted-foreground">Give this address a friendly name to identify it easily</p>
+                <p className="text-xs text-muted-foreground">{t('register.addressNameHint')}</p>
               </div>
 
-              {/* Map Section */}
               <div className="space-y-3">
                 <Label className="flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-primary" />
-                  Map Location
+                  {t('register.mapLocation')}
                 </Label>
                 <div className="overflow-hidden border-2 border-muted hover:border-primary/20 transition-colors rounded-lg">
                   <AddressMap 
@@ -276,12 +274,11 @@ export default function AddAddress() {
                     }}
                   />
                 </div>
-                <p className="text-xs text-muted-foreground text-right">Tap on the map to pin your location</p>
+                <p className="text-xs text-muted-foreground text-end">{t('register.tapToPin')}</p>
               </div>
 
-              {/* Text Address */}
               <div className="space-y-2">
-                <Label htmlFor="textAddress">Detailed Address</Label>
+                <Label htmlFor="textAddress">{t('register.detailedAddress')}</Label>
                 <Controller
                   control={form.control}
                   name="textAddress"
@@ -289,7 +286,7 @@ export default function AddAddress() {
                     <VoiceInput 
                       as="textarea"
                       id="textAddress" 
-                      placeholder="Building No., Street Name, District, Landmarks..." 
+                      placeholder={t('register.addressPlaceholder')}
                       className="resize-none h-24"
                       {...field} 
                     />
@@ -300,45 +297,46 @@ export default function AddAddress() {
 
               <Separator />
 
-              {/* Photos Grid */}
               <div className="space-y-4">
                 <h3 className="text-sm font-semibold flex items-center gap-2 text-primary">
                   <Camera className="w-4 h-4" />
-                  Location Photos
+                  {t('register.locationPhotos')}
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
                   <FileUploadBox 
-                    label="Building" 
+                    label={t('register.building')} 
                     icon={Upload} 
                     processedImage={images.building || null}
                     onDrop={(f) => handleImageUpload('building', f)}
                     onRemove={() => handleRemoveImage('building')}
                     isProcessing={processing.building}
+                    t={t}
                   />
                   <FileUploadBox 
-                    label="Main Gate" 
+                    label={t('register.mainGate')} 
                     icon={Upload} 
                     processedImage={images.gate || null}
                     onDrop={(f) => handleImageUpload('gate', f)}
                     onRemove={() => handleRemoveImage('gate')}
                     isProcessing={processing.gate}
+                    t={t}
                   />
                   <FileUploadBox 
-                    label="Flat Door" 
+                    label={t('register.flatDoor')} 
                     icon={Upload} 
                     processedImage={images.door || null}
                     onDrop={(f) => handleImageUpload('door', f)}
                     onRemove={() => handleRemoveImage('door')}
                     isProcessing={processing.door}
+                    t={t}
                   />
                 </div>
               </div>
             </div>
 
-            {/* Submit Button */}
             <div className="flex justify-end mt-8 pt-4 border-t border-border/50">
               <Button type="submit" className="w-32 md:w-40 bg-primary hover:bg-primary/90" disabled={addressMutation.isPending}>
-                 {addressMutation.isPending ? "Saving..." : "Save Address"} <CheckCircle2 className="w-4 h-4 ml-2" />
+                 {addressMutation.isPending ? t('common.saving') : t('address.saveAddress')} <CheckCircle2 className="w-4 h-4 ms-2" />
               </Button>
             </div>
           </form>

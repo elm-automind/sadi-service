@@ -1,5 +1,6 @@
 import { useRoute, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -14,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { FallbackContact } from "@shared/schema";
 
 export default function ViewFallback() {
+  const { t } = useTranslation();
   const [, params] = useRoute("/view-fallback/:id");
   const contactId = params?.id ? parseInt(params.id) : null;
 
@@ -28,7 +30,7 @@ export default function ViewFallback() {
       <div className="min-h-screen bg-muted/30 flex items-center justify-center p-4">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Loading fallback contact...</p>
+          <p className="mt-4 text-muted-foreground">{t('common.loading')}</p>
         </div>
       </div>
     );
@@ -43,13 +45,13 @@ export default function ViewFallback() {
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Users className="w-8 h-8 text-red-500" />
           </div>
-          <h1 className="text-xl font-bold text-foreground mb-2">Contact Not Found</h1>
+          <h1 className="text-xl font-bold text-foreground mb-2">{t('fallback.contactNotFound')}</h1>
           <p className="text-muted-foreground text-sm mb-6">
-            This fallback contact does not exist or has been removed.
+            {t('fallback.contactNotFoundDesc')}
           </p>
           <Link href="/">
             <Button>
-              <Home className="w-4 h-4 mr-2" /> Go Home
+              <Home className="w-4 h-4 mr-2" /> {t('common.goHome')}
             </Button>
           </Link>
         </Card>
@@ -93,7 +95,7 @@ export default function ViewFallback() {
               )}
               {contact.requiresExtraFee && (
                 <Badge className="bg-orange-100 text-orange-700 border-orange-200 gap-1">
-                  <DollarSign className="w-3 h-3" /> Extra Fee Required
+                  <DollarSign className="w-3 h-3" /> {t('fallback.extraFeeRequired')}
                 </Badge>
               )}
             </div>
@@ -108,21 +110,21 @@ export default function ViewFallback() {
                 data-testid="tab-location"
                 className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 data-[state=active]:bg-transparent py-3 px-6"
               >
-                <MapPin className="w-4 h-4 mr-2" /> Location
+                <MapPin className="w-4 h-4 mr-2" /> {t('viewAddress.location')}
               </TabsTrigger>
               <TabsTrigger 
                 value="photos" 
                 data-testid="tab-photos"
                 className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 data-[state=active]:bg-transparent py-3 px-6"
               >
-                <Image className="w-4 h-4 mr-2" /> Photos
+                <Image className="w-4 h-4 mr-2" /> {t('viewAddress.photos')}
               </TabsTrigger>
               <TabsTrigger 
                 value="details" 
                 data-testid="tab-details"
                 className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 data-[state=active]:bg-transparent py-3 px-6"
               >
-                <FileText className="w-4 h-4 mr-2" /> Details
+                <FileText className="w-4 h-4 mr-2" /> {t('viewAddress.details')}
               </TabsTrigger>
             </TabsList>
 
@@ -143,7 +145,7 @@ export default function ViewFallback() {
                     <div>
                       <p className="font-medium text-foreground">{contact.textAddress}</p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Coordinates: {contact.lat.toFixed(6)}, {contact.lng.toFixed(6)}
+                        {t('viewAddress.coordinates')}: {contact.lat.toFixed(6)}, {contact.lng.toFixed(6)}
                       </p>
                     </div>
                   </div>
@@ -151,7 +153,7 @@ export default function ViewFallback() {
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
                   <MapPin className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                  <p>No location information available</p>
+                  <p>{t('viewAddress.noLocation')}</p>
                 </div>
               )}
             </TabsContent>
@@ -160,9 +162,9 @@ export default function ViewFallback() {
             <TabsContent value="photos" className="p-4 md:p-6 mt-0">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {[
-                  { label: "Building View", icon: Building2, src: contact.photoBuilding },
-                  { label: "Main Gate", icon: DoorOpen, src: contact.photoGate },
-                  { label: "Flat Door", icon: Home, src: contact.photoDoor }
+                  { label: t('viewAddress.buildingView'), icon: Building2, src: contact.photoBuilding },
+                  { label: t('viewAddress.mainGate'), icon: DoorOpen, src: contact.photoGate },
+                  { label: t('viewAddress.flatDoor'), icon: Home, src: contact.photoDoor }
                 ].map((img, i) => (
                   <div key={i} className="space-y-2">
                     <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
@@ -178,7 +180,7 @@ export default function ViewFallback() {
                       ) : (
                         <div className="text-center text-muted-foreground">
                           <Image className="w-8 h-8 mx-auto mb-1 opacity-30" />
-                          <p className="text-xs">No photo</p>
+                          <p className="text-xs">{t('viewAddress.noPhoto')}</p>
                         </div>
                       )}
                     </div>
@@ -192,20 +194,20 @@ export default function ViewFallback() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="p-4 bg-muted/50 rounded-lg border border-border/50">
                   <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-2">
-                    <User className="w-4 h-4" /> Relationship
+                    <User className="w-4 h-4" /> {t('fallback.relationship')}
                   </div>
                   <p className="font-medium text-foreground capitalize">
-                    {contact.relationship || "Not specified"}
+                    {contact.relationship || t('common.notSpecified')}
                   </p>
                 </div>
                 <div className="p-4 bg-muted/50 rounded-lg border border-border/50">
                   <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-2">
-                    <Navigation className="w-4 h-4" /> Distance
+                    <Navigation className="w-4 h-4" /> {t('fallback.distance')}
                   </div>
                   <p className="font-medium text-foreground">
                     {contact.distanceKm !== null 
-                      ? `${contact.distanceKm.toFixed(2)} km from primary address`
-                      : "Not calculated"}
+                      ? t('fallback.distanceFromPrimary', { distance: contact.distanceKm.toFixed(2) })
+                      : t('fallback.notCalculated')}
                   </p>
                 </div>
               </div>
@@ -214,24 +216,24 @@ export default function ViewFallback() {
               {contact.requiresExtraFee && (
                 <div className="p-4 bg-orange-50 dark:bg-orange-900/10 rounded-lg border border-orange-200 dark:border-orange-900/30">
                   <div className="flex items-center gap-2 text-sm font-medium text-orange-700 dark:text-orange-400 mb-3">
-                    <AlertCircle className="w-4 h-4" /> Extended Distance Delivery
+                    <AlertCircle className="w-4 h-4" /> {t('fallback.extendedDistanceDelivery')}
                   </div>
                   <div className="space-y-2 text-sm">
                     <div className="flex items-center gap-2">
                       <Calendar className="w-4 h-4 text-orange-600" />
-                      <span className="text-muted-foreground">Scheduled Date:</span>
-                      <span className="font-medium text-foreground">{contact.scheduledDate || "Not set"}</span>
+                      <span className="text-muted-foreground">{t('fallback.scheduledDate')}:</span>
+                      <span className="font-medium text-foreground">{contact.scheduledDate || t('fallback.notSet')}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Clock className="w-4 h-4 text-orange-600" />
-                      <span className="text-muted-foreground">Time Slot:</span>
-                      <span className="font-medium text-foreground">{contact.scheduledTimeSlot || "Not set"}</span>
+                      <span className="text-muted-foreground">{t('fallback.timeSlot')}:</span>
+                      <span className="font-medium text-foreground">{contact.scheduledTimeSlot || t('fallback.notSet')}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <DollarSign className="w-4 h-4 text-orange-600" />
-                      <span className="text-muted-foreground">Extra Fee:</span>
+                      <span className="text-muted-foreground">{t('fallback.extraFee')}:</span>
                       <span className="font-medium text-foreground">
-                        {contact.extraFeeAcknowledged ? "Acknowledged" : "Pending"}
+                        {contact.extraFeeAcknowledged ? t('fallback.acknowledged') : t('fallback.pending')}
                       </span>
                     </div>
                   </div>
@@ -241,7 +243,7 @@ export default function ViewFallback() {
               {contact.specialNote && (
                 <div className="p-4 bg-yellow-50 dark:bg-yellow-900/10 rounded-lg border border-yellow-200 dark:border-yellow-900/30">
                   <div className="flex items-center gap-2 text-sm font-medium text-yellow-700 dark:text-yellow-400 mb-2">
-                    <FileText className="w-4 h-4" /> Special Notes
+                    <FileText className="w-4 h-4" /> {t('fallback.specialNotes')}
                   </div>
                   <p className="text-foreground">{contact.specialNote}</p>
                 </div>
@@ -255,11 +257,11 @@ export default function ViewFallback() {
           <div className="p-4 md:p-6 bg-muted/30 flex justify-between items-center">
             <div className="text-sm text-muted-foreground">
               <Users className="w-4 h-4 inline mr-1" />
-              Fallback Contact
+              {t('fallback.fallbackContact')}
             </div>
             <Link href="/dashboard">
               <Button variant="outline" className="gap-2">
-                <ArrowLeft className="w-4 h-4" /> Back to Dashboard
+                <ArrowLeft className="w-4 h-4" /> {t('common.backToDashboard')}
               </Button>
             </Link>
           </div>

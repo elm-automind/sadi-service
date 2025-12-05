@@ -4,6 +4,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useDropzone } from "react-dropzone";
+import { useTranslation } from "react-i18next";
 import { 
   MapPin, Camera, CheckCircle2, 
   Upload, X, Loader2
@@ -110,6 +111,7 @@ const FileUploadBox = ({ label, icon: Icon, onDrop, processedImage, existingUrl,
 };
 
 export default function EditAddress() {
+  const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const params = useParams<{ id: string }>();
   const addressId = params.id ? parseInt(params.id) : null;
@@ -251,8 +253,8 @@ export default function EditAddress() {
     },
     onSuccess: (data) => {
       toast({
-        title: "Address Updated!",
-        description: "Your address has been updated successfully.",
+        title: t('address.addressAdded'),
+        description: t('common.success'),
       });
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       setLocation("/dashboard");
@@ -260,8 +262,8 @@ export default function EditAddress() {
     onError: (error: any) => {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: error.message || "Failed to update address"
+        title: t('common.error'),
+        description: error.message || t('errors.somethingWentWrong')
       });
     }
   });
@@ -270,8 +272,8 @@ export default function EditAddress() {
     updateMutation.mutate(data);
   };
 
-  if (userLoading) return <div className="flex justify-center p-8">Loading...</div>;
-  if (!address) return <div className="flex justify-center p-8">Address not found</div>;
+  if (userLoading) return <div className="flex justify-center p-8">{t('common.loading')}</div>;
+  if (!address) return <div className="flex justify-center p-8">{t('viewAddress.addressNotFound')}</div>;
 
   return (
     <div className="min-h-screen bg-muted/30 p-3 md:p-8 flex justify-center items-start pt-6 md:pt-20 relative">
@@ -280,8 +282,8 @@ export default function EditAddress() {
       <Card className="w-full max-w-3xl shadow-xl border-border/60 bg-card/95 backdrop-blur-sm">
         <CardHeader className="border-b border-border/40 pb-4 md:pb-6">
           <div>
-            <CardTitle className="text-xl md:text-2xl font-bold text-primary">Edit Address</CardTitle>
-            <CardDescription className="text-xs md:text-sm">Update your delivery address details.</CardDescription>
+            <CardTitle className="text-xl md:text-2xl font-bold text-primary">{t('address.editAddress')}</CardTitle>
+            <CardDescription className="text-xs md:text-sm">{t('address.registerNewLocation')}</CardDescription>
           </div>
         </CardHeader>
 
@@ -289,20 +291,20 @@ export default function EditAddress() {
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <div className="space-y-6 md:space-y-8">
               <div className="space-y-2">
-                <Label htmlFor="label">Address Name</Label>
+                <Label htmlFor="label">{t('register.addressName')}</Label>
                 <Input 
                   id="label"
-                  placeholder="e.g., Home, Office, Parents House..."
+                  placeholder={t('register.addressNamePlaceholder')}
                   {...form.register("label")}
                   data-testid="input-address-label"
                 />
-                <p className="text-xs text-muted-foreground">Give this address a friendly name to identify it easily</p>
+                <p className="text-xs text-muted-foreground">{t('register.addressNameHint')}</p>
               </div>
 
               <div className="space-y-3">
                 <Label className="flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-primary" />
-                  Map Location
+                  {t('register.mapLocation')}
                 </Label>
                 <div className="overflow-hidden border-2 border-muted hover:border-primary/20 transition-colors rounded-lg">
                   <AddressMap 
@@ -317,11 +319,11 @@ export default function EditAddress() {
                     }}
                   />
                 </div>
-                <p className="text-xs text-muted-foreground text-right">Tap on the map to update location</p>
+                <p className="text-xs text-muted-foreground text-right">{t('register.tapToPin')}</p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="textAddress">Detailed Address</Label>
+                <Label htmlFor="textAddress">{t('register.detailedAddress')}</Label>
                 <Controller
                   control={form.control}
                   name="textAddress"
@@ -329,7 +331,7 @@ export default function EditAddress() {
                     <VoiceInput 
                       as="textarea"
                       id="textAddress" 
-                      placeholder="Building No., Street Name, District, Landmarks..." 
+                      placeholder={t('register.addressPlaceholder')}
                       className="resize-none h-24"
                       {...field} 
                     />
@@ -343,11 +345,11 @@ export default function EditAddress() {
               <div className="space-y-4">
                 <h3 className="text-sm font-semibold flex items-center gap-2 text-primary">
                   <Camera className="w-4 h-4" />
-                  Location Photos
+                  {t('register.locationPhotos')}
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
                   <FileUploadBox 
-                    label="Building" 
+                    label={t('register.building')}
                     icon={Upload} 
                     processedImage={images.building || null}
                     existingUrl={existingImages.building}
@@ -356,7 +358,7 @@ export default function EditAddress() {
                     isProcessing={processing.building}
                   />
                   <FileUploadBox 
-                    label="Main Gate" 
+                    label={t('register.mainGate')}
                     icon={Upload} 
                     processedImage={images.gate || null}
                     existingUrl={existingImages.gate}
@@ -365,7 +367,7 @@ export default function EditAddress() {
                     isProcessing={processing.gate}
                   />
                   <FileUploadBox 
-                    label="Flat Door" 
+                    label={t('register.flatDoor')}
                     icon={Upload} 
                     processedImage={images.door || null}
                     existingUrl={existingImages.door}
@@ -385,10 +387,10 @@ export default function EditAddress() {
                 {updateMutation.isPending ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Saving...
+                    {t('common.saving')}
                   </>
                 ) : (
-                  "Save Changes"
+                  t('common.save')
                 )}
               </Button>
             </div>

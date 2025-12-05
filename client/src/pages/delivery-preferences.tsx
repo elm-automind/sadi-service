@@ -3,6 +3,7 @@ import { useLocation, Link } from "wouter";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useTranslation } from "react-i18next";
 import { Clock, FileText, CheckCircle2, Settings, Sun, Sunset, Moon, Check } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { User, Address } from "@shared/schema";
@@ -78,6 +79,7 @@ interface UserWithAddresses extends User {
 }
 
 export default function DeliveryPreferences() {
+  const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -130,15 +132,15 @@ export default function DeliveryPreferences() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       toast({
-        title: "Preferences Updated",
-        description: "Your delivery preferences have been saved.",
+        title: t('delivery.preferencesUpdated'),
+        description: t('delivery.preferencesSaved'),
       });
       setLocation("/dashboard");
     },
     onError: (error: any) => {
       toast({
         variant: "destructive",
-        title: "Error",
+        title: t('common.error'),
         description: error.message
       });
     }
@@ -162,7 +164,7 @@ export default function DeliveryPreferences() {
     return null;
   };
 
-  if (isLoading) return <div className="p-8 text-center">Loading...</div>;
+  if (isLoading) return <div className="p-8 text-center">{t('common.loading')}</div>;
   if (!user) return null;
 
   return (
@@ -176,14 +178,14 @@ export default function DeliveryPreferences() {
               <Settings className="w-6 h-6" />
             </div>
             <div>
-              <CardTitle className="text-xl font-bold text-primary">Delivery Preferences</CardTitle>
-              <CardDescription>Set your preferred delivery times and special instructions.</CardDescription>
+              <CardTitle className="text-xl font-bold text-primary">{t('delivery.deliveryPreferences')}</CardTitle>
+              <CardDescription>{t('delivery.setPreferences')}</CardDescription>
             </div>
           </div>
 
           {user.addresses.length > 0 && (
             <div className="mt-4">
-              <Label className="text-sm">Select Address</Label>
+              <Label className="text-sm">{t('address.selectAddress')}</Label>
               <Select 
                 value={activeAddressId?.toString()} 
                 onValueChange={(v) => {
@@ -201,7 +203,7 @@ export default function DeliveryPreferences() {
                 }}
               >
                 <SelectTrigger className="mt-2" data-testid="select-address">
-                  <SelectValue placeholder="Choose an address" />
+                  <SelectValue placeholder={t('address.chooseAddress')} />
                 </SelectTrigger>
                 <SelectContent>
                   {user.addresses.map((addr) => (
@@ -209,7 +211,7 @@ export default function DeliveryPreferences() {
                       <div className="flex items-center gap-2">
                         <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">{addr.digitalId}</span>
                         <span className="truncate max-w-[200px]">{addr.textAddress.substring(0, 30)}{addr.textAddress.length > 30 ? '...' : ''}</span>
-                        {addr.isPrimary && <span className="text-xs text-primary font-medium">(Primary)</span>}
+                        {addr.isPrimary && <span className="text-xs text-primary font-medium">({t('address.primary')})</span>}
                       </div>
                     </SelectItem>
                   ))}
@@ -225,10 +227,10 @@ export default function DeliveryPreferences() {
             {/* Time Period Selection - All slots always visible */}
             <div className="space-y-4">
               <Label className="text-base font-semibold flex items-center gap-2">
-                <Clock className="w-4 h-4" /> Preferred Delivery Time
+                <Clock className="w-4 h-4" /> {t('delivery.preferredDeliveryTime')}
               </Label>
               <p className="text-sm text-muted-foreground">
-                Select your preferred time slot. The selected time will be highlighted.
+                {t('delivery.selectTimeSlot')}
               </p>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -296,7 +298,7 @@ export default function DeliveryPreferences() {
             {/* Special Notes */}
             <div className="space-y-3">
               <Label htmlFor="specialNote" className="text-base font-semibold flex items-center gap-2">
-                <FileText className="w-4 h-4" /> Special Delivery Instructions
+                <FileText className="w-4 h-4" /> {t('delivery.specialInstructions')}
               </Label>
               <Controller
                 control={form.control}
@@ -305,7 +307,7 @@ export default function DeliveryPreferences() {
                   <VoiceInput 
                     as="textarea"
                     id="specialNote" 
-                    placeholder="e.g., Ring the doorbell twice, leave at reception if not home, call before arriving, beware of dog..." 
+                    placeholder={t('delivery.specialNotePlaceholder')}
                     className="h-32 resize-none"
                     {...field}
                     value={field.value || ""}
@@ -313,18 +315,18 @@ export default function DeliveryPreferences() {
                 )}
               />
               <p className="text-xs text-muted-foreground">
-                Tap the microphone icon to use voice input for hands-free typing.
+                {t('delivery.voiceInputHint')}
               </p>
             </div>
 
             <div className="pt-6 border-t border-border/40 flex flex-col sm:flex-row gap-3 justify-end">
               <Link href="/dashboard">
                 <Button type="button" variant="outline" className="w-full sm:w-auto">
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
               </Link>
               <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={updateMutation.isPending}>
-                {updateMutation.isPending ? "Saving..." : "Save Preferences"} <CheckCircle2 className="w-4 h-4 ml-2" />
+                {updateMutation.isPending ? t('common.saving') : t('delivery.savePreferences')} <CheckCircle2 className="w-4 h-4 ml-2" />
               </Button>
             </div>
           </form>

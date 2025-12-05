@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLocation, Link } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslation } from "react-i18next";
 import * as z from "zod";
 import { Mail, Lock, ArrowRight, ArrowLeft, CheckCircle, KeyRound } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
@@ -14,6 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { LanguageSwitcher } from "@/components/language-switcher";
 
 const emailSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -33,6 +35,7 @@ type ResetData = z.infer<typeof resetSchema>;
 type Step = 'email' | 'otp' | 'password' | 'success';
 
 export default function ResetPassword() {
+  const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
@@ -57,16 +60,16 @@ export default function ResetPassword() {
         setEmail(emailForm.getValues('email'));
         setStep('otp');
         toast({
-          title: "OTP Sent",
-          description: "Check your email for the 6-digit code",
+          title: t('auth.otpSent'),
+          description: t('auth.checkEmailOtp'),
         });
       }
     },
     onError: (error: any) => {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: error.message || "Failed to send OTP. Please try again."
+        title: t('errors.somethingWentWrong'),
+        description: error.message || t('errors.somethingWentWrong')
       });
     }
   });
@@ -84,8 +87,8 @@ export default function ResetPassword() {
     onError: (error: any) => {
       toast({
         variant: "destructive",
-        title: "Invalid OTP",
-        description: error.message || "The code is invalid or expired. Please try again."
+        title: t('auth.invalidOtp'),
+        description: error.message || t('auth.invalidOtpDesc')
       });
       setOtp('');
     }
@@ -103,15 +106,15 @@ export default function ResetPassword() {
     onSuccess: () => {
       setStep('success');
       toast({
-        title: "Password Reset",
-        description: "Your password has been reset successfully.",
+        title: t('auth.passwordReset'),
+        description: t('auth.passwordResetSuccess'),
       });
     },
     onError: (error: any) => {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: error.message || "Failed to reset password. Please try again."
+        title: t('errors.somethingWentWrong'),
+        description: error.message || t('errors.somethingWentWrong')
       });
     }
   });
@@ -123,29 +126,31 @@ export default function ResetPassword() {
     }
   };
 
-  // Success Screen
   if (step === 'success') {
     return (
       <div className="min-h-screen bg-muted/30 p-4 flex items-center justify-center relative">
-        <PageNavigation className="absolute top-4 left-4" />
+        <PageNavigation className="absolute top-4 start-4" />
+        <div className="absolute top-4 end-4">
+          <LanguageSwitcher />
+        </div>
 
         <Card className="w-full max-w-md shadow-xl border-border/60 bg-card/95 backdrop-blur-sm">
           <CardHeader className="space-y-1 text-center">
             <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
               <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
             </div>
-            <CardTitle className="text-2xl font-bold">Password Reset Complete</CardTitle>
+            <CardTitle className="text-2xl font-bold">{t('auth.passwordResetComplete')}</CardTitle>
             <CardDescription>
-              Your password has been reset successfully.
+              {t('auth.passwordResetSuccess')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground text-center">
-              You can now log in with your new password.
+              {t('auth.canLoginNewPassword')}
             </p>
             <Link href="/login">
               <Button className="w-full" data-testid="button-go-login">
-                Go to Login <ArrowRight className="ml-2 w-4 h-4" />
+                {t('auth.goToLogin')} <ArrowRight className="ms-2 w-4 h-4 rtl:rotate-180" />
               </Button>
             </Link>
           </CardContent>
@@ -154,28 +159,30 @@ export default function ResetPassword() {
     );
   }
 
-  // Password Step
   if (step === 'password') {
     return (
       <div className="min-h-screen bg-muted/30 p-4 flex items-center justify-center relative">
-        <PageNavigation className="absolute top-4 left-4" />
+        <PageNavigation className="absolute top-4 start-4" />
+        <div className="absolute top-4 end-4">
+          <LanguageSwitcher />
+        </div>
 
         <Card className="w-full max-w-md shadow-xl border-border/60 bg-card/95 backdrop-blur-sm">
           <CardHeader className="space-y-1 text-center">
-            <CardTitle className="text-2xl font-bold text-primary">Create New Password</CardTitle>
-            <CardDescription>Enter your new password below</CardDescription>
+            <CardTitle className="text-2xl font-bold text-primary">{t('auth.createNewPassword')}</CardTitle>
+            <CardDescription>{t('auth.enterNewPassword')}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={resetForm.handleSubmit((data) => resetPasswordMutation.mutate(data))} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="password">New Password</Label>
+                <Label htmlFor="password">{t('auth.newPassword')}</Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Lock className="absolute start-3 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input 
                     id="password" 
                     type="password" 
                     placeholder="••••••" 
-                    className="pl-9"
+                    className="ps-9"
                     data-testid="input-password"
                     {...resetForm.register("password")} 
                   />
@@ -186,14 +193,14 @@ export default function ResetPassword() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Label htmlFor="confirmPassword">{t('auth.confirmPassword')}</Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Lock className="absolute start-3 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input 
                     id="confirmPassword" 
                     type="password" 
                     placeholder="••••••" 
-                    className="pl-9"
+                    className="ps-9"
                     data-testid="input-confirm-password"
                     {...resetForm.register("confirmPassword")} 
                   />
@@ -209,8 +216,8 @@ export default function ResetPassword() {
                 disabled={resetPasswordMutation.isPending}
                 data-testid="button-reset-password"
               >
-                {resetPasswordMutation.isPending ? "Resetting..." : "Reset Password"} 
-                <ArrowRight className="ml-2 w-4 h-4" />
+                {resetPasswordMutation.isPending ? t('common.loading') : t('auth.resetPassword')} 
+                <ArrowRight className="ms-2 w-4 h-4 rtl:rotate-180" />
               </Button>
             </form>
           </CardContent>
@@ -219,20 +226,22 @@ export default function ResetPassword() {
     );
   }
 
-  // OTP Step
   if (step === 'otp') {
     return (
       <div className="min-h-screen bg-muted/30 p-4 flex items-center justify-center relative">
-        <PageNavigation className="absolute top-4 left-4" />
+        <PageNavigation className="absolute top-4 start-4" />
+        <div className="absolute top-4 end-4">
+          <LanguageSwitcher />
+        </div>
 
         <Card className="w-full max-w-md shadow-xl border-border/60 bg-card/95 backdrop-blur-sm">
           <CardHeader className="space-y-1 text-center">
             <div className="mx-auto mb-4 w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
               <KeyRound className="w-6 h-6 text-primary" />
             </div>
-            <CardTitle className="text-2xl font-bold text-primary">Enter OTP</CardTitle>
+            <CardTitle className="text-2xl font-bold text-primary">{t('auth.enterOtp')}</CardTitle>
             <CardDescription>
-              We sent a 6-digit code to <span className="font-medium text-foreground">{email}</span>
+              {t('auth.sentCodeTo')} <span className="font-medium text-foreground">{email}</span>
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -255,14 +264,14 @@ export default function ResetPassword() {
             </div>
 
             <p className="text-sm text-muted-foreground text-center">
-              Didn't receive the code?{" "}
+              {t('auth.didntReceiveCode')}{" "}
               <Button 
                 variant="link" 
                 className="p-0 h-auto font-medium text-primary"
                 onClick={() => sendOtpMutation.mutate({ email })}
                 disabled={sendOtpMutation.isPending}
               >
-                Resend
+                {t('auth.resend')}
               </Button>
             </p>
 
@@ -274,7 +283,7 @@ export default function ResetPassword() {
                 setOtp('');
               }}
             >
-              <ArrowLeft className="mr-2 w-4 h-4" /> Change Email
+              <ArrowLeft className="me-2 w-4 h-4 rtl:rotate-180" /> {t('auth.changeEmail')}
             </Button>
           </CardContent>
         </Card>
@@ -282,27 +291,29 @@ export default function ResetPassword() {
     );
   }
 
-  // Email Step (default)
   return (
     <div className="min-h-screen bg-muted/30 p-4 flex items-center justify-center relative">
-      <PageNavigation className="absolute top-4 left-4" />
+      <PageNavigation className="absolute top-4 start-4" />
+      <div className="absolute top-4 end-4">
+        <LanguageSwitcher />
+      </div>
 
       <Card className="w-full max-w-md shadow-xl border-border/60 bg-card/95 backdrop-blur-sm">
         <CardHeader className="space-y-1 text-center">
-          <CardTitle className="text-2xl font-bold text-primary">Reset Password</CardTitle>
-          <CardDescription>Enter your email to receive a verification code</CardDescription>
+          <CardTitle className="text-2xl font-bold text-primary">{t('auth.resetPassword')}</CardTitle>
+          <CardDescription>{t('auth.enterEmailVerification')}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={emailForm.handleSubmit((data) => sendOtpMutation.mutate(data))} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email Address</Label>
+              <Label htmlFor="email">{t('auth.emailAddress')}</Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Mail className="absolute start-3 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input 
                   id="email" 
                   type="email"
                   placeholder="name@example.com" 
-                  className="pl-9"
+                  className="ps-9"
                   data-testid="input-email"
                   {...emailForm.register("email")} 
                 />
@@ -318,15 +329,15 @@ export default function ResetPassword() {
               disabled={sendOtpMutation.isPending}
               data-testid="button-send-otp"
             >
-              {sendOtpMutation.isPending ? "Sending..." : "Send OTP"} 
-              <ArrowRight className="ml-2 w-4 h-4" />
+              {sendOtpMutation.isPending ? t('common.loading') : t('auth.sendOtp')} 
+              <ArrowRight className="ms-2 w-4 h-4 rtl:rotate-180" />
             </Button>
             
             <div className="text-center text-sm text-muted-foreground pt-4 border-t mt-4">
-              Remember your password?{" "}
+              {t('auth.rememberPassword')}{" "}
               <Link href="/login">
                 <Button variant="link" className="p-0 h-auto font-medium text-primary">
-                  Log In
+                  {t('auth.login')}
                 </Button>
               </Link>
             </div>
