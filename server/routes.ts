@@ -940,6 +940,30 @@ export async function registerRoutes(httpServer: Server, app: Express) {
     }
   });
 
+  // --- Delivery Credit Score Routes ---
+
+  // Get overall delivery stats for the company
+  app.get("/api/company/delivery-stats", requireCompanyAuth, async (req: any, res) => {
+    try {
+      const stats = await storage.getDeliveryStatsByCompany(req.companyProfile.companyName);
+      res.json(stats);
+    } catch (error) {
+      console.error("Get delivery stats error:", error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  });
+
+  // Get address-level delivery stats with credit scores for the company
+  app.get("/api/company/address-delivery-stats", requireCompanyAuth, async (req: any, res) => {
+    try {
+      const stats = await storage.getAddressDeliveryStats(req.companyProfile.companyName);
+      res.json(stats);
+    } catch (error) {
+      console.error("Get address delivery stats error:", error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  });
+
   // --- Public Address View Route (no auth required) ---
   app.get("/api/address/:digitalId", async (req, res) => {
     try {

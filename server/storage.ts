@@ -84,6 +84,26 @@ export interface IStorage {
   createDeliveryOutcome(outcome: InsertDeliveryOutcome): Promise<DeliveryOutcome>;
   getDeliveryOutcomesByAddressDigitalId(addressDigitalId: string): Promise<DeliveryOutcome[]>;
   getDeliveryOutcomesByDriverId(driverId: string): Promise<DeliveryOutcome[]>;
+  
+  getDeliveryStatsByCompany(companyName: string): Promise<{
+    totalDeliveries: number;
+    successfulDeliveries: number;
+    failedDeliveries: number;
+    successRate: number;
+    avgLocationScore: number;
+  }>;
+  getAddressDeliveryStats(companyName: string): Promise<{
+    addressDigitalId: string;
+    totalDeliveries: number;
+    successfulDeliveries: number;
+    failedDeliveries: number;
+    avgLocationScore: number;
+    creditScore: number;
+    lastDeliveryDate: string | null;
+    lat: number | null;
+    lng: number | null;
+    textAddress: string | null;
+  }[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -466,6 +486,122 @@ export class DatabaseStorage implements IStorage {
 
   async getDeliveryOutcomesByDriverId(driverId: string): Promise<DeliveryOutcome[]> {
     return await db.select().from(deliveryOutcomes).where(eq(deliveryOutcomes.driverId, driverId));
+  }
+
+  async getDeliveryStatsByCompany(companyName: string): Promise<{
+    totalDeliveries: number;
+    successfulDeliveries: number;
+    failedDeliveries: number;
+    successRate: number;
+    avgLocationScore: number;
+  }> {
+    const feedbacks = await db.select().from(driverFeedback).where(eq(driverFeedback.companyName, companyName));
+    
+    const totalDeliveries = feedbacks.length;
+    const successfulDeliveries = feedbacks.filter(f => f.deliveryStatus === "delivered").length;
+    const failedDeliveries = feedbacks.filter(f => f.deliveryStatus === "failed").length;
+    const successRate = totalDeliveries > 0 ? (successfulDeliveries / totalDeliveries) * 100 : 0;
+    
+    const locationScores = feedbacks.map(f => f.locationScore).filter(s => s !== null) as number[];
+    const avgLocationScore = locationScores.length > 0 
+      ? locationScores.reduce((a, b) => a + b, 0) / locationScores.length 
+      : 0;
+
+    return {
+      totalDeliveries,
+      successfulDeliveries,
+      failedDeliveries,
+      successRate: Math.round(successRate * 10) / 10,
+      avgLocationScore: Math.round(avgLocationScore * 10) / 10,
+    };
+  }
+
+  async getAddressDeliveryStats(companyName: string): Promise<{
+    addressDigitalId: string;
+    totalDeliveries: number;
+    successfulDeliveries: number;
+    failedDeliveries: number;
+    avgLocationScore: number;
+    creditScore: number;
+    lastDeliveryDate: string | null;
+    lat: number | null;
+    lng: number | null;
+    textAddress: string | null;
+  }[]> {
+    const feedbacks = await db.select().from(driverFeedback).where(eq(driverFeedback.companyName, companyName));
+    
+    const addressMap = new Map<string, {
+      totalDeliveries: number;
+      successfulDeliveries: number;
+      failedDeliveries: number;
+      locationScores: number[];
+      lastDeliveryDate: Date | null;
+    }>();
+
+    for (const feedback of feedbacks) {
+      if (!feedback.addressDigitalId) continue;
+      
+      const existing = addressMap.get(feedback.addressDigitalId) || {
+        totalDeliveries: 0,
+        successfulDeliveries: 0,
+        failedDeliveries: 0,
+        locationScores: [],
+        lastDeliveryDate: null,
+      };
+
+      existing.totalDeliveries++;
+      if (feedback.deliveryStatus === "delivered") existing.successfulDeliveries++;
+      if (feedback.deliveryStatus === "failed") existing.failedDeliveries++;
+      if (feedback.locationScore) existing.locationScores.push(feedback.locationScore);
+      
+      const feedbackDate = feedback.createdAt ? new Date(feedback.createdAt) : null;
+      if (feedbackDate && (!existing.lastDeliveryDate || feedbackDate > existing.lastDeliveryDate)) {
+        existing.lastDeliveryDate = feedbackDate;
+      }
+
+      addressMap.set(feedback.addressDigitalId, existing);
+    }
+
+    const results: {
+      addressDigitalId: string;
+      totalDeliveries: number;
+      successfulDeliveries: number;
+      failedDeliveries: number;
+      avgLocationScore: number;
+      creditScore: number;
+      lastDeliveryDate: string | null;
+      lat: number | null;
+      lng: number | null;
+      textAddress: string | null;
+    }[] = [];
+
+    for (const [addressDigitalId, stats] of Array.from(addressMap.entries())) {
+      const address = await db.select().from(addresses).where(eq(addresses.digitalId, addressDigitalId)).then((rows: Address[]) => rows[0]);
+      
+      const avgLocationScore = stats.locationScores.length > 0
+        ? stats.locationScores.reduce((a, b) => a + b, 0) / stats.locationScores.length
+        : 0;
+
+      const successRate = stats.totalDeliveries > 0 
+        ? (stats.successfulDeliveries / stats.totalDeliveries) * 100 
+        : 0;
+      const creditScore = Math.round((successRate * 0.6) + (avgLocationScore * 8));
+
+      results.push({
+        addressDigitalId,
+        totalDeliveries: stats.totalDeliveries,
+        successfulDeliveries: stats.successfulDeliveries,
+        failedDeliveries: stats.failedDeliveries,
+        avgLocationScore: Math.round(avgLocationScore * 10) / 10,
+        creditScore: Math.min(100, Math.max(0, creditScore)),
+        lastDeliveryDate: stats.lastDeliveryDate?.toISOString() || null,
+        lat: address?.lat || null,
+        lng: address?.lng || null,
+        textAddress: address?.textAddress || null,
+      });
+    }
+
+    return results.sort((a, b) => b.totalDeliveries - a.totalDeliveries);
   }
 }
 
