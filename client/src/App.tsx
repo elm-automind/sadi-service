@@ -23,6 +23,7 @@ import ViewFallback from "@/pages/view-fallback";
 import EditFallback from "@/pages/edit-fallback";
 import DriverLookup from "@/pages/driver-lookup";
 import DriverFeedback from "@/pages/driver-feedback";
+import AddressCapture from "@/pages/address-capture";
 
 function Router() {
   return (
@@ -40,7 +41,8 @@ function Router() {
       <Route path="/edit-address/:id" component={EditAddress} />
       <Route path="/preferences" component={DeliveryPreferences} />
       <Route path="/fallback-contact" component={FallbackContact} />
-      <Route path="/view/:digitalId" component={ViewAddress} />
+      <Route path="/view/:digitalId" component={AddressCapture} />
+      <Route path="/address/:digitalId" component={AddressCapture} />
       <Route path="/view-fallback/:id" component={ViewFallback} />
       <Route path="/edit-fallback/:id" component={EditFallback} />
       <Route path="/driver" component={DriverLookup} />
