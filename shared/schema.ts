@@ -134,6 +134,28 @@ export const passwordResetOtps = pgTable("password_reset_otps", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const shipmentLookupStatusEnum = ["pending_feedback", "feedback_completed"] as const;
+export type ShipmentLookupStatus = typeof shipmentLookupStatusEnum[number];
+
+export const shipmentLookups = pgTable("shipment_lookups", {
+  id: serial("id").primaryKey(),
+  shipmentNumber: text("shipment_number").notNull(),
+  driverId: text("driver_id").notNull(),
+  companyName: text("company_name").notNull(),
+  addressId: integer("address_id").notNull().references(() => addresses.id),
+  status: text("status").notNull().default("pending_feedback"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const driverFeedback = pgTable("driver_feedback", {
+  id: serial("id").primaryKey(),
+  shipmentLookupId: integer("shipment_lookup_id").notNull().references(() => shipmentLookups.id).unique(),
+  locationScore: integer("location_score").notNull(),
+  customerBehavior: text("customer_behavior").notNull(),
+  additionalNotes: text("additional_notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   accountType: true,
   iqamaId: true,
@@ -260,6 +282,34 @@ export const insertFallbackContactSchema = createInsertSchema(fallbackContacts).
   scheduledTimeSlot: z.string().trim().optional(),
 });
 
+export const insertShipmentLookupSchema = createInsertSchema(shipmentLookups).pick({
+  shipmentNumber: true,
+  driverId: true,
+  companyName: true,
+  addressId: true,
+  status: true,
+});
+
+export const shipmentLookupFormSchema = z.object({
+  shipmentNumber: z.string().min(1, "Shipment number is required"),
+  driverId: z.string().min(1, "Driver ID is required"),
+  companyName: z.string().min(1, "Company name is required"),
+  digitalId: z.string().min(1, "Digital ID is required"),
+});
+
+export const insertDriverFeedbackSchema = createInsertSchema(driverFeedback).pick({
+  shipmentLookupId: true,
+  locationScore: true,
+  customerBehavior: true,
+  additionalNotes: true,
+});
+
+export const driverFeedbackFormSchema = z.object({
+  locationScore: z.number().min(1, "Location score is required").max(5, "Score must be between 1-5"),
+  customerBehavior: z.string().min(1, "Customer behavior feedback is required"),
+  additionalNotes: z.string().optional(),
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertCompanyProfile = z.infer<typeof insertCompanyProfileSchema>;
@@ -281,3 +331,7 @@ export type Address = typeof addresses.$inferSelect;
 export type InsertFallbackContact = z.infer<typeof insertFallbackContactSchema>;
 export type FallbackContact = typeof fallbackContacts.$inferSelect;
 export type PasswordResetOtp = typeof passwordResetOtps.$inferSelect;
+export type InsertShipmentLookup = z.infer<typeof insertShipmentLookupSchema>;
+export type ShipmentLookup = typeof shipmentLookups.$inferSelect;
+export type InsertDriverFeedback = z.infer<typeof insertDriverFeedbackSchema>;
+export type DriverFeedback = typeof driverFeedback.$inferSelect;

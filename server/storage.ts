@@ -6,11 +6,14 @@ import {
   type PricingPlan, type InsertPricingPlan,
   type CompanySubscription, type InsertCompanySubscription,
   type CompanyDriver, type InsertCompanyDriver,
+  type ShipmentLookup, type InsertShipmentLookup,
+  type DriverFeedback, type InsertDriverFeedback,
   users, addresses, fallbackContacts, passwordResetOtps, companyProfiles,
-  companyAddresses, pricingPlans, companySubscriptions, companyDrivers
+  companyAddresses, pricingPlans, companySubscriptions, companyDrivers,
+  shipmentLookups, driverFeedback
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, gt, lt, asc } from "drizzle-orm";
+import { eq, and, gt, lt, asc, desc } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -65,6 +68,14 @@ export interface IStorage {
   getValidOtp(email: string, otp: string): Promise<PasswordResetOtp | undefined>;
   markOtpAsUsed(otpId: number): Promise<void>;
   deleteExpiredOtps(): Promise<void>;
+
+  createShipmentLookup(lookup: InsertShipmentLookup): Promise<ShipmentLookup>;
+  getShipmentLookupById(id: number): Promise<ShipmentLookup | undefined>;
+  getPendingFeedbackByDriver(driverId: string, companyName: string): Promise<ShipmentLookup | undefined>;
+  updateShipmentLookupStatus(id: number, status: string): Promise<ShipmentLookup | undefined>;
+  
+  createDriverFeedback(feedback: InsertDriverFeedback): Promise<DriverFeedback>;
+  getDriverFeedbackByLookupId(shipmentLookupId: number): Promise<DriverFeedback | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -361,6 +372,59 @@ export class DatabaseStorage implements IStorage {
   async deleteExpiredOtps(): Promise<void> {
     const now = new Date();
     await db.delete(passwordResetOtps).where(lt(passwordResetOtps.expiresAt, now));
+  }
+
+  async createShipmentLookup(insertLookup: InsertShipmentLookup): Promise<ShipmentLookup> {
+    const [lookup] = await db
+      .insert(shipmentLookups)
+      .values(insertLookup)
+      .returning();
+    return lookup;
+  }
+
+  async getShipmentLookupById(id: number): Promise<ShipmentLookup | undefined> {
+    const [lookup] = await db.select().from(shipmentLookups).where(eq(shipmentLookups.id, id));
+    return lookup || undefined;
+  }
+
+  async getPendingFeedbackByDriver(driverId: string, companyName: string): Promise<ShipmentLookup | undefined> {
+    const normalizedDriverId = driverId.toLowerCase().trim();
+    const normalizedCompanyName = companyName.toLowerCase().trim();
+    
+    const results = await db
+      .select()
+      .from(shipmentLookups)
+      .where(eq(shipmentLookups.status, "pending_feedback"))
+      .orderBy(asc(shipmentLookups.createdAt));
+    
+    const match = results.find(lookup => 
+      lookup.driverId.toLowerCase().trim() === normalizedDriverId &&
+      lookup.companyName.toLowerCase().trim() === normalizedCompanyName
+    );
+    
+    return match || undefined;
+  }
+
+  async updateShipmentLookupStatus(id: number, status: string): Promise<ShipmentLookup | undefined> {
+    const [updated] = await db
+      .update(shipmentLookups)
+      .set({ status })
+      .where(eq(shipmentLookups.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async createDriverFeedback(insertFeedback: InsertDriverFeedback): Promise<DriverFeedback> {
+    const [feedback] = await db
+      .insert(driverFeedback)
+      .values(insertFeedback)
+      .returning();
+    return feedback;
+  }
+
+  async getDriverFeedbackByLookupId(shipmentLookupId: number): Promise<DriverFeedback | undefined> {
+    const [feedback] = await db.select().from(driverFeedback).where(eq(driverFeedback.shipmentLookupId, shipmentLookupId));
+    return feedback || undefined;
   }
 }
 

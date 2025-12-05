@@ -6,7 +6,8 @@ import { Resend } from "resend";
 import { storage } from "./storage";
 import { 
   insertUserSchema, insertAddressSchema, insertFallbackContactSchema, 
-  companyRegistrationSchema, companyAddressFormSchema, subscriptionFormSchema, driverFormSchema, bulkDriverSchema 
+  companyRegistrationSchema, companyAddressFormSchema, subscriptionFormSchema, driverFormSchema, bulkDriverSchema,
+  shipmentLookupFormSchema, driverFeedbackFormSchema
 } from "@shared/schema";
 import { calculateDistanceKm } from "@shared/utils";
 import { z } from "zod";
@@ -966,6 +967,199 @@ export async function registerRoutes(httpServer: Server, app: Express) {
     } catch (error) {
       console.error("Fetch address error:", error);
       res.status(500).json({ message: "Internal Server Error" });
+    }
+  });
+
+  // --- Driver Address Lookup Routes (no auth, public for drivers) ---
+
+  // Check if driver has pending feedback before allowing new lookup
+  app.post("/api/driver/check-pending-feedback", async (req, res) => {
+    try {
+      const { driverId, companyName } = req.body;
+      
+      if (!driverId || !companyName) {
+        return res.status(400).json({ message: "Driver ID and company name are required" });
+      }
+
+      // Storage layer handles normalization (case-insensitive comparison)
+      const pendingLookup = await storage.getPendingFeedbackByDriver(
+        String(driverId).trim(),
+        String(companyName).trim()
+      );
+      
+      if (pendingLookup) {
+        // Get the address for context
+        const address = await storage.getAddressById(pendingLookup.addressId);
+        return res.json({
+          hasPendingFeedback: true,
+          pendingLookup: {
+            id: pendingLookup.id,
+            shipmentNumber: pendingLookup.shipmentNumber,
+            addressLabel: address?.label || "Previous delivery"
+          }
+        });
+      }
+      
+      res.json({ hasPendingFeedback: false });
+    } catch (error) {
+      console.error("Check pending feedback error:", error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  });
+
+  // Driver address lookup - requires no pending feedback
+  app.post("/api/driver/lookup-address", async (req, res) => {
+    try {
+      const lookupData = shipmentLookupFormSchema.parse(req.body);
+      
+      // Normalize inputs for consistent storage and comparison
+      const normalizedDriverId = String(lookupData.driverId).trim();
+      const normalizedCompanyName = String(lookupData.companyName).trim();
+      
+      // Check for pending feedback first (case-insensitive comparison in storage)
+      const pendingLookup = await storage.getPendingFeedbackByDriver(normalizedDriverId, normalizedCompanyName);
+      
+      if (pendingLookup) {
+        return res.status(403).json({
+          message: "You must provide feedback for your previous delivery before looking up a new address",
+          pendingLookupId: pendingLookup.id,
+          requiresFeedback: true
+        });
+      }
+
+      // Find the address by digital ID
+      const address = await storage.getAddressByDigitalId(lookupData.digitalId.toUpperCase().trim());
+      
+      if (!address) {
+        return res.status(404).json({ message: "Address not found" });
+      }
+
+      // Get user info
+      const user = await storage.getUser(address.userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Get fallback contacts for this address
+      const fallbackContacts = await storage.getFallbackContactsByAddressId(address.id);
+
+      // Create shipment lookup record with normalized values
+      const shipmentLookup = await storage.createShipmentLookup({
+        shipmentNumber: String(lookupData.shipmentNumber).trim(),
+        driverId: normalizedDriverId,
+        companyName: normalizedCompanyName,
+        addressId: address.id,
+        status: "pending_feedback"
+      });
+
+      // Return address details with user info
+      res.json({
+        lookupId: shipmentLookup.id,
+        address,
+        user: {
+          name: user.name,
+          phone: user.phone,
+          email: user.email
+        },
+        fallbackContacts
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Validation Error", errors: error.errors });
+      } else {
+        console.error("Driver lookup address error:", error);
+        res.status(500).json({ message: "Internal Server Error" });
+      }
+    }
+  });
+
+  // Get pending lookup details for feedback form
+  app.get("/api/driver/pending-lookup/:id", async (req, res) => {
+    try {
+      const lookupId = parseInt(req.params.id);
+      if (isNaN(lookupId)) {
+        return res.status(400).json({ message: "Invalid lookup ID" });
+      }
+
+      const lookup = await storage.getShipmentLookupById(lookupId);
+      if (!lookup) {
+        return res.status(404).json({ message: "Lookup not found" });
+      }
+
+      if (lookup.status !== "pending_feedback") {
+        return res.status(400).json({ message: "Feedback already provided for this delivery. You cannot submit feedback again." });
+      }
+
+      // Check if feedback already exists (extra protection)
+      const existingFeedback = await storage.getDriverFeedbackByLookupId(lookupId);
+      if (existingFeedback) {
+        return res.status(400).json({ message: "Feedback has already been submitted for this delivery." });
+      }
+
+      const address = await storage.getAddressById(lookup.addressId);
+      
+      res.json({
+        lookup,
+        address: address ? {
+          label: address.label,
+          textAddress: address.textAddress
+        } : null
+      });
+    } catch (error) {
+      console.error("Get pending lookup error:", error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  });
+
+  // Submit driver feedback
+  app.post("/api/driver/feedback", async (req, res) => {
+    try {
+      const { lookupId, ...feedbackData } = req.body;
+      
+      if (!lookupId) {
+        return res.status(400).json({ message: "Lookup ID is required" });
+      }
+
+      const parsedFeedback = driverFeedbackFormSchema.parse(feedbackData);
+
+      // Verify the lookup exists and needs feedback
+      const lookup = await storage.getShipmentLookupById(lookupId);
+      if (!lookup) {
+        return res.status(404).json({ message: "Lookup not found" });
+      }
+
+      if (lookup.status !== "pending_feedback") {
+        return res.status(400).json({ message: "Feedback already provided for this delivery" });
+      }
+
+      // Check if feedback already exists
+      const existingFeedback = await storage.getDriverFeedbackByLookupId(lookupId);
+      if (existingFeedback) {
+        return res.status(400).json({ message: "Feedback already submitted" });
+      }
+
+      // Create feedback record
+      const feedback = await storage.createDriverFeedback({
+        shipmentLookupId: lookupId,
+        locationScore: parsedFeedback.locationScore,
+        customerBehavior: parsedFeedback.customerBehavior,
+        additionalNotes: parsedFeedback.additionalNotes || null
+      });
+
+      // Update lookup status
+      await storage.updateShipmentLookupStatus(lookupId, "feedback_completed");
+
+      res.json({
+        success: true,
+        feedback
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Validation Error", errors: error.errors });
+      } else {
+        console.error("Submit driver feedback error:", error);
+        res.status(500).json({ message: "Internal Server Error" });
+      }
     }
   });
 

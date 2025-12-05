@@ -21,6 +21,8 @@ import CompanyDashboard from "@/pages/company-dashboard";
 import FallbackContact from "@/pages/fallback-contact";
 import ViewFallback from "@/pages/view-fallback";
 import EditFallback from "@/pages/edit-fallback";
+import DriverLookup from "@/pages/driver-lookup";
+import DriverFeedback from "@/pages/driver-feedback";
 
 function Router() {
   return (
@@ -41,6 +43,8 @@ function Router() {
       <Route path="/view/:digitalId" component={ViewAddress} />
       <Route path="/view-fallback/:id" component={ViewFallback} />
       <Route path="/edit-fallback/:id" component={EditFallback} />
+      <Route path="/driver" component={DriverLookup} />
+      <Route path="/driver-feedback/:id" component={DriverFeedback} />
       <Route component={NotFound} />
     </Switch>
   );
