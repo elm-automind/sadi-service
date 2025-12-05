@@ -136,8 +136,9 @@ export async function registerRoutes(httpServer: Server, app: Express) {
     const { identifier, password } = req.body;
     if (!identifier || !password) return res.status(400).json({ message: "Missing credentials" });
 
-    // Find user by Email OR ID
+    // Find user by Email, Phone, or Iqama ID
     let user = await storage.getUserByEmail(identifier);
+    if (!user) user = await storage.getUserByPhone(identifier);
     if (!user) user = await storage.getUserByIqama(identifier);
     
     if (!user) {

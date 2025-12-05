@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowRight, ShieldCheck, Truck, MapPin, LogIn, Package } from "lucide-react";
+import { ArrowRight, ShieldCheck, Truck, MapPin, LogIn } from "lucide-react";
 
 export default function Home() {
   return (
@@ -12,12 +12,7 @@ export default function Home() {
         <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-blue-200/20 rounded-full blur-3xl" />
       </div>
       
-      <div className="absolute top-4 right-4 flex gap-2">
-        <Link href="/driver">
-          <Button variant="ghost" className="gap-2">
-            <Package className="w-4 h-4" /> Driver Portal
-          </Button>
-        </Link>
+      <div className="absolute top-4 right-4">
         <Link href="/login">
           <Button variant="ghost" className="gap-2" data-testid="link-login">
             <LogIn className="w-4 h-4" /> Login
