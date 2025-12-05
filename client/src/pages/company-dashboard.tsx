@@ -6,8 +6,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { 
   Building2, LogOut, Package, Users, TrendingUp, 
-  MapPin, CreditCard, Edit2, Check, Loader2, Plus, Trash2, UserCog, Upload
+  MapPin, CreditCard, Edit2, Check, Loader2, Plus, Trash2, UserCog, Upload, Star, AlertTriangle, CheckCircle2
 } from "lucide-react";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -70,6 +73,51 @@ interface CompanyDriver {
   status: string;
   createdAt: string;
 }
+
+interface DeliveryStats {
+  totalDeliveries: number;
+  successfulDeliveries: number;
+  failedDeliveries: number;
+  successRate: number;
+  avgLocationScore: number;
+}
+
+interface AddressDeliveryStats {
+  addressDigitalId: string;
+  totalDeliveries: number;
+  successfulDeliveries: number;
+  failedDeliveries: number;
+  avgLocationScore: number;
+  creditScore: number;
+  lastDeliveryDate: string | null;
+  lat: number | null;
+  lng: number | null;
+  textAddress: string | null;
+}
+
+const defaultIcon = L.icon({
+  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+});
+
+const getCreditScoreColor = (score: number): string => {
+  if (score >= 80) return "text-green-600";
+  if (score >= 60) return "text-yellow-600";
+  if (score >= 40) return "text-orange-600";
+  return "text-red-600";
+};
+
+const getCreditScoreBadge = (score: number): string => {
+  if (score >= 80) return "Excellent";
+  if (score >= 60) return "Good";
+  if (score >= 40) return "Fair";
+  return "Poor";
+};
 
 const addressFormSchema = z.object({
   street: z.string().min(3, "Street is required"),
@@ -142,6 +190,26 @@ export default function CompanyDashboard() {
     queryKey: ["/api/company/drivers"],
     queryFn: async () => {
       const res = await fetch("/api/company/drivers", { credentials: "include" });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!user && user.accountType === "company",
+  });
+
+  const { data: deliveryStats } = useQuery<DeliveryStats>({
+    queryKey: ["/api/company/delivery-stats"],
+    queryFn: async () => {
+      const res = await fetch("/api/company/delivery-stats", { credentials: "include" });
+      if (!res.ok) return { totalDeliveries: 0, successfulDeliveries: 0, failedDeliveries: 0, successRate: 0, avgLocationScore: 0 };
+      return res.json();
+    },
+    enabled: !!user && user.accountType === "company",
+  });
+
+  const { data: addressDeliveryStats = [] } = useQuery<AddressDeliveryStats[]>({
+    queryKey: ["/api/company/address-delivery-stats"],
+    queryFn: async () => {
+      const res = await fetch("/api/company/address-delivery-stats", { credentials: "include" });
       if (!res.ok) return [];
       return res.json();
     },
@@ -482,7 +550,7 @@ export default function CompanyDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Total Deliveries</p>
-                  <p className="text-3xl font-bold text-foreground">0</p>
+                  <p className="text-3xl font-bold text-foreground" data-testid="text-total-deliveries">{deliveryStats?.totalDeliveries || 0}</p>
                 </div>
                 <div className="p-3 bg-blue-100 dark:bg-blue-900/20 rounded-full">
                   <Package className="w-6 h-6 text-blue-600" />
@@ -510,7 +578,7 @@ export default function CompanyDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Success Rate</p>
-                  <p className="text-3xl font-bold text-foreground">0%</p>
+                  <p className="text-3xl font-bold text-foreground" data-testid="text-success-rate">{deliveryStats?.successRate || 0}%</p>
                 </div>
                 <div className="p-3 bg-purple-100 dark:bg-purple-900/20 rounded-full">
                   <TrendingUp className="w-6 h-6 text-purple-600" />
@@ -608,6 +676,137 @@ export default function CompanyDashboard() {
                 <UserCog className="w-12 h-12 mx-auto mb-3 opacity-20" />
                 <p>No drivers added yet</p>
                 <p className="text-sm">Add drivers to validate their IDs during delivery</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Star className="w-5 h-5 text-primary" />
+                  Delivery Credit Scores
+                </CardTitle>
+                <CardDescription>
+                  Address credit scores based on delivery feedback
+                </CardDescription>
+              </div>
+              {deliveryStats && (
+                <div className="flex gap-4">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-green-600" data-testid="text-successful-deliveries">{deliveryStats.successfulDeliveries}</p>
+                    <p className="text-xs text-muted-foreground">Successful</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-red-600" data-testid="text-failed-deliveries">{deliveryStats.failedDeliveries}</p>
+                    <p className="text-xs text-muted-foreground">Failed</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-yellow-600" data-testid="text-avg-location-score">{deliveryStats.avgLocationScore}</p>
+                    <p className="text-xs text-muted-foreground">Avg Score</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            {addressDeliveryStats.length > 0 ? (
+              <div className="space-y-6">
+                <div className="h-[300px] rounded-lg overflow-hidden border">
+                  <MapContainer
+                    center={[
+                      addressDeliveryStats[0]?.lat || 24.7136,
+                      addressDeliveryStats[0]?.lng || 46.6753
+                    ]}
+                    zoom={10}
+                    style={{ height: "100%", width: "100%" }}
+                  >
+                    <TileLayer
+                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    />
+                    {addressDeliveryStats.filter(addr => addr.lat && addr.lng).map((addr) => (
+                      <Marker 
+                        key={addr.addressDigitalId} 
+                        position={[addr.lat!, addr.lng!]}
+                        icon={defaultIcon}
+                      >
+                        <Popup>
+                          <div className="p-1">
+                            <p className="font-semibold text-sm">{addr.addressDigitalId}</p>
+                            <p className="text-xs text-muted-foreground mb-2">{addr.textAddress || "Address"}</p>
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-xs">Credit Score:</span>
+                              <span className={`font-bold ${getCreditScoreColor(addr.creditScore)}`}>{addr.creditScore}</span>
+                            </div>
+                            <div className="text-xs">
+                              <span className="text-green-600">{addr.successfulDeliveries} delivered</span>
+                              {" / "}
+                              <span className="text-red-600">{addr.failedDeliveries} failed</span>
+                            </div>
+                          </div>
+                        </Popup>
+                      </Marker>
+                    ))}
+                  </MapContainer>
+                </div>
+
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Address ID</TableHead>
+                      <TableHead>Credit Score</TableHead>
+                      <TableHead>Deliveries</TableHead>
+                      <TableHead>Location Score</TableHead>
+                      <TableHead>Last Delivery</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {addressDeliveryStats.map((addr) => (
+                      <TableRow key={addr.addressDigitalId} data-testid={`row-address-${addr.addressDigitalId}`}>
+                        <TableCell className="font-mono font-medium">{addr.addressDigitalId}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-lg font-bold ${getCreditScoreColor(addr.creditScore)}`}>
+                              {addr.creditScore}
+                            </span>
+                            <Badge variant="secondary" className="text-xs">
+                              {getCreditScoreBadge(addr.creditScore)}
+                            </Badge>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <CheckCircle2 className="w-4 h-4 text-green-600" />
+                            <span>{addr.successfulDeliveries}</span>
+                            <AlertTriangle className="w-4 h-4 text-red-600 ml-2" />
+                            <span>{addr.failedDeliveries}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Star className="w-4 h-4 text-yellow-500" />
+                            <span>{addr.avgLocationScore}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-sm">
+                          {addr.lastDeliveryDate 
+                            ? new Date(addr.lastDeliveryDate).toLocaleDateString()
+                            : "-"
+                          }
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <MapPin className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                <p>No delivery data available yet</p>
+                <p className="text-sm">Credit scores will appear here as drivers submit feedback</p>
               </div>
             )}
           </CardContent>
