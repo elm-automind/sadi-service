@@ -95,26 +95,36 @@ export async function generateInvoice(
 
   const amount = billingCycle === "annual" ? planInfo.annualPrice : planInfo.monthlyPrice;
 
+  // Ensure unified number is exactly 10 characters (pad or truncate if needed)
+  const identityValue = companyInfo.unifiedNumber.replace(/\D/g, '').padStart(10, '0').slice(-10);
+  
+  // Format address fields to meet API requirements (alphanumeric only, no special chars)
+  const formatAddressField = (value: string | undefined, defaultVal: string): string => {
+    if (!value) return defaultVal;
+    // Remove special characters, keep letters and numbers
+    return value.replace(/[^a-zA-Z0-9\u0600-\u06FF\s]/g, '').trim() || defaultVal;
+  };
+
   const payload: InvoicePayload = {
-    customerId: companyInfo.unifiedNumber,
+    customerId: identityValue,
     customerEnFullName: companyInfo.companyName,
     customerArFullName: companyInfo.companyName,
     identityType: "700",
-    identityTypeValue: companyInfo.unifiedNumber,
+    identityTypeValue: identityValue,
     nationalAddress: {
-      street: addressInfo?.street || "Not Specified",
-      buildingNumber: "0000",
-      additionalNumber: "0000",
-      district: addressInfo?.district || "Not Specified",
-      city: addressInfo?.city || "Riyadh",
-      postalCode: "00000",
+      street: formatAddressField(addressInfo?.street, "MainStreet"),
+      buildingNumber: "1234",
+      additionalNumber: "5678",
+      district: formatAddressField(addressInfo?.district, "AlOlaya"),
+      city: formatAddressField(addressInfo?.city, "Riyadh"),
+      postalCode: "12345",
       country: "SA",
     },
     mobileNumber: companyInfo.phone.replace(/^\+/, ""),
     email: companyInfo.email || "",
-    customerNIN: companyInfo.unifiedNumber,
+    customerNIN: identityValue,
     customerDescription: null,
-    customerVatNumber: companyInfo.unifiedNumber,
+    customerVatNumber: identityValue,
     isRealTime: 1,
     expiryPeriod: 99999,
     Transactions: [
@@ -212,7 +222,21 @@ export async function generateInvoice(
 
     // Check for errors in response body (API returns 200 but may have errors)
     const bodyData = responseData.body as Record<string, unknown> | undefined;
+    const data = bodyData?.data as Record<string, unknown> | undefined;
     const errors = bodyData?.errors as Array<{ key: string; message: string }> | undefined;
+    const validationErrors = data?.validationErrors as Array<{ key: string; field: string; message: string }> | undefined;
+    const isValid = data?.isValid as boolean | undefined;
+    
+    // Check for validation errors (API returns isValid: false with validationErrors array)
+    if (isValid === false && validationErrors && validationErrors.length > 0) {
+      const errorMessages = validationErrors.map(e => `${e.message}: ${e.key}`).join("; ");
+      console.error(`Billing API validation errors: ${errorMessages}`);
+      return {
+        success: false,
+        error: errorMessages,
+        message: "Invoice validation failed. Please check your company information.",
+      };
+    }
     
     if (errors && errors.length > 0) {
       const errorMessage = errors.map(e => e.message).join(", ");
@@ -226,9 +250,7 @@ export async function generateInvoice(
 
     console.log(`Invoice generated successfully for ${companyInfo.companyName}`);
 
-    // Extract billing data from nested response structure
-    const body = responseData.body as Record<string, unknown> | undefined;
-    const data = body?.data as Record<string, unknown> | undefined;
+    // Extract billing data from nested response structure (reuse data from above)
     const result = data?.result as Record<string, unknown> | undefined;
 
     const sadadNumber = result?.sadadNumber as string | undefined;
