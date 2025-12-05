@@ -69,6 +69,20 @@ export const companySubscriptions = pgTable("company_subscriptions", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const driverStatusEnum = ["active", "inactive", "suspended"] as const;
+export type DriverStatus = typeof driverStatusEnum[number];
+
+export const companyDrivers = pgTable("company_drivers", {
+  id: serial("id").primaryKey(),
+  companyProfileId: integer("company_profile_id").notNull().references(() => companyProfiles.id),
+  driverId: text("driver_id").notNull(),
+  name: text("name").notNull(),
+  phone: text("phone"),
+  status: text("status").notNull().default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const addresses = pgTable("addresses", {
   id: serial("id").primaryKey(),
   digitalId: text("digital_id").notNull().unique(),
@@ -179,6 +193,21 @@ export const subscriptionFormSchema = z.object({
   billingCycle: z.enum(billingCycleEnum),
 });
 
+export const insertCompanyDriverSchema = createInsertSchema(companyDrivers).pick({
+  companyProfileId: true,
+  driverId: true,
+  name: true,
+  phone: true,
+  status: true,
+});
+
+export const driverFormSchema = z.object({
+  driverId: z.string().min(3, "Driver ID is required"),
+  name: z.string().min(2, "Driver name is required"),
+  phone: z.string().optional(),
+  status: z.enum(driverStatusEnum).default("active"),
+});
+
 export const insertAddressSchema = createInsertSchema(addresses).pick({
   digitalId: true,
   userId: true,
@@ -233,6 +262,9 @@ export type PricingPlan = typeof pricingPlans.$inferSelect;
 export type InsertCompanySubscription = z.infer<typeof insertCompanySubscriptionSchema>;
 export type CompanySubscription = typeof companySubscriptions.$inferSelect;
 export type SubscriptionForm = z.infer<typeof subscriptionFormSchema>;
+export type InsertCompanyDriver = z.infer<typeof insertCompanyDriverSchema>;
+export type CompanyDriver = typeof companyDrivers.$inferSelect;
+export type DriverForm = z.infer<typeof driverFormSchema>;
 export type InsertAddress = z.infer<typeof insertAddressSchema>;
 export type Address = typeof addresses.$inferSelect;
 export type InsertFallbackContact = z.infer<typeof insertFallbackContactSchema>;

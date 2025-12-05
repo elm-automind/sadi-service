@@ -5,8 +5,9 @@ import {
   type CompanyAddress, type InsertCompanyAddress,
   type PricingPlan, type InsertPricingPlan,
   type CompanySubscription, type InsertCompanySubscription,
+  type CompanyDriver, type InsertCompanyDriver,
   users, addresses, fallbackContacts, passwordResetOtps, companyProfiles,
-  companyAddresses, pricingPlans, companySubscriptions
+  companyAddresses, pricingPlans, companySubscriptions, companyDrivers
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, gt, lt, asc } from "drizzle-orm";
@@ -34,6 +35,13 @@ export interface IStorage {
   getCompanySubscription(companyProfileId: number): Promise<CompanySubscription | undefined>;
   createCompanySubscription(subscription: InsertCompanySubscription): Promise<CompanySubscription>;
   updateCompanySubscription(companyProfileId: number, updates: Partial<CompanySubscription>): Promise<CompanySubscription | undefined>;
+
+  getCompanyDrivers(companyProfileId: number): Promise<CompanyDriver[]>;
+  getCompanyDriverById(id: number): Promise<CompanyDriver | undefined>;
+  getCompanyDriverByDriverId(companyProfileId: number, driverId: string): Promise<CompanyDriver | undefined>;
+  createCompanyDriver(driver: InsertCompanyDriver): Promise<CompanyDriver>;
+  updateCompanyDriver(id: number, updates: Partial<CompanyDriver>): Promise<CompanyDriver | undefined>;
+  deleteCompanyDriver(id: number): Promise<boolean>;
   
   createAddress(address: InsertAddress): Promise<Address>;
   getAddressById(id: number): Promise<Address | undefined>;
@@ -166,6 +174,47 @@ export class DatabaseStorage implements IStorage {
       .where(eq(companySubscriptions.companyProfileId, companyProfileId))
       .returning();
     return updated || undefined;
+  }
+
+  async getCompanyDrivers(companyProfileId: number): Promise<CompanyDriver[]> {
+    return await db.select().from(companyDrivers).where(eq(companyDrivers.companyProfileId, companyProfileId));
+  }
+
+  async getCompanyDriverById(id: number): Promise<CompanyDriver | undefined> {
+    const [driver] = await db.select().from(companyDrivers).where(eq(companyDrivers.id, id));
+    return driver || undefined;
+  }
+
+  async getCompanyDriverByDriverId(companyProfileId: number, driverId: string): Promise<CompanyDriver | undefined> {
+    const [driver] = await db.select().from(companyDrivers).where(
+      and(
+        eq(companyDrivers.companyProfileId, companyProfileId),
+        eq(companyDrivers.driverId, driverId)
+      )
+    );
+    return driver || undefined;
+  }
+
+  async createCompanyDriver(insertDriver: InsertCompanyDriver): Promise<CompanyDriver> {
+    const [driver] = await db
+      .insert(companyDrivers)
+      .values(insertDriver)
+      .returning();
+    return driver;
+  }
+
+  async updateCompanyDriver(id: number, updates: Partial<CompanyDriver>): Promise<CompanyDriver | undefined> {
+    const [updated] = await db
+      .update(companyDrivers)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(companyDrivers.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteCompanyDriver(id: number): Promise<boolean> {
+    const [deleted] = await db.delete(companyDrivers).where(eq(companyDrivers.id, id)).returning();
+    return !!deleted;
   }
 
   async createAddress(insertAddress: InsertAddress): Promise<Address> {
