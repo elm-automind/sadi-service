@@ -38,6 +38,8 @@ export default function Dashboard() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [addressToDelete, setAddressToDelete] = useState<Address | null>(null);
   const [selectedFallbackAddressId, setSelectedFallbackAddressId] = useState<number | null>(null);
+  const [deleteFallbackDialogOpen, setDeleteFallbackDialogOpen] = useState(false);
+  const [fallbackToDelete, setFallbackToDelete] = useState<FallbackContact | null>(null);
 
   const { data: user, isLoading } = useQuery<UserWithAddresses>({
     queryKey: ["/api/user"],
@@ -97,6 +99,29 @@ export default function Dashboard() {
     }
   });
 
+  const deleteFallbackMutation = useMutation({
+    mutationFn: async (contactId: number) => {
+      const res = await apiRequest("DELETE", `/api/fallback-contact/${contactId}`, {});
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/fallback-contacts", selectedFallbackAddressId] });
+      toast({
+        title: "Fallback Contact Deleted",
+        description: "The fallback contact has been removed.",
+      });
+      setDeleteFallbackDialogOpen(false);
+      setFallbackToDelete(null);
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to delete fallback contact",
+      });
+    }
+  });
+
   useEffect(() => {
     if (!isLoading && !user) {
       setLocation("/");
@@ -117,6 +142,17 @@ export default function Dashboard() {
   const confirmDelete = () => {
     if (addressToDelete) {
       deleteMutation.mutate(addressToDelete.id);
+    }
+  };
+
+  const handleDeleteFallbackClick = (contact: FallbackContact) => {
+    setFallbackToDelete(contact);
+    setDeleteFallbackDialogOpen(true);
+  };
+
+  const confirmDeleteFallback = () => {
+    if (fallbackToDelete) {
+      deleteFallbackMutation.mutate(fallbackToDelete.id);
     }
   };
 
@@ -391,11 +427,28 @@ export default function Dashboard() {
                                   )}
                                 </div>
                               </div>
-                              <Link href={`/view-fallback/${contact.id}`}>
-                                <Button variant="ghost" size="sm" title="View Details" data-testid={`btn-view-fallback-${contact.id}`}>
-                                  <Eye className="w-4 h-4" />
+                              <div className="flex gap-1 shrink-0">
+                                <Link href={`/view-fallback/${contact.id}`}>
+                                  <Button variant="ghost" size="sm" title="View Details" data-testid={`btn-view-fallback-${contact.id}`}>
+                                    <Eye className="w-4 h-4" />
+                                  </Button>
+                                </Link>
+                                <Link href={`/edit-fallback/${contact.id}`}>
+                                  <Button variant="ghost" size="sm" title="Edit" data-testid={`btn-edit-fallback-${contact.id}`}>
+                                    <Edit className="w-4 h-4" />
+                                  </Button>
+                                </Link>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  title="Delete"
+                                  data-testid={`btn-delete-fallback-${contact.id}`}
+                                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  onClick={() => handleDeleteFallbackClick(contact)}
+                                >
+                                  <Trash2 className="w-4 h-4" />
                                 </Button>
-                              </Link>
+                              </div>
                             </div>
                           </div>
                         ))}
@@ -415,7 +468,7 @@ export default function Dashboard() {
 
       </div>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Address Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -431,6 +484,27 @@ export default function Dashboard() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {deleteMutation.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Fallback Contact Confirmation Dialog */}
+      <AlertDialog open={deleteFallbackDialogOpen} onOpenChange={setDeleteFallbackDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Fallback Contact?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the fallback contact "{fallbackToDelete?.name}". This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteFallback}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteFallbackMutation.isPending ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

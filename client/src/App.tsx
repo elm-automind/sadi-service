@@ -19,6 +19,7 @@ import Dashboard from "@/pages/dashboard";
 import CompanyDashboard from "@/pages/company-dashboard";
 import FallbackContact from "@/pages/fallback-contact";
 import ViewFallback from "@/pages/view-fallback";
+import EditFallback from "@/pages/edit-fallback";
 
 function Router() {
   return (
@@ -37,6 +38,7 @@ function Router() {
       <Route path="/fallback-contact" component={FallbackContact} />
       <Route path="/view/:digitalId" component={ViewAddress} />
       <Route path="/view-fallback/:id" component={ViewFallback} />
+      <Route path="/edit-fallback/:id" component={EditFallback} />
       <Route component={NotFound} />
     </Switch>
   );
