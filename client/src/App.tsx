@@ -4,6 +4,7 @@ import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useSessionActivity } from "@/hooks/use-session-activity";
+import "./lib/i18n";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import RegisterType from "@/pages/register-type";
