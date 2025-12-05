@@ -105,6 +105,7 @@ export default function Dashboard() {
 
   const handleLogout = async () => {
     await apiRequest("POST", "/api/logout", {});
+    queryClient.removeQueries({ queryKey: ["/api/user"] }); // Clear session-related queries only
     setLocation("/login");
   };
 

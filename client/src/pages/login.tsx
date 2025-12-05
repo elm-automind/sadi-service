@@ -1,10 +1,9 @@
-import { useState } from "react";
 import { useLocation, Link } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { User, Lock, ArrowRight, Trash2 } from "lucide-react";
-import { useMutation } from "@tanstack/react-query";
+import { User, Lock, ArrowRight } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
 import { PageNavigation } from "@/components/page-navigation";
@@ -24,6 +23,7 @@ type LoginData = z.infer<typeof loginSchema>;
 export default function Login() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const form = useForm<LoginData>({
     resolver: zodResolver(loginSchema),
   });
@@ -33,22 +33,17 @@ export default function Login() {
       const res = await apiRequest("POST", "/api/login", data);
       return await res.json();
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
+      // Reset and refetch user query to trigger session activity tracking
+      await queryClient.resetQueries({ queryKey: ["/api/user"] });
+      
       toast({
         title: "Login Successful",
         description: `Welcome back, ${data.user.name}`,
       });
       
-      // Simple logic to check if we should go to dashboard/preferences or add address
-      // For now, we'll fetch user data in the next page to decide, or trust the response
-      // We'll query the user endpoint to check addresses
-      // But for simplicity, let's just go to preferences if they have an address.
-      // The API could return this info.
-      
-      // Let's assume we go to add-address first, and let that page redirect if they already have one?
-      // Or query /api/user here.
-      
-      checkUserStatus();
+      // Go to dashboard
+      setLocation("/dashboard");
     },
     onError: (error: any) => {
       toast({
@@ -58,15 +53,6 @@ export default function Login() {
       });
     }
   });
-
-  const checkUserStatus = async () => {
-    try {
-       // After login, always go to Dashboard
-       setLocation("/dashboard");
-    } catch (e) {
-      setLocation("/dashboard");
-    }
-  };
 
   const onSubmit = (data: LoginData) => {
     loginMutation.mutate(data);

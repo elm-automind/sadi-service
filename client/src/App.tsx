@@ -1,8 +1,9 @@
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { useSessionActivity } from "@/hooks/use-session-activity";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import Register from "@/pages/register";
@@ -35,12 +36,35 @@ function Router() {
   );
 }
 
+function SessionActivityWrapper({ children }: { children: React.ReactNode }) {
+  const { data: user, isLoading } = useQuery({
+    queryKey: ["/api/user"],
+    queryFn: async () => {
+      const res = await fetch("/api/user", { credentials: "include" });
+      if (!res.ok) {
+        return null; // Return null for unauthenticated, don't throw
+      }
+      return res.json();
+    },
+    retry: false,
+    staleTime: 0, // Always refetch when invalidated
+    refetchOnWindowFocus: false,
+  });
+
+  const isLoggedIn = !isLoading && !!user;
+  useSessionActivity(isLoggedIn);
+
+  return <>{children}</>;
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
-        <Router />
+        <SessionActivityWrapper>
+          <Router />
+        </SessionActivityWrapper>
       </TooltipProvider>
     </QueryClientProvider>
   );

@@ -25,20 +25,24 @@ app.use(
 
 app.use(express.urlencoded({ extended: false, limit: '15mb' }));
 
-// Session Setup
+// Session Setup with auto-logout after 1 minute of inactivity
 const SessionStore = MemoryStore(session);
 const sessionSecret = process.env.SESSION_SECRET || "dev-session-secret-change-in-production";
+const SESSION_TIMEOUT = 60 * 1000; // 1 minute inactivity timeout
+
 app.use(
   session({
     secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
+    rolling: true, // Reset session expiry on each request
     store: new SessionStore({
-      checkPeriod: 86400000, // prune expired entries every 24h
+      checkPeriod: SESSION_TIMEOUT, // prune expired entries every minute
     }),
     cookie: { 
       secure: process.env.NODE_ENV === "production",
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      maxAge: SESSION_TIMEOUT,
+      httpOnly: true,
     },
   })
 );

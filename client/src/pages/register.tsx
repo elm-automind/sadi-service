@@ -8,7 +8,7 @@ import {
   User, MapPin, Camera, Clock, CheckCircle2, 
   ChevronRight, ChevronLeft, Upload, FileText, Lock, LogIn
 } from "lucide-react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
 import { PageNavigation } from "@/components/page-navigation";
@@ -92,6 +92,7 @@ export default function Register() {
   const [regType, setRegType] = useState<"quick" | "full">("full"); 
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [files, setFiles] = useState<{
     building?: File;
     gate?: File;
@@ -130,9 +131,11 @@ export default function Register() {
       const res = await apiRequest("POST", "/api/register", payload);
       return await res.json();
     },
-    onSuccess: (data) => {
-      // Store session data for success page display (temporary, in real app we fetch from API)
-      // We'll just use the response data
+    onSuccess: async (data) => {
+      // Reset and refetch user query to trigger session activity tracking
+      await queryClient.resetQueries({ queryKey: ["/api/user"] });
+      
+      // Store session data for success page display
       localStorage.setItem("lastRegisteredUser", JSON.stringify(data));
       
       if (data.address) {
@@ -144,9 +147,9 @@ export default function Register() {
       } else {
         toast({
           title: "Account Created!",
-          description: "You can now login.",
+          description: "Your account has been created. Redirecting to dashboard.",
         });
-        setLocation("/login");
+        setLocation("/dashboard");
       }
     },
     onError: (error: any) => {

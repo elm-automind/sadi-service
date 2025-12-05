@@ -117,9 +117,16 @@ export async function registerRoutes(httpServer: Server, app: Express) {
   });
 
   app.post("/api/logout", (req, res) => {
-    req.session.destroy(() => {
+    req.session.destroy((err) => {
+      res.clearCookie("connect.sid");
       res.json({ message: "Logged out" });
     });
+  });
+
+  // Session ping endpoint - keeps session alive when user is active
+  app.post("/api/session/ping", requireAuth, (req, res) => {
+    // Session is automatically extended by express-session with rolling: true
+    res.json({ success: true });
   });
 
   // --- Password Reset Routes (OTP-based) ---
