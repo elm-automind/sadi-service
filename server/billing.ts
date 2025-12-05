@@ -77,6 +77,7 @@ export async function generateInvoice(
 ): Promise<BillingResult> {
   const apiUrl = process.env.BILLING_API_URL || "https://elmx-bp-beta.api.elm.sa/billing/v3/api/invoice/generateinvoicewithcustomer";
   const productCode = process.env.BILLING_PRODUCT_CODE;
+  const clientKey = process.env.BILLING_CLIENT_KEY;
   const appId = process.env.BILLING_APP_ID;
   const appKey = process.env.BILLING_APP_KEY;
 
@@ -149,6 +150,9 @@ export async function generateInvoice(
       // Add optional headers if configured
       if (productCode) {
         headers["ProductCode"] = productCode;
+      }
+      if (clientKey) {
+        headers["ClientKey"] = clientKey;
       }
       
       response = await fetch(apiUrl, {

@@ -23,10 +23,6 @@ localPort = 36427
 externalPort = 3001
 
 [[ports]]
-localPort = 38427
-externalPort = 3003
-
-[[ports]]
 localPort = 40375
 externalPort = 3002
 
@@ -74,3 +70,4 @@ BILLING_APP_KEY = "c440f95c0be4981f8c2d2a465e83edcb"
 PAYMENT_API_URL = "https://pg-beta.api.elm.sa/payment/api/product/createpaymentrequest"
 PAYMENT_APP_ID = "8ab5d791"
 PAYMENT_APP_KEY = "77a0e640a57cf7e166acfcb4645ddd8c"
+PAYMENT_CLIENT_KEY = "8af5e1f3-3910-4152-b039-d3c23f90224f"

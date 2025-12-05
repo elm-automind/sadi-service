@@ -26,6 +26,7 @@ export async function createPaymentRequest(
 ): Promise<PaymentResult> {
   const apiUrl = process.env.PAYMENT_API_URL || "https://pg-beta.api.elm.sa/payment/api/product/createpaymentrequest";
   const productCode = process.env.BILLING_PRODUCT_CODE;
+  const clientKey = process.env.PAYMENT_CLIENT_KEY;
   const appId = process.env.PAYMENT_APP_ID || process.env.BILLING_APP_ID;
   const appKey = process.env.PAYMENT_APP_KEY || process.env.BILLING_APP_KEY;
 
@@ -80,6 +81,9 @@ export async function createPaymentRequest(
       // Add optional headers if configured
       if (productCode) {
         headers["ProductCode"] = productCode;
+      }
+      if (clientKey) {
+        headers["ClientKey"] = clientKey;
       }
       
       response = await fetch(apiUrl, {
