@@ -15,18 +15,18 @@ import { MessageSquare, Star, MapPin, Package, CheckCircle2, AlertCircle, CheckC
 import { useToast } from "@/hooks/use-toast";
 
 const feedbackSchema = z.object({
-  deliveryStatus: z.enum(["delivered", "failed", "partial"], { required_error: "Please select delivery status" }),
+  deliveryStatus: z.enum(["delivered", "failed"], { required_error: "Please select delivery status" }),
   locationScore: z.number().min(1, "Please rate the location accuracy").max(5),
   customerBehavior: z.string().min(1, "Please describe customer behavior"),
   failureReason: z.string().optional(),
   additionalNotes: z.string().optional(),
 }).refine((data) => {
-  if (data.deliveryStatus === "failed" || data.deliveryStatus === "partial") {
+  if (data.deliveryStatus === "failed") {
     return data.failureReason && data.failureReason.length > 0;
   }
   return true;
 }, {
-  message: "Please select a reason for the failed/partial delivery",
+  message: "Please select a reason for the failed delivery",
   path: ["failureReason"],
 });
 
@@ -34,7 +34,6 @@ type FeedbackFormValues = z.infer<typeof feedbackSchema>;
 
 const deliveryStatusOptions = [
   { value: "delivered", label: "Successfully Delivered", color: "text-green-600" },
-  { value: "partial", label: "Partially Delivered", color: "text-yellow-600" },
   { value: "failed", label: "Failed to Deliver", color: "text-red-600" },
 ];
 
@@ -247,7 +246,7 @@ export default function DriverFeedback() {
                   )}
                 />
 
-                {(deliveryStatus === "failed" || deliveryStatus === "partial") && (
+                {deliveryStatus === "failed" && (
                   <FormField
                     control={form.control}
                     name="failureReason"

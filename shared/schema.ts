@@ -137,7 +137,7 @@ export const passwordResetOtps = pgTable("password_reset_otps", {
 export const shipmentLookupStatusEnum = ["pending_feedback", "feedback_completed"] as const;
 export type ShipmentLookupStatus = typeof shipmentLookupStatusEnum[number];
 
-export const deliveryStatusEnum = ["delivered", "failed", "partial"] as const;
+export const deliveryStatusEnum = ["delivered", "failed"] as const;
 export type DeliveryStatus = typeof deliveryStatusEnum[number];
 
 export const shipmentLookups = pgTable("shipment_lookups", {
@@ -347,7 +347,7 @@ export const insertDriverFeedbackSchema = createInsertSchema(driverFeedback).pic
 });
 
 export const driverFeedbackFormSchema = z.object({
-  deliveryStatus: z.enum(["delivered", "failed", "partial"], { required_error: "Please select delivery status" }),
+  deliveryStatus: z.enum(["delivered", "failed"], { required_error: "Please select delivery status" }),
   locationScore: z.number().min(1, "Location score is required").max(5, "Score must be between 1-5"),
   customerBehavior: z.string().min(1, "Customer behavior feedback is required"),
   failureReason: z.string().optional(),
