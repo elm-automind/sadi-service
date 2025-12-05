@@ -24,6 +24,7 @@ import { processImage, revokePreviewUrl, type ProcessedImage } from "@/lib/image
 
 // --- Schema ---
 const addressSchema = z.object({
+  label: z.string().optional(),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
   textAddress: z.string().min(10, "Please provide a detailed address (min 10 chars)"),
@@ -176,6 +177,7 @@ export default function AddAddress() {
   const form = useForm<AddressData>({
     resolver: zodResolver(addressSchema),
     defaultValues: {
+      label: "",
       textAddress: "",
     }
   });
@@ -194,9 +196,10 @@ export default function AddAddress() {
   const addressMutation = useMutation({
     mutationFn: async (data: AddressData) => {
       const payload = {
-        ...data,
+        label: data.label,
         lat: data.latitude,
         lng: data.longitude,
+        textAddress: data.textAddress,
         photoBuilding: images.building?.dataUri,
         photoGate: images.gate?.dataUri,
         photoDoor: images.door?.dataUri,
@@ -244,6 +247,18 @@ export default function AddAddress() {
         <CardContent className="p-4 md:p-6">
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <div className="space-y-6 md:space-y-8">
+              {/* Address Label */}
+              <div className="space-y-2">
+                <Label htmlFor="label">Address Name</Label>
+                <Input 
+                  id="label"
+                  placeholder="e.g., Home, Office, Parents House..."
+                  {...form.register("label")}
+                  data-testid="input-address-label"
+                />
+                <p className="text-xs text-muted-foreground">Give this address a friendly name to identify it easily</p>
+              </div>
+
               {/* Map Section */}
               <div className="space-y-3">
                 <Label className="flex items-center gap-2">
