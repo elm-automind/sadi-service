@@ -878,8 +878,8 @@ export const PRICING_PLANS_SEED: InsertPricingPlan[] = [
   {
     slug: "basic",
     name: "Basic",
-    monthlyPrice: 199,
-    annualPrice: 1999,
+    monthlyPrice: 1,
+    annualPrice: 10,
     features: [
       "Address capture & storage",
       "Single branch support",
@@ -894,8 +894,8 @@ export const PRICING_PLANS_SEED: InsertPricingPlan[] = [
   {
     slug: "standard",
     name: "Standard",
-    monthlyPrice: 499,
-    annualPrice: 4999,
+    monthlyPrice: 1.25,
+    annualPrice: 13,
     features: [
       "Everything in Basic",
       "Driver management",
@@ -911,8 +911,8 @@ export const PRICING_PLANS_SEED: InsertPricingPlan[] = [
   {
     slug: "pro",
     name: "Pro",
-    monthlyPrice: 899,
-    annualPrice: 8999,
+    monthlyPrice: 1.5,
+    annualPrice: 15,
     features: [
       "Everything in Standard",
       "Live delivery map view",
@@ -929,8 +929,8 @@ export const PRICING_PLANS_SEED: InsertPricingPlan[] = [
   {
     slug: "enterprise",
     name: "Enterprise",
-    monthlyPrice: 1499,
-    annualPrice: 14999,
+    monthlyPrice: 2,
+    annualPrice: 20,
     features: [
       "Everything in Pro",
       "Unlimited drivers",

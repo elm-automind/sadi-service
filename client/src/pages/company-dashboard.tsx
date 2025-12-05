@@ -1527,9 +1527,9 @@ DRV003, Khalid Omar, 0551234567"
                         <Badge variant="secondary">{subscriptionData?.subscription.billingCycle}</Badge>
                       </div>
                       <p className="text-2xl font-bold text-primary mt-1">
-                        ${subscriptionData?.subscription.billingCycle === "annual" ? currentPlan.annualPrice : currentPlan.monthlyPrice}
+                        <span className="text-sm font-normal">{t('company.sar')}</span> {subscriptionData?.subscription.billingCycle === "annual" ? currentPlan.annualPrice : currentPlan.monthlyPrice}
                         <span className="text-sm font-normal text-muted-foreground">
-                          /{subscriptionData?.subscription.billingCycle === "annual" ? "year" : "month"}
+                          /{subscriptionData?.subscription.billingCycle === "annual" ? t('company.year') : t('company.month')}
                         </span>
                       </p>
                     </div>
@@ -1610,8 +1610,9 @@ DRV003, Khalid Omar, 0551234567"
                         {isSelected && <Check className="w-5 h-5 text-primary" />}
                       </CardTitle>
                       <div className="mt-2">
-                        <span className="text-3xl font-bold">${price}</span>
-                        <span className="text-muted-foreground">/{isAnnual ? 'year' : 'month'}</span>
+                        <span className="text-sm text-muted-foreground">{t('company.sar')}</span>
+                        <span className="text-3xl font-bold ms-1">{price}</span>
+                        <span className="text-muted-foreground">/{isAnnual ? t('company.year') : t('company.month')}</span>
                       </div>
                     </CardHeader>
                     <CardContent className="pt-0">
