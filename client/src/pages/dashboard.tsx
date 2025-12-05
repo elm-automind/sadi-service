@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   MapPin, Plus, Clock, Users, LogOut, 
   ChevronRight, QrCode, Eye, Edit,
-  UserPlus, Phone, Navigation, Calendar, Trash2
+  UserPlus, Phone, Navigation, Calendar, Trash2, Star
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -118,6 +118,48 @@ export default function Dashboard() {
         variant: "destructive",
         title: "Error",
         description: error.message || "Failed to delete fallback contact",
+      });
+    }
+  });
+
+  const setDefaultAddressMutation = useMutation({
+    mutationFn: async (addressId: number) => {
+      const res = await apiRequest("POST", `/api/addresses/${addressId}/set-primary`, {});
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      toast({
+        title: "Default Address Set",
+        description: "This address is now your default delivery address.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to set default address",
+      });
+    }
+  });
+
+  const setDefaultFallbackMutation = useMutation({
+    mutationFn: async (contactId: number) => {
+      const res = await apiRequest("POST", `/api/fallback-contact/${contactId}/set-default`, {});
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/fallback-contacts", selectedFallbackAddressId] });
+      toast({
+        title: "Default Fallback Set",
+        description: "This fallback contact is now your default for this address.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to set default fallback",
       });
     }
   });
@@ -263,14 +305,23 @@ export default function Dashboard() {
                 <div 
                   key={address.id}
                   data-testid={`address-card-${address.id}`}
-                  className="p-4 bg-muted/50 rounded-lg border border-border/50 hover:border-primary/30 transition-colors"
+                  className={`p-4 bg-muted/50 rounded-lg border transition-colors ${
+                    address.isPrimary 
+                      ? 'border-primary/50 bg-primary/5' 
+                      : 'border-border/50 hover:border-primary/30'
+                  }`}
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <span className="font-mono text-sm font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">
                           {address.digitalId}
                         </span>
+                        {address.isPrimary && (
+                          <Badge variant="default" className="bg-primary text-xs gap-1">
+                            <Star className="w-3 h-3" /> Default
+                          </Badge>
+                        )}
                         {address.preferredTime && (
                           <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded capitalize">
                             {address.preferredTime}
@@ -286,7 +337,20 @@ export default function Dashboard() {
                         </p>
                       )}
                     </div>
-                    <div className="flex gap-1 shrink-0">
+                    <div className="flex gap-1 shrink-0 flex-wrap justify-end">
+                      {!address.isPrimary && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          title="Set as Default"
+                          data-testid={`btn-set-default-${address.id}`}
+                          className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                          onClick={() => setDefaultAddressMutation.mutate(address.id)}
+                          disabled={setDefaultAddressMutation.isPending}
+                        >
+                          <Star className="w-4 h-4" />
+                        </Button>
+                      )}
                       <Link href={`/view/${address.digitalId}`}>
                         <Button variant="ghost" size="sm" title="View" data-testid={`btn-view-${address.id}`}>
                           <Eye className="w-4 h-4" />
@@ -394,12 +458,21 @@ export default function Dashboard() {
                           <div 
                             key={contact.id}
                             data-testid={`fallback-card-${contact.id}`}
-                            className="p-3 bg-muted/50 rounded-lg border border-border/50 hover:border-purple-300 transition-colors"
+                            className={`p-3 bg-muted/50 rounded-lg border transition-colors ${
+                              contact.isDefault 
+                                ? 'border-purple-400 bg-purple-50/50' 
+                                : 'border-border/50 hover:border-purple-300'
+                            }`}
                           >
                             <div className="flex items-start justify-between gap-3">
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1">
+                                <div className="flex items-center gap-2 mb-1 flex-wrap">
                                   <span className="font-medium text-foreground">{contact.name}</span>
+                                  {contact.isDefault && (
+                                    <Badge variant="default" className="bg-purple-600 text-xs gap-1">
+                                      <Star className="w-3 h-3" /> Default
+                                    </Badge>
+                                  )}
                                   {contact.relationship && (
                                     <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
                                       {contact.relationship}
@@ -427,7 +500,20 @@ export default function Dashboard() {
                                   )}
                                 </div>
                               </div>
-                              <div className="flex gap-1 shrink-0">
+                              <div className="flex gap-1 shrink-0 flex-wrap justify-end">
+                                {!contact.isDefault && (
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    title="Set as Default"
+                                    data-testid={`btn-set-default-fallback-${contact.id}`}
+                                    className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                                    onClick={() => setDefaultFallbackMutation.mutate(contact.id)}
+                                    disabled={setDefaultFallbackMutation.isPending}
+                                  >
+                                    <Star className="w-4 h-4" />
+                                  </Button>
+                                )}
                                 <Link href={`/view-fallback/${contact.id}`}>
                                   <Button variant="ghost" size="sm" title="View Details" data-testid={`btn-view-fallback-${contact.id}`}>
                                     <Eye className="w-4 h-4" />
