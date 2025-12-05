@@ -16,6 +16,7 @@ import AddAddress from "@/pages/add-address";
 import EditAddress from "@/pages/edit-address";
 import DeliveryPreferences from "@/pages/delivery-preferences";
 import ViewAddress from "@/pages/view-address";
+import SmartViewAddress from "@/pages/smart-view-address";
 import Dashboard from "@/pages/dashboard";
 import CompanyDashboard from "@/pages/company-dashboard";
 import FallbackContact from "@/pages/fallback-contact";
@@ -41,9 +42,7 @@ function Router() {
       <Route path="/edit-address/:id" component={EditAddress} />
       <Route path="/preferences" component={DeliveryPreferences} />
       <Route path="/fallback-contact" component={FallbackContact} />
-      <Route path="/view/:digitalId" component={ViewAddress} />
-      <Route path="/deliver/:digitalId" component={AddressCapture} />
-      <Route path="/d/:digitalId" component={AddressCapture} />
+      <Route path="/view/:digitalId" component={SmartViewAddress} />
       <Route path="/view-fallback/:id" component={ViewFallback} />
       <Route path="/edit-fallback/:id" component={EditFallback} />
       <Route path="/driver" component={DriverLookup} />
