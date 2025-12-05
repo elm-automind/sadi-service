@@ -642,3 +642,103 @@ export class DatabaseStorage implements IStorage {
 }
 
 export const storage = new DatabaseStorage();
+
+export const PRICING_PLANS_SEED: InsertPricingPlan[] = [
+  {
+    slug: "basic",
+    name: "Basic",
+    monthlyPrice: 199,
+    annualPrice: 1999,
+    features: [
+      "Address capture & storage",
+      "Single branch support",
+      "Driver address lookup",
+      "Basic QR code generation",
+      "Email support"
+    ],
+    isDefault: true,
+    isActive: true,
+    sortOrder: 1,
+  },
+  {
+    slug: "standard",
+    name: "Standard",
+    monthlyPrice: 499,
+    annualPrice: 4999,
+    features: [
+      "Everything in Basic",
+      "Driver management",
+      "Delivery feedback collection",
+      "Basic analytics dashboard",
+      "Up to 10 drivers",
+      "Priority email support"
+    ],
+    isDefault: false,
+    isActive: true,
+    sortOrder: 2,
+  },
+  {
+    slug: "pro",
+    name: "Pro",
+    monthlyPrice: 899,
+    annualPrice: 8999,
+    features: [
+      "Everything in Standard",
+      "Live delivery map view",
+      "Credit scoring system",
+      "Advanced analytics",
+      "API integrations",
+      "Up to 50 drivers",
+      "Phone & email support"
+    ],
+    isDefault: false,
+    isActive: true,
+    sortOrder: 3,
+  },
+  {
+    slug: "enterprise",
+    name: "Enterprise",
+    monthlyPrice: 1499,
+    annualPrice: 14999,
+    features: [
+      "Everything in Pro",
+      "Unlimited drivers",
+      "Multiple branch support",
+      "SLA dashboard",
+      "Custom billing & export",
+      "Dedicated account manager",
+      "24/7 priority support"
+    ],
+    isDefault: false,
+    isActive: true,
+    sortOrder: 4,
+  },
+];
+
+export async function seedPricingPlans(): Promise<void> {
+  try {
+    for (const plan of PRICING_PLANS_SEED) {
+      const existing = await db.select().from(pricingPlans).where(eq(pricingPlans.slug, plan.slug));
+      
+      if (existing.length === 0) {
+        await db.insert(pricingPlans).values(plan);
+        console.log(`Seeded pricing plan: ${plan.name}`);
+      } else {
+        await db.update(pricingPlans)
+          .set({
+            name: plan.name,
+            monthlyPrice: plan.monthlyPrice,
+            annualPrice: plan.annualPrice,
+            features: plan.features,
+            isDefault: plan.isDefault,
+            isActive: plan.isActive,
+            sortOrder: plan.sortOrder,
+          })
+          .where(eq(pricingPlans.slug, plan.slug));
+      }
+    }
+    console.log("Pricing plans seeded successfully");
+  } catch (error) {
+    console.error("Error seeding pricing plans:", error);
+  }
+}

@@ -444,15 +444,17 @@ export default function CompanyDashboard() {
   const handleSelectPlan = (planId: number) => {
     if (!pricingPlans || pricingPlans.length === 0) return;
     setSelectedPlanId(planId);
-    subscriptionMutation.mutate({
-      pricingPlanId: planId,
-      billingCycle: isAnnual ? "annual" : "monthly",
-    });
+    if (hasSubscription) {
+      subscriptionMutation.mutate({
+        pricingPlanId: planId,
+        billingCycle: isAnnual ? "annual" : "monthly",
+      });
+    }
   };
 
   const handleBillingToggle = (annual: boolean) => {
     setIsAnnual(annual);
-    if (selectedPlanId && pricingPlans && pricingPlans.length > 0) {
+    if (hasSubscription && selectedPlanId && pricingPlans && pricingPlans.length > 0) {
       subscriptionMutation.mutate({
         pricingPlanId: selectedPlanId,
         billingCycle: annual ? "annual" : "monthly",
@@ -517,7 +519,8 @@ export default function CompanyDashboard() {
   if (!user) return null;
 
   const currentPlan = subscriptionData?.plan;
-  const annualDiscount = 20;
+  const hasSubscription = !!subscriptionData?.subscription;
+  const annualDiscount = 15;
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -531,6 +534,142 @@ export default function CompanyDashboard() {
         return <Badge variant="secondary">{status}</Badge>;
     }
   };
+
+  if (!hasSubscription) {
+    return (
+      <div className="min-h-screen bg-muted/30 p-4 md:p-8">
+        <div className="max-w-6xl mx-auto space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 font-bold text-2xl border-2 border-blue-200">
+                <Building2 className="w-7 h-7" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-foreground">{user.name}</h1>
+                <p className="text-sm text-muted-foreground">{user.email}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 rtl-no-flip">
+              <LanguageSwitcher />
+              <Button variant="ghost" size="sm" onClick={handleLogout} data-testid="button-logout">
+                <LogOut className="w-4 h-4 me-2" /> {t('auth.logout')}
+              </Button>
+            </div>
+          </div>
+
+          <Separator />
+
+          <div className="text-center py-8">
+            <CreditCard className="w-16 h-16 mx-auto mb-4 text-primary" />
+            <h2 className="text-3xl font-bold text-foreground mb-2">{t('company.selectPricingPlan')}</h2>
+            <p className="text-muted-foreground max-w-md mx-auto mb-8">
+              {t('company.chooseSubscriptionPlan')}
+            </p>
+
+            <div className="flex items-center justify-center gap-3 p-3 bg-muted rounded-lg max-w-xs mx-auto mb-8">
+              <span className={`text-sm ${!isAnnual ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>
+                {t('company.monthly')}
+              </span>
+              <Switch
+                checked={isAnnual}
+                onCheckedChange={handleBillingToggle}
+                data-testid="switch-billing-cycle"
+              />
+              <span className={`text-sm ${isAnnual ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>
+                {t('company.annual')}
+                <Badge variant="secondary" className="ms-2 text-xs">{t('company.savePercent', { percent: annualDiscount })}</Badge>
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {pricingPlans?.map((plan) => {
+              const isSelected = selectedPlanId === plan.id;
+              const price = isAnnual ? plan.annualPrice : plan.monthlyPrice;
+              const isPopular = plan.slug === "standard";
+              const isRecommended = plan.slug === "pro";
+              
+              return (
+                <Card 
+                  key={plan.id} 
+                  className={`relative cursor-pointer transition-all hover:shadow-lg ${
+                    isSelected ? 'border-primary ring-2 ring-primary/20' : 'hover:border-primary/50'
+                  } ${isPopular || isRecommended ? 'border-primary/50' : ''}`}
+                  onClick={() => setSelectedPlanId(plan.id)}
+                  data-testid={`card-plan-${plan.slug}`}
+                >
+                  {isPopular && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                      <Badge className="bg-primary">{t('company.mostPopular')}</Badge>
+                    </div>
+                  )}
+                  {isRecommended && !isPopular && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                      <Badge className="bg-green-600">{t('company.recommended')}</Badge>
+                    </div>
+                  )}
+                  <CardHeader className="pb-2 pt-6">
+                    <CardTitle className="text-xl flex items-center justify-between gap-2">
+                      {plan.name}
+                      {isSelected && <Check className="w-5 h-5 text-primary" />}
+                    </CardTitle>
+                    <div className="mt-3">
+                      <span className="text-sm text-muted-foreground">{t('company.sar')}</span>
+                      <span className="text-4xl font-bold ms-1">{price}</span>
+                      <span className="text-muted-foreground">/{isAnnual ? t('company.year') : t('company.month')}</span>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    <p className="text-sm text-muted-foreground mb-4">{t('company.planIncludes')}</p>
+                    <ul className="space-y-3 text-sm">
+                      {plan.features.map((feature, i) => (
+                        <li key={i} className="flex items-start gap-2">
+                          <Check className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />
+                          <span className="text-foreground">{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <Button 
+                      className="w-full mt-6" 
+                      variant={isSelected ? "default" : "outline"}
+                      disabled={subscriptionMutation.isPending}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (isSelected) {
+                          subscriptionMutation.mutate({
+                            pricingPlanId: plan.id,
+                            billingCycle: isAnnual ? "annual" : "monthly",
+                          });
+                        } else {
+                          setSelectedPlanId(plan.id);
+                        }
+                      }}
+                      data-testid={`button-select-${plan.slug}`}
+                    >
+                      {subscriptionMutation.isPending && selectedPlanId === plan.id ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin me-2" />
+                          {t('company.subscribing')}
+                        </>
+                      ) : isSelected ? (
+                        t('company.getStarted')
+                      ) : (
+                        t('company.selectPlan')
+                      )}
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          <p className="text-center text-sm text-muted-foreground mt-8">
+            {t('company.annualDiscount')}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-muted/30 p-4 md:p-8">
