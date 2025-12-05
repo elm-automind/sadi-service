@@ -1,20 +1,32 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import ViewAddress from "./view-address";
 import AddressCapture from "./address-capture";
 
-export default function SmartViewAddress() {
-  const { data: user, isLoading } = useQuery({
-    queryKey: ["/api/user"],
-    queryFn: async () => {
-      const res = await fetch("/api/user", { credentials: "include" });
-      if (!res.ok) return null;
-      return res.json();
-    },
-    retry: false,
-    staleTime: 0,
-  });
+function isInternalNavigation(): boolean {
+  const referrer = document.referrer;
+  
+  if (!referrer) {
+    return false;
+  }
+  
+  try {
+    const referrerUrl = new URL(referrer);
+    const currentUrl = new URL(window.location.href);
+    
+    return referrerUrl.hostname === currentUrl.hostname;
+  } catch {
+    return false;
+  }
+}
 
-  if (isLoading) {
+export default function SmartViewAddress() {
+  const [isInternal, setIsInternal] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    setIsInternal(isInternalNavigation());
+  }, []);
+
+  if (isInternal === null) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -22,7 +34,7 @@ export default function SmartViewAddress() {
     );
   }
 
-  if (user) {
+  if (isInternal) {
     return <ViewAddress />;
   }
 
