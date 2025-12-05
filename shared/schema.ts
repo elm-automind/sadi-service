@@ -51,10 +51,11 @@ export const fallbackContacts = pgTable("fallback_contacts", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const passwordResetTokens = pgTable("password_reset_tokens", {
+export const passwordResetOtps = pgTable("password_reset_otps", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
-  token: text("token").notNull().unique(),
+  email: text("email").notNull(),
+  otp: text("otp").notNull(),
   expiresAt: timestamp("expires_at").notNull(),
   used: boolean("used").default(false),
   createdAt: timestamp("created_at").defaultNow(),
@@ -115,4 +116,4 @@ export type InsertAddress = z.infer<typeof insertAddressSchema>;
 export type Address = typeof addresses.$inferSelect;
 export type InsertFallbackContact = z.infer<typeof insertFallbackContactSchema>;
 export type FallbackContact = typeof fallbackContacts.$inferSelect;
-export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
+export type PasswordResetOtp = typeof passwordResetOtps.$inferSelect;

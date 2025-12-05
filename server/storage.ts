@@ -1,7 +1,7 @@
 import { 
   type User, type InsertUser, type Address, type InsertAddress,
-  type FallbackContact, type InsertFallbackContact, type PasswordResetToken,
-  users, addresses, fallbackContacts, passwordResetTokens 
+  type FallbackContact, type InsertFallbackContact, type PasswordResetOtp,
+  users, addresses, fallbackContacts, passwordResetOtps 
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, gt, lt } from "drizzle-orm";
@@ -27,10 +27,10 @@ export interface IStorage {
   deleteAddress(id: number): Promise<boolean>;
   clearPrimaryAddresses(userId: number): Promise<void>;
 
-  createPasswordResetToken(userId: number, token: string, expiresAt: Date): Promise<PasswordResetToken>;
-  getValidPasswordResetToken(token: string): Promise<PasswordResetToken | undefined>;
-  markTokenAsUsed(tokenId: number): Promise<void>;
-  deleteExpiredTokens(): Promise<void>;
+  createPasswordResetOtp(userId: number, email: string, otp: string, expiresAt: Date): Promise<PasswordResetOtp>;
+  getValidOtp(email: string, otp: string): Promise<PasswordResetOtp | undefined>;
+  markOtpAsUsed(otpId: number): Promise<void>;
+  deleteExpiredOtps(): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -133,39 +133,40 @@ export class DatabaseStorage implements IStorage {
       .where(eq(addresses.userId, userId));
   }
 
-  async createPasswordResetToken(userId: number, token: string, expiresAt: Date): Promise<PasswordResetToken> {
-    const [resetToken] = await db
-      .insert(passwordResetTokens)
-      .values({ userId, token, expiresAt })
+  async createPasswordResetOtp(userId: number, email: string, otp: string, expiresAt: Date): Promise<PasswordResetOtp> {
+    const [resetOtp] = await db
+      .insert(passwordResetOtps)
+      .values({ userId, email, otp, expiresAt })
       .returning();
-    return resetToken;
+    return resetOtp;
   }
 
-  async getValidPasswordResetToken(token: string): Promise<PasswordResetToken | undefined> {
+  async getValidOtp(email: string, otp: string): Promise<PasswordResetOtp | undefined> {
     const now = new Date();
-    const [resetToken] = await db
+    const [resetOtp] = await db
       .select()
-      .from(passwordResetTokens)
+      .from(passwordResetOtps)
       .where(
         and(
-          eq(passwordResetTokens.token, token),
-          eq(passwordResetTokens.used, false),
-          gt(passwordResetTokens.expiresAt, now)
+          eq(passwordResetOtps.email, email),
+          eq(passwordResetOtps.otp, otp),
+          eq(passwordResetOtps.used, false),
+          gt(passwordResetOtps.expiresAt, now)
         )
       );
-    return resetToken || undefined;
+    return resetOtp || undefined;
   }
 
-  async markTokenAsUsed(tokenId: number): Promise<void> {
+  async markOtpAsUsed(otpId: number): Promise<void> {
     await db
-      .update(passwordResetTokens)
+      .update(passwordResetOtps)
       .set({ used: true })
-      .where(eq(passwordResetTokens.id, tokenId));
+      .where(eq(passwordResetOtps.id, otpId));
   }
 
-  async deleteExpiredTokens(): Promise<void> {
+  async deleteExpiredOtps(): Promise<void> {
     const now = new Date();
-    await db.delete(passwordResetTokens).where(lt(passwordResetTokens.expiresAt, now));
+    await db.delete(passwordResetOtps).where(lt(passwordResetOtps.expiresAt, now));
   }
 }
 

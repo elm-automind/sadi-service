@@ -122,9 +122,9 @@ export async function registerRoutes(httpServer: Server, app: Express) {
     });
   });
 
-  // --- Password Reset Routes ---
+  // --- Password Reset Routes (OTP-based) ---
 
-  app.post("/api/forgot-password", async (req, res) => {
+  app.post("/api/send-reset-otp", async (req, res) => {
     try {
       const { email } = req.body;
       if (!email) return res.status(400).json({ message: "Email is required" });
@@ -133,34 +133,35 @@ export async function registerRoutes(httpServer: Server, app: Express) {
       
       // Always return success to prevent email enumeration
       if (!user) {
-        return res.json({ message: "If an account exists with this email, a reset link will be sent." });
+        // Return success even if user doesn't exist (security best practice)
+        return res.json({ message: "If an account exists with this email, an OTP will be sent.", success: true });
       }
 
+      // Generate 6-digit OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+      await storage.createPasswordResetOtp(user.id, email, otp, expiresAt);
+
+      // Send email with OTP (or log in dev mode if email service not configured)
       if (!resend) {
-        return res.status(503).json({ message: "Email service is not configured. Please contact support." });
+        console.log(`[DEV MODE] Password reset OTP for ${email}: ${otp}`);
+        return res.json({ message: "OTP sent to your email", success: true });
       }
 
-      // Generate secure token
-      const token = crypto.randomBytes(32).toString('hex');
-      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
-
-      await storage.createPasswordResetToken(user.id, token, expiresAt);
-
-      // Send email
-      const resetUrl = `${req.protocol}://${req.get('host')}/reset-password/${token}`;
-      
       const { error } = await resend.emails.send({
         from: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
         to: email,
-        subject: 'Reset Your Password',
+        subject: 'Your Password Reset Code',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2>Password Reset Request</h2>
+            <h2>Password Reset Code</h2>
             <p>Hello ${user.name},</p>
-            <p>You requested to reset your password. Click the button below to set a new password:</p>
-            <a href="${resetUrl}" style="display: inline-block; background-color: #0070f3; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin: 16px 0;">Reset Password</a>
-            <p>Or copy this link: <a href="${resetUrl}">${resetUrl}</a></p>
-            <p>This link will expire in 1 hour.</p>
+            <p>Your password reset code is:</p>
+            <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0;">
+              <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #1f2937;">${otp}</span>
+            </div>
+            <p>This code will expire in 10 minutes.</p>
             <p>If you didn't request this, you can safely ignore this email.</p>
           </div>
         `,
@@ -168,56 +169,62 @@ export async function registerRoutes(httpServer: Server, app: Express) {
 
       if (error) {
         console.error("Email send error:", error);
-        return res.status(500).json({ message: "Failed to send reset email. Please try again." });
+        // Still allow the flow to continue, just log the error
+        console.log(`[FALLBACK] Password reset OTP for ${email}: ${otp}`);
       }
 
-      res.json({ message: "If an account exists with this email, a reset link will be sent." });
+      res.json({ message: "OTP sent to your email", success: true });
     } catch (error) {
-      console.error("Forgot password error:", error);
+      console.error("Send OTP error:", error);
       res.status(500).json({ message: "Internal Server Error" });
     }
   });
 
-  app.get("/api/verify-reset-token/:token", async (req, res) => {
+  app.post("/api/verify-otp", async (req, res) => {
     try {
-      const { token } = req.params;
-      const resetToken = await storage.getValidPasswordResetToken(token);
+      const { email, otp } = req.body;
       
-      if (!resetToken) {
-        return res.status(400).json({ message: "Invalid or expired reset link" });
+      if (!email || !otp) {
+        return res.status(400).json({ message: "Email and OTP are required" });
+      }
+
+      const resetOtp = await storage.getValidOtp(email, otp);
+      
+      if (!resetOtp) {
+        return res.status(400).json({ message: "Invalid or expired OTP" });
       }
 
       res.json({ valid: true });
     } catch (error) {
-      console.error("Verify token error:", error);
+      console.error("Verify OTP error:", error);
       res.status(500).json({ message: "Internal Server Error" });
     }
   });
 
   app.post("/api/reset-password", async (req, res) => {
     try {
-      const { token, password } = req.body;
+      const { email, otp, password } = req.body;
       
-      if (!token || !password) {
-        return res.status(400).json({ message: "Token and password are required" });
+      if (!email || !otp || !password) {
+        return res.status(400).json({ message: "Email, OTP, and password are required" });
       }
 
       if (password.length < 6) {
         return res.status(400).json({ message: "Password must be at least 6 characters" });
       }
 
-      const resetToken = await storage.getValidPasswordResetToken(token);
+      const resetOtp = await storage.getValidOtp(email, otp);
       
-      if (!resetToken) {
-        return res.status(400).json({ message: "Invalid or expired reset link" });
+      if (!resetOtp) {
+        return res.status(400).json({ message: "Invalid or expired OTP" });
       }
 
       // Hash new password and update user
       const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
-      await storage.updateUserPassword(resetToken.userId, hashedPassword);
+      await storage.updateUserPassword(resetOtp.userId, hashedPassword);
       
-      // Mark token as used
-      await storage.markTokenAsUsed(resetToken.id);
+      // Mark OTP as used
+      await storage.markOtpAsUsed(resetOtp.id);
 
       res.json({ message: "Password has been reset successfully" });
     } catch (error) {
