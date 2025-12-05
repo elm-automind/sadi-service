@@ -132,6 +132,8 @@ export async function generateInvoice(
 
   try {
     console.log(`Calling billing API for company: ${companyInfo.companyName}, plan: ${planInfo.name}, cycle: ${billingCycle}`);
+    console.log(`Billing API URL: ${apiUrl}`);
+    console.log(`Billing API Payload:`, JSON.stringify(payload, null, 2));
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000);
@@ -163,12 +165,30 @@ export async function generateInvoice(
     }
 
     console.log(`Billing API response status: ${response.status}`);
+    console.log(`Billing API response body: ${responseText}`);
 
     if (!response.ok) {
-      console.error(`Billing API error: ${response.status} - ${responseText}`);
+      console.error(`Billing API error: ${response.status}`);
+      console.error(`Billing API error response: ${responseText}`);
+      
+      // Try to parse error message from response
+      let errorDetail = `Billing service error (${response.status})`;
+      try {
+        const errorData = JSON.parse(responseText);
+        if (errorData.message) {
+          errorDetail = errorData.message;
+        } else if (errorData.error) {
+          errorDetail = errorData.error;
+        } else if (errorData.body?.message) {
+          errorDetail = errorData.body.message;
+        }
+      } catch {
+        // Use default error message
+      }
+      
       return {
         success: false,
-        error: `Billing service unavailable (${response.status})`,
+        error: errorDetail,
         message: "Failed to generate invoice. Please try again later.",
       };
     }
