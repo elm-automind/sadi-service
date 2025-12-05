@@ -86,8 +86,9 @@ const FileUploadBox = ({ label, icon: Icon, onDrop, processedImage, onRemove, is
           >
             <X className="w-3 h-3" />
           </button>
-          <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[10px] p-1 text-center truncate">
-            {processedImage.originalName}
+          <div {...getRootProps()} className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[10px] p-1 text-center cursor-pointer hover:bg-black/70">
+            <input {...getInputProps()} />
+            Click to replace
           </div>
         </div>
       ) : (
