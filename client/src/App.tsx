@@ -8,6 +8,8 @@ import Home from "@/pages/home";
 import Register from "@/pages/register";
 import Success from "@/pages/success";
 import Login from "@/pages/login";
+import ForgotPassword from "@/pages/forgot-password";
+import ResetPassword from "@/pages/reset-password";
 import AddAddress from "@/pages/add-address";
 import DeliveryPreferences from "@/pages/delivery-preferences";
 import ViewAddress from "@/pages/view-address";
@@ -22,6 +24,8 @@ function Router() {
       <Route path="/register" component={Register} />
       <Route path="/success" component={Success} />
       <Route path="/login" component={Login} />
+      <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/reset-password/:token" component={ResetPassword} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/add-address" component={AddAddress} />
       <Route path="/preferences" component={DeliveryPreferences} />

@@ -51,6 +51,15 @@ export const fallbackContacts = pgTable("fallback_contacts", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  token: text("token").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  used: boolean("used").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   iqamaId: true,
   email: true,
@@ -106,3 +115,4 @@ export type InsertAddress = z.infer<typeof insertAddressSchema>;
 export type Address = typeof addresses.$inferSelect;
 export type InsertFallbackContact = z.infer<typeof insertFallbackContactSchema>;
 export type FallbackContact = typeof fallbackContacts.$inferSelect;
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;

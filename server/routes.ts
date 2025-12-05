@@ -1,10 +1,14 @@
 import type { Express } from "express";
 import { type Server } from "http";
 import bcrypt from "bcrypt";
+import crypto from "crypto";
+import { Resend } from "resend";
 import { storage } from "./storage";
 import { insertUserSchema, insertAddressSchema, insertFallbackContactSchema } from "@shared/schema";
 import { calculateDistanceKm } from "@shared/utils";
 import { z } from "zod";
+
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 const SALT_ROUNDS = 10;
 
@@ -81,12 +85,28 @@ export async function registerRoutes(httpServer: Server, app: Express) {
     let user = await storage.getUserByEmail(identifier);
     if (!user) user = await storage.getUserByIqama(identifier);
     
-    // Verify password using bcrypt
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
     
-    const passwordMatch = await bcrypt.compare(password, user.password);
+    // Check if password is hashed (bcrypt hashes start with $2b$ or $2a$)
+    const isHashedPassword = user.password.startsWith('$2b$') || user.password.startsWith('$2a$');
+    
+    let passwordMatch = false;
+    if (isHashedPassword) {
+      // Compare with bcrypt
+      passwordMatch = await bcrypt.compare(password, user.password);
+    } else {
+      // Legacy plaintext password - compare directly
+      passwordMatch = user.password === password;
+      
+      // Migrate to hashed password on successful login
+      if (passwordMatch) {
+        const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+        await storage.updateUserPassword(user.id, hashedPassword);
+      }
+    }
+    
     if (!passwordMatch) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
@@ -100,6 +120,110 @@ export async function registerRoutes(httpServer: Server, app: Express) {
     req.session.destroy(() => {
       res.json({ message: "Logged out" });
     });
+  });
+
+  // --- Password Reset Routes ---
+
+  app.post("/api/forgot-password", async (req, res) => {
+    try {
+      const { email } = req.body;
+      if (!email) return res.status(400).json({ message: "Email is required" });
+
+      const user = await storage.getUserByEmail(email);
+      
+      // Always return success to prevent email enumeration
+      if (!user) {
+        return res.json({ message: "If an account exists with this email, a reset link will be sent." });
+      }
+
+      if (!resend) {
+        return res.status(503).json({ message: "Email service is not configured. Please contact support." });
+      }
+
+      // Generate secure token
+      const token = crypto.randomBytes(32).toString('hex');
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+      await storage.createPasswordResetToken(user.id, token, expiresAt);
+
+      // Send email
+      const resetUrl = `${req.protocol}://${req.get('host')}/reset-password/${token}`;
+      
+      const { error } = await resend.emails.send({
+        from: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
+        to: email,
+        subject: 'Reset Your Password',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2>Password Reset Request</h2>
+            <p>Hello ${user.name},</p>
+            <p>You requested to reset your password. Click the button below to set a new password:</p>
+            <a href="${resetUrl}" style="display: inline-block; background-color: #0070f3; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin: 16px 0;">Reset Password</a>
+            <p>Or copy this link: <a href="${resetUrl}">${resetUrl}</a></p>
+            <p>This link will expire in 1 hour.</p>
+            <p>If you didn't request this, you can safely ignore this email.</p>
+          </div>
+        `,
+      });
+
+      if (error) {
+        console.error("Email send error:", error);
+        return res.status(500).json({ message: "Failed to send reset email. Please try again." });
+      }
+
+      res.json({ message: "If an account exists with this email, a reset link will be sent." });
+    } catch (error) {
+      console.error("Forgot password error:", error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  });
+
+  app.get("/api/verify-reset-token/:token", async (req, res) => {
+    try {
+      const { token } = req.params;
+      const resetToken = await storage.getValidPasswordResetToken(token);
+      
+      if (!resetToken) {
+        return res.status(400).json({ message: "Invalid or expired reset link" });
+      }
+
+      res.json({ valid: true });
+    } catch (error) {
+      console.error("Verify token error:", error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  });
+
+  app.post("/api/reset-password", async (req, res) => {
+    try {
+      const { token, password } = req.body;
+      
+      if (!token || !password) {
+        return res.status(400).json({ message: "Token and password are required" });
+      }
+
+      if (password.length < 6) {
+        return res.status(400).json({ message: "Password must be at least 6 characters" });
+      }
+
+      const resetToken = await storage.getValidPasswordResetToken(token);
+      
+      if (!resetToken) {
+        return res.status(400).json({ message: "Invalid or expired reset link" });
+      }
+
+      // Hash new password and update user
+      const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+      await storage.updateUserPassword(resetToken.userId, hashedPassword);
+      
+      // Mark token as used
+      await storage.markTokenAsUsed(resetToken.id);
+
+      res.json({ message: "Password has been reset successfully" });
+    } catch (error) {
+      console.error("Reset password error:", error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
   });
 
   app.get("/api/user", requireAuth, async (req, res) => {

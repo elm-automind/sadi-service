@@ -1,10 +1,10 @@
 import { 
   type User, type InsertUser, type Address, type InsertAddress,
-  type FallbackContact, type InsertFallbackContact,
-  users, addresses, fallbackContacts 
+  type FallbackContact, type InsertFallbackContact, type PasswordResetToken,
+  users, addresses, fallbackContacts, passwordResetTokens 
 } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, and, gt, lt } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -12,6 +12,7 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserByPhone(phone: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUserPassword(userId: number, hashedPassword: string): Promise<void>;
   
   createAddress(address: InsertAddress): Promise<Address>;
   getAddressById(id: number): Promise<Address | undefined>;
@@ -25,6 +26,11 @@ export interface IStorage {
   deleteFallbackContactsByAddressId(addressId: number): Promise<void>;
   deleteAddress(id: number): Promise<boolean>;
   clearPrimaryAddresses(userId: number): Promise<void>;
+
+  createPasswordResetToken(userId: number, token: string, expiresAt: Date): Promise<PasswordResetToken>;
+  getValidPasswordResetToken(token: string): Promise<PasswordResetToken | undefined>;
+  markTokenAsUsed(tokenId: number): Promise<void>;
+  deleteExpiredTokens(): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -54,6 +60,13 @@ export class DatabaseStorage implements IStorage {
       .values(insertUser)
       .returning();
     return user;
+  }
+
+  async updateUserPassword(userId: number, hashedPassword: string): Promise<void> {
+    await db
+      .update(users)
+      .set({ password: hashedPassword })
+      .where(eq(users.id, userId));
   }
 
   async createAddress(insertAddress: InsertAddress): Promise<Address> {
@@ -118,6 +131,41 @@ export class DatabaseStorage implements IStorage {
       .update(addresses)
       .set({ isPrimary: false })
       .where(eq(addresses.userId, userId));
+  }
+
+  async createPasswordResetToken(userId: number, token: string, expiresAt: Date): Promise<PasswordResetToken> {
+    const [resetToken] = await db
+      .insert(passwordResetTokens)
+      .values({ userId, token, expiresAt })
+      .returning();
+    return resetToken;
+  }
+
+  async getValidPasswordResetToken(token: string): Promise<PasswordResetToken | undefined> {
+    const now = new Date();
+    const [resetToken] = await db
+      .select()
+      .from(passwordResetTokens)
+      .where(
+        and(
+          eq(passwordResetTokens.token, token),
+          eq(passwordResetTokens.used, false),
+          gt(passwordResetTokens.expiresAt, now)
+        )
+      );
+    return resetToken || undefined;
+  }
+
+  async markTokenAsUsed(tokenId: number): Promise<void> {
+    await db
+      .update(passwordResetTokens)
+      .set({ used: true })
+      .where(eq(passwordResetTokens.id, tokenId));
+  }
+
+  async deleteExpiredTokens(): Promise<void> {
+    const now = new Date();
+    await db.delete(passwordResetTokens).where(lt(passwordResetTokens.expiresAt, now));
   }
 }
 
