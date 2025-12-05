@@ -5,7 +5,7 @@ import crypto from "crypto";
 import { Resend } from "resend";
 import { storage } from "./storage";
 import { generateInvoice } from "./billing";
-import { createPaymentRequest } from "./payment";
+import { createPaymentRequest, inquirePaymentRequest } from "./payment";
 import { 
   insertUserSchema, insertAddressSchema, insertFallbackContactSchema, 
   companyRegistrationSchema, companyAddressFormSchema, subscriptionFormSchema, driverFormSchema, bulkDriverSchema,
@@ -814,6 +814,42 @@ export async function registerRoutes(httpServer: Server, app: Express) {
         console.error("Update company subscription error:", error);
         res.status(500).json({ message: "Internal Server Error" });
       }
+    }
+  });
+
+  // Verify payment status
+  app.post("/api/company/verify-payment", requireCompanyAuth, async (req: any, res) => {
+    try {
+      const { paymentRequestId } = req.body;
+      
+      if (!paymentRequestId) {
+        return res.status(400).json({ message: "Payment request ID is required" });
+      }
+      
+      console.log(`Verifying payment for request: ${paymentRequestId}`);
+      
+      const result = await inquirePaymentRequest(paymentRequestId);
+      
+      if (result.success && result.isPaid) {
+        // Update subscription status to active
+        const subscription = await storage.getCompanySubscription(req.companyProfile.id);
+        if (subscription) {
+          await storage.updateCompanySubscription(subscription.id, {
+            status: "active",
+            paymentStatus: "paid",
+          });
+        }
+      }
+      
+      res.json({
+        success: result.success,
+        isPaid: result.isPaid,
+        status: result.status,
+        message: result.message,
+      });
+    } catch (error) {
+      console.error("Verify payment error:", error);
+      res.status(500).json({ message: "Failed to verify payment" });
     }
   });
 

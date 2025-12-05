@@ -5,22 +5,27 @@ import { ArrowLeft, CreditCard, Loader2, CheckCircle, XCircle } from "lucide-rea
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { SarSymbol } from "@/components/sar-symbol";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Payment() {
   const { t } = useTranslation();
+  const { toast } = useToast();
   const [, navigate] = useLocation();
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
+  const [paymentRequestId, setPaymentRequestId] = useState<string | null>(null);
   const [paymentDetails, setPaymentDetails] = useState<{
     planName: string;
     amount: number;
     billingCycle: string;
   } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isVerifying, setIsVerifying] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<"pending" | "success" | "failed">("pending");
 
   useEffect(() => {
     // Get payment data from sessionStorage
     const storedPaymentUrl = sessionStorage.getItem("paymentUrl");
+    const storedPaymentRequestId = sessionStorage.getItem("paymentRequestId");
     const storedPaymentDetails = sessionStorage.getItem("paymentDetails");
 
     if (storedPaymentUrl) {
@@ -30,6 +35,10 @@ export default function Payment() {
       // No payment URL, redirect back
       navigate("/company-dashboard");
       return;
+    }
+
+    if (storedPaymentRequestId) {
+      setPaymentRequestId(storedPaymentRequestId);
     }
 
     if (storedPaymentDetails) {
@@ -44,8 +53,7 @@ export default function Payment() {
     const handleMessage = (event: MessageEvent) => {
       if (event.data?.type === "PAYMENT_SUCCESS") {
         setPaymentStatus("success");
-        sessionStorage.removeItem("paymentUrl");
-        sessionStorage.removeItem("paymentDetails");
+        clearPaymentData();
       } else if (event.data?.type === "PAYMENT_FAILED") {
         setPaymentStatus("failed");
       }
@@ -55,16 +63,67 @@ export default function Payment() {
     return () => window.removeEventListener("message", handleMessage);
   }, [navigate]);
 
-  const handleBack = () => {
+  const clearPaymentData = () => {
     sessionStorage.removeItem("paymentUrl");
+    sessionStorage.removeItem("paymentRequestId");
     sessionStorage.removeItem("paymentDetails");
+  };
+
+  const handleBack = () => {
+    clearPaymentData();
     navigate("/company-dashboard");
   };
 
   const handleReturnToDashboard = () => {
-    sessionStorage.removeItem("paymentUrl");
-    sessionStorage.removeItem("paymentDetails");
+    clearPaymentData();
     navigate("/company-dashboard");
+  };
+
+  const handleVerifyPayment = async () => {
+    if (!paymentRequestId) {
+      toast({
+        title: t('common.error'),
+        description: t('payment.verificationError'),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsVerifying(true);
+    
+    try {
+      const response = await fetch("/api/company/verify-payment", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ paymentRequestId }),
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.isPaid) {
+        setPaymentStatus("success");
+        clearPaymentData();
+      } else {
+        setPaymentStatus("failed");
+        toast({
+          title: t('payment.failed'),
+          description: data.message || t('payment.notYetCompleted'),
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Payment verification error:", error);
+      toast({
+        title: t('common.error'),
+        description: t('payment.verificationError'),
+        variant: "destructive",
+      });
+    } finally {
+      setIsVerifying(false);
+    }
   };
 
   if (isLoading) {
@@ -185,13 +244,18 @@ export default function Payment() {
                 <p className="text-xs text-muted-foreground">{t('payment.completedPaymentDesc')}</p>
               </div>
               <Button 
-                onClick={() => setPaymentStatus("success")} 
+                onClick={handleVerifyPayment} 
                 variant="default"
                 className="w-full sm:w-auto"
+                disabled={isVerifying}
                 data-testid="button-confirm-payment"
               >
-                <CheckCircle className="w-4 h-4 mr-2" />
-                {t('payment.confirmPayment')}
+                {isVerifying ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                )}
+                {isVerifying ? t('payment.verifying') : t('payment.confirmPayment')}
               </Button>
             </div>
           </CardContent>

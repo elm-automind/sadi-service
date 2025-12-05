@@ -582,6 +582,9 @@
     "securityNote": "Your payment is secured with industry-standard encryption. We do not store your card details.",
     "completedPayment": "Already completed your payment?",
     "completedPaymentDesc": "If you see a success message in the payment window above, click here to continue.",
-    "confirmPayment": "I've Completed Payment"
+    "confirmPayment": "I've Completed Payment",
+    "verifying": "Verifying...",
+    "verificationError": "Could not verify payment. Please try again.",
+    "notYetCompleted": "Payment not yet completed. Please complete the payment first."
   }
 }

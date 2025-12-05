@@ -391,6 +391,7 @@ export default function CompanyDashboard() {
       if (data.payment?.paymentUrl) {
         // Store payment URL and details in sessionStorage for the payment page
         sessionStorage.setItem("paymentUrl", data.payment.paymentUrl);
+        sessionStorage.setItem("paymentRequestId", data.payment.paymentRequestId);
         sessionStorage.setItem("paymentDetails", JSON.stringify({
           planName: data.plan?.name || "Subscription",
           amount: data.subscription?.totalDueAmount || 0,

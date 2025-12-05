@@ -19,6 +19,14 @@ interface PaymentResult {
   error?: string;
 }
 
+interface PaymentInquiryResult {
+  success: boolean;
+  isPaid: boolean;
+  status?: string;
+  message?: string;
+  error?: string;
+}
+
 export async function createPaymentRequest(
   sadadNumber: string,
   accountNumber: string,
@@ -171,6 +179,118 @@ export async function createPaymentRequest(
       success: false,
       error: errorMessage,
       message: "Failed to connect to payment service. Please try again later.",
+    };
+  }
+}
+
+export async function inquirePaymentRequest(
+  paymentRequestId: string
+): Promise<PaymentInquiryResult> {
+  const apiUrl = "https://pg-beta.api.elm.sa/api/product/inquirepaymentrequest";
+  const productCode = process.env.BILLING_PRODUCT_CODE || "812";
+  const clientKey = process.env.PAYMENT_CLIENT_KEY;
+  const appId = process.env.PAYMENT_APP_ID || process.env.BILLING_APP_ID;
+  const appKey = process.env.PAYMENT_APP_KEY || process.env.BILLING_APP_KEY;
+
+  if (!appId || !appKey) {
+    console.warn("Payment API credentials not configured");
+    return {
+      success: false,
+      isPaid: false,
+      error: "Payment API credentials not configured",
+      message: "Payment verification not available",
+    };
+  }
+
+  const messageId = crypto.randomUUID();
+  const timestamp = new Date().toISOString();
+
+  try {
+    console.log(`Inquiring payment status for request: ${paymentRequestId}`);
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+    let response: Response;
+    try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        "MessageId": messageId,
+        "Timestamp": timestamp,
+        "app-id": appId,
+        "app-key": appKey,
+        "ProductCode": productCode,
+      };
+      
+      if (clientKey) {
+        headers["ClientKey"] = clientKey;
+      }
+      
+      response = await fetch(apiUrl, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(paymentRequestId),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
+
+    let responseText: string;
+    try {
+      responseText = await response.text();
+    } catch {
+      responseText = "";
+    }
+
+    console.log(`Payment inquiry response status: ${response.status}`);
+    console.log(`Payment inquiry response: ${responseText}`);
+
+    if (!response.ok) {
+      console.error(`Payment inquiry error: ${response.status} - ${responseText}`);
+      return {
+        success: false,
+        isPaid: false,
+        error: `Payment verification failed (${response.status})`,
+        message: "Could not verify payment status. Please try again.",
+      };
+    }
+
+    let responseData: Record<string, unknown> = {};
+    try {
+      if (responseText && responseText.trim().startsWith("{")) {
+        responseData = JSON.parse(responseText);
+      }
+    } catch (parseError) {
+      console.warn("Could not parse payment inquiry response as JSON:", parseError);
+    }
+
+    const body = responseData.body as Record<string, unknown> | undefined;
+    const data = body?.data as Record<string, unknown> | undefined;
+    
+    const paymentStatus = data?.paymentStatus as string | undefined;
+    const isPaid = paymentStatus === "Paid" || paymentStatus === "paid" || paymentStatus === "PAID";
+    
+    console.log(`Payment status for ${paymentRequestId}: ${paymentStatus}, isPaid: ${isPaid}`);
+
+    return {
+      success: true,
+      isPaid,
+      status: paymentStatus,
+      message: isPaid ? "Payment verified successfully" : "Payment not yet completed",
+    };
+  } catch (error) {
+    console.error("Payment inquiry failed:", error);
+    
+    const errorMessage = error instanceof Error 
+      ? (error.name === 'AbortError' ? 'Request timeout' : 'Connection failed')
+      : 'Unknown error';
+    
+    return {
+      success: false,
+      isPaid: false,
+      error: errorMessage,
+      message: "Failed to verify payment. Please try again.",
     };
   }
 }
