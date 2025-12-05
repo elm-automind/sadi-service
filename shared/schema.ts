@@ -206,6 +206,11 @@ export const insertUserSchema = createInsertSchema(users).pick({
   phone: true,
   name: true,
   password: true,
+}).extend({
+  email: z.string().email("Invalid email format"),
+  phone: z.string().min(9, "Phone number must be at least 9 digits").regex(/^[0-9+\-\s]+$/, "Invalid phone number format"),
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
 export const insertCompanyProfileSchema = createInsertSchema(companyProfiles).pick({
@@ -219,8 +224,8 @@ export const companyRegistrationSchema = z.object({
   companyName: z.string().min(2, "Company name is required"),
   unifiedNumber: z.string().min(5, "Unified number is required"),
   companyType: z.enum(companyTypeEnum, { required_error: "Company type is required" }),
-  email: z.string().email("Invalid email address"),
-  phone: z.string().min(9, "Mobile number is required"),
+  email: z.string().email("Invalid email format"),
+  phone: z.string().min(9, "Phone number must be at least 9 digits").regex(/^[0-9+\-\s]+$/, "Invalid phone number format"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
