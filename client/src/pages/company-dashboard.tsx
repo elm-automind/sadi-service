@@ -6,12 +6,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { 
   Building2, LogOut, Package, Users, TrendingUp, 
-  MapPin, CreditCard, Edit2, Check, Loader2, Plus, Trash2, UserCog
+  MapPin, CreditCard, Edit2, Check, Loader2, Plus, Trash2, UserCog, Upload
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
@@ -92,6 +93,8 @@ export default function CompanyDashboard() {
   const { toast } = useToast();
   const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false);
   const [isDriverDialogOpen, setIsDriverDialogOpen] = useState(false);
+  const [isBulkUploadDialogOpen, setIsBulkUploadDialogOpen] = useState(false);
+  const [bulkUploadText, setBulkUploadText] = useState("");
   const [editingDriver, setEditingDriver] = useState<CompanyDriver | null>(null);
   const [isAnnual, setIsAnnual] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
@@ -311,6 +314,29 @@ export default function CompanyDashboard() {
     },
   });
 
+  const bulkUploadMutation = useMutation({
+    mutationFn: async (drivers: { driverId: string; name: string; phone?: string }[]) => {
+      const res = await apiRequest("POST", "/api/company/drivers/bulk", { drivers });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/company/drivers"] });
+      setIsBulkUploadDialogOpen(false);
+      setBulkUploadText("");
+      toast({
+        title: "Bulk Upload Complete",
+        description: data.message,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to upload drivers",
+      });
+    },
+  });
+
   useEffect(() => {
     if (!isLoading && !user) {
       setLocation("/");
@@ -371,6 +397,36 @@ export default function CompanyDashboard() {
   const openEditDriver = (driver: CompanyDriver) => {
     setEditingDriver(driver);
     setIsDriverDialogOpen(true);
+  };
+
+  const parseBulkDrivers = (text: string) => {
+    const lines = text.split("\n").filter((line) => line.trim());
+    const drivers: { driverId: string; name: string; phone?: string }[] = [];
+    
+    for (const line of lines) {
+      const parts = line.split(/[,\t]/).map((p) => p.trim());
+      if (parts.length >= 2) {
+        drivers.push({
+          driverId: parts[0],
+          name: parts[1],
+          phone: parts[2] || undefined,
+        });
+      }
+    }
+    return drivers;
+  };
+
+  const handleBulkUpload = () => {
+    const drivers = parseBulkDrivers(bulkUploadText);
+    if (drivers.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "Invalid Format",
+        description: "Please enter at least one driver with format: DriverID, Name, Phone (optional)",
+      });
+      return;
+    }
+    bulkUploadMutation.mutate(drivers);
   };
 
   if (isLoading) {
@@ -490,10 +546,16 @@ export default function CompanyDashboard() {
                   Add and manage your delivery drivers
                 </CardDescription>
               </div>
-              <Button onClick={openAddDriver} data-testid="button-add-driver">
-                <Plus className="w-4 h-4 mr-2" />
-                Add Driver
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setIsBulkUploadDialogOpen(true)} data-testid="button-bulk-upload">
+                  <Upload className="w-4 h-4 mr-2" />
+                  Bulk Upload
+                </Button>
+                <Button onClick={openAddDriver} data-testid="button-add-driver">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Driver
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
@@ -635,6 +697,72 @@ export default function CompanyDashboard() {
                 </Button>
               </DialogFooter>
             </form>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={isBulkUploadDialogOpen} onOpenChange={setIsBulkUploadDialogOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Upload className="w-5 h-5" />
+                Bulk Upload Drivers
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="bulk-drivers">Driver List</Label>
+                <Textarea
+                  id="bulk-drivers"
+                  placeholder="Paste driver list here. One driver per line in format:
+DriverID, Name, Phone (optional)
+
+Example:
+DRV001, Ahmed Ali, 0501234567
+DRV002, Mohammed Hassan
+DRV003, Khalid Omar, 0551234567"
+                  className="h-48 font-mono text-sm"
+                  value={bulkUploadText}
+                  onChange={(e) => setBulkUploadText(e.target.value)}
+                  data-testid="textarea-bulk-drivers"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Each line should contain: Driver ID, Name, Phone (optional) - separated by commas or tabs
+                </p>
+              </div>
+              {bulkUploadText && (
+                <div className="p-3 bg-muted rounded-md">
+                  <p className="text-sm font-medium">Preview: {parseBulkDrivers(bulkUploadText).length} driver(s) detected</p>
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsBulkUploadDialogOpen(false);
+                  setBulkUploadText("");
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleBulkUpload}
+                disabled={bulkUploadMutation.isPending || !bulkUploadText.trim()}
+                data-testid="button-submit-bulk"
+              >
+                {bulkUploadMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4 mr-2" />
+                    Upload Drivers
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 
