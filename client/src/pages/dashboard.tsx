@@ -99,14 +99,14 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!isLoading && !user) {
-      setLocation("/login");
+      setLocation("/");
     }
   }, [user, isLoading]);
 
   const handleLogout = async () => {
     await apiRequest("POST", "/api/logout", {});
     queryClient.removeQueries({ queryKey: ["/api/user"] }); // Clear session-related queries only
-    setLocation("/login");
+    setLocation("/");
   };
 
   const handleDeleteClick = (address: Address) => {

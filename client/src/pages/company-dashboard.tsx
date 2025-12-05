@@ -34,7 +34,7 @@ export default function CompanyDashboard() {
 
   useEffect(() => {
     if (!isLoading && !user) {
-      setLocation("/login");
+      setLocation("/");
     }
     if (!isLoading && user && user.accountType !== "company") {
       setLocation("/dashboard");
@@ -44,7 +44,7 @@ export default function CompanyDashboard() {
   const handleLogout = async () => {
     await apiRequest("POST", "/api/logout", {});
     queryClient.removeQueries({ queryKey: ["/api/user"] });
-    setLocation("/login");
+    setLocation("/");
   };
 
   if (isLoading) {
