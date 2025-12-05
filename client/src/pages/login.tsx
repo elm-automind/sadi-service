@@ -3,7 +3,7 @@ import { useLocation, Link } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { User, Lock, ArrowRight, Home, Trash2 } from "lucide-react";
+import { User, Lock, ArrowRight, Home, Trash2, ArrowLeft } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
@@ -75,6 +75,10 @@ export default function Login() {
     <div className="min-h-screen bg-muted/30 p-4 flex items-center justify-center relative">
       {/* Navigation Buttons */}
       <div className="absolute top-4 left-4 flex gap-2">
+        <Button variant="ghost" size="sm" className="gap-2" onClick={() => window.history.back()}>
+          <ArrowLeft className="w-4 h-4" />
+          <span className="hidden sm:inline">Back</span>
+        </Button>
         <Link href="/">
           <Button variant="ghost" size="sm" className="gap-2">
             <Home className="w-4 h-4" />

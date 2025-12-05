@@ -35,7 +35,18 @@ export default function ViewFallback() {
 
   if (error || !contact) {
     return (
-      <div className="min-h-screen bg-muted/30 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-muted/30 flex items-center justify-center p-4 relative">
+        <div className="absolute top-4 left-4 flex gap-2">
+          <Button variant="ghost" size="sm" className="gap-2" onClick={() => window.history.back()}>
+            <ArrowLeft className="w-4 h-4" /> Back
+          </Button>
+          <Link href="/">
+            <Button variant="ghost" size="sm" className="gap-2">
+              <Home className="w-4 h-4" /> Home
+            </Button>
+          </Link>
+        </div>
+        
         <Card className="w-full max-w-md p-8 text-center">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Users className="w-8 h-8 text-red-500" />
@@ -44,9 +55,9 @@ export default function ViewFallback() {
           <p className="text-muted-foreground text-sm mb-6">
             This fallback contact does not exist or has been removed.
           </p>
-          <Link href="/dashboard">
+          <Link href="/">
             <Button>
-              <Home className="w-4 h-4 mr-2" /> Go to Dashboard
+              <Home className="w-4 h-4 mr-2" /> Go Home
             </Button>
           </Link>
         </Card>
@@ -55,17 +66,21 @@ export default function ViewFallback() {
   }
 
   return (
-    <div className="min-h-screen bg-muted/30 p-4 flex items-center justify-center py-8">
+    <div className="min-h-screen bg-muted/30 p-4 flex items-center justify-center py-8 relative">
+      <div className="absolute top-4 left-4 flex gap-2">
+        <Button variant="ghost" size="sm" className="gap-2" onClick={() => window.history.back()}>
+          <ArrowLeft className="w-4 h-4" /> Back
+        </Button>
+        <Link href="/">
+          <Button variant="ghost" size="sm" className="gap-2">
+            <Home className="w-4 h-4" /> Home
+          </Button>
+        </Link>
+      </div>
+      
       <Card className="w-full max-w-2xl shadow-xl border-border/60 overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-purple-100 to-purple-50 dark:from-purple-900/20 dark:to-purple-800/10 p-6 border-b border-border/40">
-          <div className="flex items-center gap-2 mb-4">
-            <Link href="/dashboard">
-              <Button variant="ghost" size="sm" className="gap-2">
-                <ArrowLeft className="w-4 h-4" /> Back to Dashboard
-              </Button>
-            </Link>
-          </div>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 rounded-full bg-purple-200 dark:bg-purple-900/50 flex items-center justify-center text-purple-700 dark:text-purple-300 font-bold text-2xl shrink-0 border-2 border-purple-300 dark:border-purple-700">

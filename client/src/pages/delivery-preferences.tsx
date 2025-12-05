@@ -3,7 +3,7 @@ import { useLocation, Link } from "wouter";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Clock, FileText, CheckCircle2, Home, Settings, Sun, Sunset, Moon, Check } from "lucide-react";
+import { Clock, FileText, CheckCircle2, Home, Settings, Sun, Sunset, Moon, Check, ArrowLeft } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { User, Address } from "@shared/schema";
 
@@ -166,10 +166,13 @@ export default function DeliveryPreferences() {
 
   return (
     <div className="min-h-screen bg-muted/30 p-4 flex items-center justify-center relative">
-      <div className="absolute top-4 left-4">
-        <Link href="/dashboard">
+      <div className="absolute top-4 left-4 flex gap-2">
+        <Button variant="ghost" size="sm" className="gap-2" onClick={() => window.history.back()}>
+          <ArrowLeft className="w-4 h-4" /> Back
+        </Button>
+        <Link href="/">
           <Button variant="ghost" size="sm" className="gap-2">
-            <Home className="w-4 h-4" /> Dashboard
+            <Home className="w-4 h-4" /> Home
           </Button>
         </Link>
       </div>
