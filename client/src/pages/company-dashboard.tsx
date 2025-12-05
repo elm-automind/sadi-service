@@ -389,11 +389,21 @@ export default function CompanyDashboard() {
       queryClient.invalidateQueries({ queryKey: ["/api/company/subscription"] });
       
       if (data.payment?.paymentUrl) {
+        // Store payment URL and details in sessionStorage for the payment page
+        sessionStorage.setItem("paymentUrl", data.payment.paymentUrl);
+        sessionStorage.setItem("paymentDetails", JSON.stringify({
+          planName: data.plan?.name || "Subscription",
+          amount: data.subscription?.totalDueAmount || 0,
+          billingCycle: data.subscription?.billingCycle || "monthly",
+        }));
+        
         toast({
           title: t('company.redirectingToPayment'),
           description: t('company.paymentPageOpening'),
         });
-        window.location.href = data.payment.paymentUrl;
+        
+        // Navigate to embedded payment page
+        setLocation("/payment");
         return;
       }
       

@@ -565,5 +565,20 @@
     "afternoon": "Afternoon",
     "evening": "Evening",
     "selectTimePeriod": "Please select a time period"
+  },
+  "payment": {
+    "title": "Complete Payment",
+    "loading": "Loading payment...",
+    "success": "Payment Successful!",
+    "successMessage": "Your subscription has been activated. Thank you for your payment.",
+    "failed": "Payment Failed",
+    "failedMessage": "We couldn't process your payment. Please try again.",
+    "tryAgain": "Try Again",
+    "cancel": "Cancel",
+    "returnToDashboard": "Return to Dashboard",
+    "securePayment": "Secure Payment Gateway",
+    "securePaymentDesc": "Complete your payment securely using the form below.",
+    "loadingPaymentPage": "Loading payment page...",
+    "securityNote": "Your payment is secured with industry-standard encryption. We do not store your card details."
   }
 }

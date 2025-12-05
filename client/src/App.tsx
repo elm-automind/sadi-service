@@ -25,6 +25,7 @@ import EditFallback from "@/pages/edit-fallback";
 import DriverLookup from "@/pages/driver-lookup";
 import DriverFeedback from "@/pages/driver-feedback";
 import AddressCapture from "@/pages/address-capture";
+import Payment from "@/pages/payment";
 
 function Router() {
   return (
@@ -47,6 +48,7 @@ function Router() {
       <Route path="/edit-fallback/:id" component={EditFallback} />
       <Route path="/driver" component={DriverLookup} />
       <Route path="/driver-feedback/:id" component={DriverFeedback} />
+      <Route path="/payment" component={Payment} />
       <Route component={NotFound} />
     </Switch>
   );

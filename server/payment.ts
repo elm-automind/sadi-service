@@ -125,9 +125,23 @@ export async function createPaymentRequest(
 
     console.log(`Payment API response:`, JSON.stringify(responseData, null, 2));
 
-    const data = responseData.data as Record<string, unknown> | undefined;
+    // Extract from nested body.data structure (API returns body.data.paymentUrl)
+    const body = responseData.body as Record<string, unknown> | undefined;
+    const data = body?.data as Record<string, unknown> | undefined;
     const paymentUrl = data?.paymentUrl as string | undefined;
     const paymentRequestId = data?.paymentRequestId as string | undefined;
+
+    // Check for errors in response
+    const errors = body?.errors as Array<{ message: string }> | undefined;
+    if (errors && errors.length > 0) {
+      const errorMsg = errors.map(e => e.message).join(", ");
+      console.error("Payment API returned errors:", errorMsg);
+      return {
+        success: false,
+        error: errorMsg,
+        message: "Payment request failed. Please try again.",
+      };
+    }
 
     if (!paymentUrl) {
       console.error("Payment URL not found in response");
