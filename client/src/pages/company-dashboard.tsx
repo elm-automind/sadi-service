@@ -300,18 +300,24 @@ export default function CompanyDashboard() {
       const res = await apiRequest("POST", "/api/company/subscription", data);
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/company/subscription"] });
       toast({
-        title: "Subscription Updated",
-        description: "Your subscription plan has been updated.",
+        title: t('company.subscriptionUpdated'),
+        description: t('company.planUpdatedSuccess'),
       });
+      if (data.invoice?.invoiceId) {
+        toast({
+          title: t('company.invoiceGenerated'),
+          description: t('company.invoiceGeneratedSuccess'),
+        });
+      }
     },
     onError: (error: Error) => {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: error.message || "Failed to update subscription",
+        title: t('company.invoiceError'),
+        description: error.message || t('company.invoiceGenerationFailed'),
       });
     },
   });

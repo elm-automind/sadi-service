@@ -128,51 +128,73 @@ export async function generateInvoice(
   try {
     console.log(`Calling billing API for company: ${companyInfo.companyName}, plan: ${planInfo.name}, cycle: ${billingCycle}`);
 
-    const response = await fetch(apiUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "ProductCode": productCode,
-        "ClientKey": clientKey,
-        "MessageId": messageId,
-        "app-id": appId,
-        "app-key": appKey,
-      },
-      body: JSON.stringify(payload),
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
 
-    const responseText = await response.text();
+    let response: Response;
+    try {
+      response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "ProductCode": productCode,
+          "ClientKey": clientKey,
+          "MessageId": messageId,
+          "app-id": appId,
+          "app-key": appKey,
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
+
+    let responseText: string;
+    try {
+      responseText = await response.text();
+    } catch {
+      responseText = "";
+    }
+
     console.log(`Billing API response status: ${response.status}`);
 
     if (!response.ok) {
       console.error(`Billing API error: ${response.status} - ${responseText}`);
       return {
         success: false,
-        error: `Billing API returned ${response.status}`,
-        message: responseText,
+        error: `Billing service unavailable (${response.status})`,
+        message: "Failed to generate invoice. Please try again later.",
       };
     }
 
-    let responseData;
+    let responseData: Record<string, unknown> = {};
     try {
-      responseData = JSON.parse(responseText);
-    } catch {
-      responseData = { raw: responseText };
+      if (responseText && responseText.trim().startsWith("{")) {
+        responseData = JSON.parse(responseText);
+      }
+    } catch (parseError) {
+      console.warn("Could not parse billing API response as JSON:", parseError);
     }
 
     console.log(`Invoice generated successfully for ${companyInfo.companyName}`);
 
     return {
       success: true,
-      invoiceId: responseData.invoiceId || responseData.InvoiceId || messageId,
+      invoiceId: (responseData.invoiceId as string) || (responseData.InvoiceId as string) || messageId,
       message: "Invoice generated successfully",
     };
   } catch (error) {
     console.error("Billing API call failed:", error);
+    
+    const errorMessage = error instanceof Error 
+      ? (error.name === 'AbortError' ? 'Request timeout' : 'Connection failed')
+      : 'Unknown error';
+    
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
-      message: "Failed to connect to billing service",
+      error: errorMessage,
+      message: "Failed to connect to billing service. Please try again later.",
     };
   }
 }
