@@ -20,6 +20,14 @@ const feedbackSchema = z.object({
   customerBehavior: z.string().min(1, "Please describe customer behavior"),
   failureReason: z.string().optional(),
   additionalNotes: z.string().optional(),
+}).refine((data) => {
+  if (data.deliveryStatus === "failed" || data.deliveryStatus === "partial") {
+    return data.failureReason && data.failureReason.length > 0;
+  }
+  return true;
+}, {
+  message: "Please select a reason for the failed/partial delivery",
+  path: ["failureReason"],
 });
 
 type FeedbackFormValues = z.infer<typeof feedbackSchema>;
@@ -292,6 +300,7 @@ export default function DriverFeedback() {
                               key={score}
                               type="button"
                               onClick={() => field.onChange(score)}
+                              data-testid={`button-star-${score}`}
                               className={`p-2 rounded-lg transition-all ${
                                 field.value >= score
                                   ? "text-yellow-500"
