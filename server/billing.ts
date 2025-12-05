@@ -95,46 +95,35 @@ export async function generateInvoice(
 
   const amount = billingCycle === "annual" ? planInfo.annualPrice : planInfo.monthlyPrice;
 
-  // Static 10-character identity value
-  const identityValue = "7000000001";
-  
-  // Format field: keep alphanumeric, max 9 chars
-  const fmt = (val: string | undefined, def: string): string => {
-    if (!val) return def;
-    return val.replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, '').slice(0, 9) || def;
-  };
-
-  // Use company address if available, otherwise use static defaults (all < 10 chars)
-  const street = fmt(addressInfo?.street, "Street1");
-  const district = fmt(addressInfo?.district, "Olaya");
-  const city = fmt(addressInfo?.city, "Riyadh");
+  // Use company's unified number for customer ID (10 digits)
+  const customerNIN = companyInfo.unifiedNumber.replace(/\D/g, '').slice(0, 10).padStart(10, '0');
 
   const payload: InvoicePayload = {
-    customerId: identityValue,
-    customerEnFullName: companyInfo.companyName.slice(0, 50),
-    customerArFullName: companyInfo.companyName.slice(0, 50),
+    customerId: customerNIN,
+    customerEnFullName: "Dana Younis",
+    customerArFullName: "دانة يونس",
     identityType: "700",
-    identityTypeValue: identityValue,
+    identityTypeValue: "7001395784",
     nationalAddress: {
-      street: street,
-      buildingNumber: "1234",
-      additionalNumber: "5678",
-      district: district,
-      city: city,
-      postalCode: "12345",
+      street: "اوس بن عوف",
+      buildingNumber: "4444",
+      additionalNumber: "5430",
+      district: "العقيق",
+      city: "محافظة الرياض",
+      postalCode: "23323",
       country: "SA",
     },
-    mobileNumber: companyInfo.phone.replace(/^\+/, "").slice(0, 10),
-    email: companyInfo.email || "test@test.sa",
-    customerNIN: identityValue,
+    mobileNumber: "9665437347628",
+    email: "",
+    customerNIN: customerNIN,
     customerDescription: null,
-    customerVatNumber: identityValue,
+    customerVatNumber: "777877444457558",
     isRealTime: 1,
     expiryPeriod: 99999,
     Transactions: [
       {
-        ServiceId: `MARRI${planInfo.slug.slice(0, 4).toUpperCase()}`,
-        Description: `${planInfo.name} - ${billingCycle}`.slice(0, 50),
+        ServiceId: "SADI-Invoice",
+        Description: "SADI-Invoice",
         TransactionDate: transactionDate,
         TransactionID: transactionId,
         AmountWithoutVat: amount,
