@@ -1,8 +1,8 @@
-import { useState } from "react";
 import { useLocation, Link } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { Building2, ArrowLeft, Loader2 } from "lucide-react";
 
@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { LanguageSwitcher } from "@/components/language-switcher";
 
 const companyTypeOptions = [
   "Logistics",
@@ -39,6 +40,7 @@ const companyRegisterSchema = z.object({
 type CompanyRegisterForm = z.infer<typeof companyRegisterSchema>;
 
 export default function RegisterCompany() {
+  const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -64,15 +66,15 @@ export default function RegisterCompany() {
     onSuccess: async () => {
       await queryClient.resetQueries();
       toast({
-        title: "Registration Successful",
-        description: "Welcome! Your company account has been created.",
+        title: t('auth.registrationSuccessful'),
+        description: t('auth.welcomeCompany'),
       });
       setLocation("/company-dashboard");
     },
     onError: (error: Error) => {
       toast({
-        title: "Registration Failed",
-        description: error.message || "An error occurred during registration.",
+        title: t('register.registrationFailed'),
+        description: error.message || t('errors.somethingWentWrong'),
         variant: "destructive",
       });
     },
@@ -83,24 +85,28 @@ export default function RegisterCompany() {
   };
 
   return (
-    <div className="min-h-screen bg-muted/30 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-muted/30 flex items-center justify-center p-4 relative">
+      <div className="absolute top-4 end-4">
+        <LanguageSwitcher />
+      </div>
+
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto w-14 h-14 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center mb-4">
             <Building2 className="w-7 h-7 text-blue-600" />
           </div>
-          <CardTitle className="text-2xl">Company Registration</CardTitle>
+          <CardTitle className="text-2xl">{t('registerType.companyRegistration')}</CardTitle>
           <CardDescription>
-            Register your company for delivery services
+            {t('auth.registerCompanyDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="companyName">Company Name</Label>
+              <Label htmlFor="companyName">{t('auth.companyName')}</Label>
               <Input
                 id="companyName"
-                placeholder="Enter company name"
+                placeholder={t('auth.enterCompanyName')}
                 {...register("companyName")}
                 data-testid="input-company-name"
               />
@@ -110,10 +116,10 @@ export default function RegisterCompany() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="unifiedNumber">Unified Number</Label>
+              <Label htmlFor="unifiedNumber">{t('auth.unifiedNumber')}</Label>
               <Input
                 id="unifiedNumber"
-                placeholder="Enter unified number"
+                placeholder={t('auth.enterUnifiedNumber')}
                 {...register("unifiedNumber")}
                 data-testid="input-unified-number"
               />
@@ -123,13 +129,13 @@ export default function RegisterCompany() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="companyType">Company Type</Label>
+              <Label htmlFor="companyType">{t('auth.companyType')}</Label>
               <Select
                 value={companyType}
                 onValueChange={(value) => setValue("companyType", value as typeof companyTypeOptions[number])}
               >
                 <SelectTrigger id="companyType" data-testid="select-company-type">
-                  <SelectValue placeholder="Select company type" />
+                  <SelectValue placeholder={t('auth.selectCompanyType')} />
                 </SelectTrigger>
                 <SelectContent>
                   {companyTypeOptions.map((type) => (
@@ -145,7 +151,7 @@ export default function RegisterCompany() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t('auth.email')}</Label>
               <Input
                 id="email"
                 type="email"
@@ -159,7 +165,7 @@ export default function RegisterCompany() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="phone">Mobile Number</Label>
+              <Label htmlFor="phone">{t('auth.mobileNumber')}</Label>
               <Input
                 id="phone"
                 type="tel"
@@ -173,7 +179,7 @@ export default function RegisterCompany() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{t('auth.password')}</Label>
               <Input
                 id="password"
                 type="password"
@@ -187,7 +193,7 @@ export default function RegisterCompany() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Label htmlFor="confirmPassword">{t('auth.confirmPassword')}</Label>
               <Input
                 id="confirmPassword"
                 type="password"
@@ -208,11 +214,11 @@ export default function RegisterCompany() {
             >
               {registerMutation.isPending ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Registering...
+                  <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                  {t('common.registering')}
                 </>
               ) : (
-                "Register Company"
+                t('auth.registerCompany')
               )}
             </Button>
           </form>
@@ -220,14 +226,14 @@ export default function RegisterCompany() {
           <div className="mt-6 text-center space-y-4">
             <Link href="/register-type">
               <Button variant="ghost" className="gap-2" data-testid="button-back">
-                <ArrowLeft className="w-4 h-4" /> Back to Account Type
+                <ArrowLeft className="w-4 h-4 rtl:rotate-180" /> {t('auth.backToAccountType')}
               </Button>
             </Link>
 
             <p className="text-sm text-muted-foreground">
-              Already have an account?{" "}
+              {t('registerType.alreadyHaveAccount')}{" "}
               <Link href="/login" className="text-primary hover:underline" data-testid="link-login">
-                Login here
+                {t('registerType.loginHere')}
               </Link>
             </p>
           </div>

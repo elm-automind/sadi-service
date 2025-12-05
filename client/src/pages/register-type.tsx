@@ -1,16 +1,24 @@
 import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { User, Building2, ArrowLeft, ArrowRight } from "lucide-react";
+import { LanguageSwitcher } from "@/components/language-switcher";
 
 export default function RegisterType() {
+  const { t } = useTranslation();
+
   return (
-    <div className="min-h-screen bg-muted/30 flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-muted/30 flex flex-col items-center justify-center p-4 relative">
+      <div className="absolute top-4 right-4 rtl:right-auto rtl:left-4">
+        <LanguageSwitcher />
+      </div>
+
       <div className="max-w-lg w-full space-y-6">
         <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold text-foreground">Choose Account Type</h1>
+          <h1 className="text-3xl font-bold text-foreground">{t('registerType.chooseAccountType')}</h1>
           <p className="text-muted-foreground">
-            Select the type of account you want to create
+            {t('registerType.selectAccountType')}
           </p>
         </div>
 
@@ -23,19 +31,19 @@ export default function RegisterType() {
                     <User className="w-6 h-6" />
                   </div>
                   <div className="flex-1">
-                    <CardTitle className="text-lg">Individual Registration</CardTitle>
+                    <CardTitle className="text-lg">{t('registerType.individualRegistration')}</CardTitle>
                     <CardDescription>
-                      For personal delivery addresses
+                      {t('registerType.forPersonalDelivery')}
                     </CardDescription>
                   </div>
-                  <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                  <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 rtl:group-hover:-translate-x-1 rtl:rotate-180 transition-all" />
                 </div>
               </CardHeader>
-              <CardContent className="pt-0 pl-[72px]">
+              <CardContent className="pt-0 ps-[72px]">
                 <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• Register with your Iqama/National ID</li>
-                  <li>• Add personal delivery addresses</li>
-                  <li>• Set delivery preferences & fallback contacts</li>
+                  <li>• {t('registerType.registerWithIqama')}</li>
+                  <li>• {t('registerType.addPersonalAddresses')}</li>
+                  <li>• {t('registerType.setDeliveryPreferences')}</li>
                 </ul>
               </CardContent>
             </Card>
@@ -49,19 +57,19 @@ export default function RegisterType() {
                     <Building2 className="w-6 h-6" />
                   </div>
                   <div className="flex-1">
-                    <CardTitle className="text-lg">Company Registration</CardTitle>
+                    <CardTitle className="text-lg">{t('registerType.companyRegistration')}</CardTitle>
                     <CardDescription>
-                      For logistics & delivery companies
+                      {t('registerType.forLogisticsCompanies')}
                     </CardDescription>
                   </div>
-                  <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
+                  <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-blue-600 group-hover:translate-x-1 rtl:group-hover:-translate-x-1 rtl:rotate-180 transition-all" />
                 </div>
               </CardHeader>
-              <CardContent className="pt-0 pl-[72px]">
+              <CardContent className="pt-0 ps-[72px]">
                 <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• Register with your company unified number</li>
-                  <li>• Access company dashboard</li>
-                  <li>• Manage delivery operations</li>
+                  <li>• {t('registerType.registerWithUnifiedNumber')}</li>
+                  <li>• {t('registerType.accessCompanyDashboard')}</li>
+                  <li>• {t('registerType.manageDeliveryOperations')}</li>
                 </ul>
               </CardContent>
             </Card>
@@ -71,15 +79,15 @@ export default function RegisterType() {
         <div className="text-center">
           <Link href="/">
             <Button variant="ghost" className="gap-2" data-testid="button-back-home">
-              <ArrowLeft className="w-4 h-4" /> Back to Home
+              <ArrowLeft className="w-4 h-4 rtl:rotate-180" /> {t('registerType.backToHome')}
             </Button>
           </Link>
         </div>
 
         <div className="text-center text-sm text-muted-foreground">
-          Already have an account?{" "}
+          {t('registerType.alreadyHaveAccount')}{" "}
           <Link href="/login" className="text-primary hover:underline" data-testid="link-login">
-            Login here
+            {t('registerType.loginHere')}
           </Link>
         </div>
       </div>

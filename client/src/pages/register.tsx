@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useLocation, Link } from "wouter";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslation } from "react-i18next";
 import * as z from "zod";
 import { useDropzone } from "react-dropzone";
 import { 
@@ -21,8 +22,7 @@ import { AddressMap } from "@/components/address-map";
 import { VoiceInput } from "@/components/voice-input";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-
-// --- Schemas ---
+import { LanguageSwitcher } from "@/components/language-switcher";
 
 const registrationSchema = z.object({
   iqamaId: z.string()
@@ -36,8 +36,6 @@ const registrationSchema = z.object({
   email: z.string().email("Valid email is required"),
   name: z.string().min(2, "Full name is required"),
   password: z.string().min(6, "Password must be at least 6 characters"),
-  
-  // Address (optional if quick reg)
   addressLabel: z.string().optional(),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
@@ -55,9 +53,10 @@ interface FileUploadBoxProps {
   processedImage: ProcessedImage | null;
   onRemove: () => void;
   isProcessing?: boolean;
+  t: (key: string) => string;
 }
 
-const FileUploadBox = ({ label, icon: Icon, onDrop, processedImage, onRemove, isProcessing }: FileUploadBoxProps) => {
+const FileUploadBox = ({ label, icon: Icon, onDrop, processedImage, onRemove, isProcessing, t }: FileUploadBoxProps) => {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
     onDrop,
     maxFiles: 1,
@@ -81,14 +80,14 @@ const FileUploadBox = ({ label, icon: Icon, onDrop, processedImage, onRemove, is
               e.stopPropagation();
               onRemove();
             }}
-            className="absolute top-1 right-1 p-1 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-md transition-colors"
+            className="absolute top-1 end-1 p-1 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-md transition-colors"
             data-testid={`remove-${label.toLowerCase().replace(' ', '-')}`}
           >
             <X className="w-3 h-3" />
           </button>
           <div {...getRootProps()} className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[10px] p-1 text-center cursor-pointer hover:bg-black/70">
             <input {...getInputProps()} />
-            Click to replace
+            {t('common.clickToReplace')}
           </div>
         </div>
       ) : (
@@ -105,7 +104,7 @@ const FileUploadBox = ({ label, icon: Icon, onDrop, processedImage, onRemove, is
           {isProcessing ? (
             <>
               <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-              <p className="text-xs text-muted-foreground">Compressing...</p>
+              <p className="text-xs text-muted-foreground">{t('common.compressing')}</p>
             </>
           ) : (
             <>
@@ -113,7 +112,7 @@ const FileUploadBox = ({ label, icon: Icon, onDrop, processedImage, onRemove, is
                 <Icon className="w-4 h-4 md:w-5 md:h-5 text-muted-foreground" />
               </div>
               <p className="text-xs text-muted-foreground">
-                {isDragActive ? "Drop here" : "Tap to upload"}
+                {isDragActive ? t('common.dropHere') : t('common.tapToUpload')}
               </p>
             </>
           )}
@@ -124,6 +123,7 @@ const FileUploadBox = ({ label, icon: Icon, onDrop, processedImage, onRemove, is
 };
 
 export default function Register() {
+  const { t } = useTranslation();
   const [step, setStep] = useState(1);
   const [regType, setRegType] = useState<"quick" | "full">("full"); 
   const [, setLocation] = useLocation();
@@ -162,8 +162,8 @@ export default function Register() {
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Image Error",
-        description: "Failed to process image. Please try again."
+        title: t('register.imageError'),
+        description: t('register.imageProcessingFailed')
       });
     } finally {
       setProcessing(p => ({ ...p, [type]: false }));
@@ -221,22 +221,19 @@ export default function Register() {
       return await res.json();
     },
     onSuccess: async (data) => {
-      // Reset and refetch user query to trigger session activity tracking
       await queryClient.resetQueries({ queryKey: ["/api/user"] });
-      
-      // Store session data for success page display
       localStorage.setItem("lastRegisteredUser", JSON.stringify(data));
       
       if (data.address) {
         toast({
-          title: "Address Registered!",
-          description: "Your account and address have been created.",
+          title: t('register.addressRegistered'),
+          description: t('register.accountAndAddressCreated'),
         });
         setLocation("/success");
       } else {
         toast({
-          title: "Account Created!",
-          description: "Your account has been created. Redirecting to dashboard.",
+          title: t('register.accountCreated'),
+          description: t('register.accountCreatedRedirecting'),
         });
         setLocation("/dashboard");
       }
@@ -244,23 +241,19 @@ export default function Register() {
     onError: (error: any) => {
       toast({
         variant: "destructive",
-        title: "Registration Failed",
-        description: error.message || "Something went wrong"
+        title: t('register.registrationFailed'),
+        description: error.message || t('errors.somethingWentWrong')
       });
     }
   });
 
   const onSubmit = (data: FormData) => {
-    // Prepare address data only if full reg or address provided
     if (regType === "full" && (!data.textAddress || data.textAddress.length < 10)) {
-       // Should be caught by validation before submit, but double check
        return;
     }
-    
     registerMutation.mutate(data);
   };
 
-  // Handle Quick Registration Button Click
   const handleQuickRegister = async () => {
     setRegType("quick");
     const valid = await form.trigger(["iqamaId", "phone", "email", "name", "password"]);
@@ -269,7 +262,6 @@ export default function Register() {
     }
   };
 
-  // Handle Full Registration / Next Step Button Click
   const handleFullRegistration = async () => {
     setRegType("full");
     let valid = false;
@@ -278,12 +270,11 @@ export default function Register() {
       valid = await form.trigger(["iqamaId", "phone", "email", "name", "password"]);
       if (valid) setStep(2);
     } else if (step === 2) {
-      // Enforce address validation here for full flow
       const address = form.getValues("textAddress");
       if (!address || address.length < 10) {
         form.setError("textAddress", { 
           type: "manual", 
-          message: "Please provide a valid detailed address (min 10 chars) or use Quick Register." 
+          message: t('register.addressValidationError')
         });
         return;
       }
@@ -294,22 +285,29 @@ export default function Register() {
 
   const prevStep = () => setStep(s => s - 1);
 
+  const timeOptions = [
+    { key: 'morning', label: t('register.morning'), time: '8am - 12pm' },
+    { key: 'afternoon', label: t('register.afternoon'), time: '1pm - 5pm' },
+    { key: 'evening', label: t('register.evening'), time: '6pm - 9pm' },
+  ];
+
   return (
     <div className="min-h-screen bg-muted/30 p-3 md:p-8 flex justify-center items-start pt-6 md:pt-20 relative">
       
-      <PageNavigation className="absolute top-4 left-4" />
+      <PageNavigation className="absolute top-4 start-4" />
 
-      <div className="absolute top-4 right-4 flex gap-2">
+      <div className="absolute top-4 end-4 flex gap-2">
+        <LanguageSwitcher />
         <Link href="/register-type">
            <Button variant="ghost" size="sm" className="gap-2" data-testid="button-back-to-type">
-            <ArrowLeft className="w-4 h-4" />
-            <span className="hidden sm:inline">Back</span>
+            <ArrowLeft className="w-4 h-4 rtl:rotate-180" />
+            <span className="hidden sm:inline">{t('common.back')}</span>
            </Button>
         </Link>
         <Link href="/login">
            <Button variant="ghost" size="sm" className="gap-2 text-primary">
             <LogIn className="w-4 h-4" />
-            <span className="hidden sm:inline">Login</span>
+            <span className="hidden sm:inline">{t('auth.login')}</span>
            </Button>
         </Link>
       </div>
@@ -318,17 +316,16 @@ export default function Register() {
         <CardHeader className="border-b border-border/40 pb-4 md:pb-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
             <div>
-              <CardTitle className="text-xl md:text-2xl font-bold text-primary">Registration</CardTitle>
-              <CardDescription className="text-xs md:text-sm">Complete your profile for secure delivery services.</CardDescription>
+              <CardTitle className="text-xl md:text-2xl font-bold text-primary">{t('register.title')}</CardTitle>
+              <CardDescription className="text-xs md:text-sm">{t('register.subtitle')}</CardDescription>
             </div>
             {step > 1 && (
               <div className="text-xs md:text-sm font-medium text-muted-foreground bg-muted px-3 py-1 rounded-full w-fit">
-                Step {step} of 3
+                {t('common.step')} {step} {t('common.of')} 3
               </div>
             )}
           </div>
           
-          {/* Progress Bar for Full Flow */}
           {step > 1 && (
             <div className="w-full h-1.5 bg-muted mt-4 md:mt-6 rounded-full overflow-hidden">
               <div 
@@ -340,15 +337,13 @@ export default function Register() {
         </CardHeader>
 
         <CardContent className="p-4 md:p-6">
-          {/* Note: using form tag but handling submission via custom buttons */}
           <form onSubmit={(e) => e.preventDefault()}> 
             
-            {/* STEP 1: Personal Information */}
             {step === 1 && (
               <div className="space-y-6 animate-in slide-in-from-right-4 duration-300 fade-in">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="name">Full Name</Label>
+                    <Label htmlFor="name">{t('register.fullName')}</Label>
                     <div className="relative">
                       <Controller
                         control={form.control}
@@ -357,36 +352,36 @@ export default function Register() {
                           <VoiceInput 
                             id="name" 
                             placeholder="John Doe" 
-                            className="pl-9" 
+                            className="ps-9" 
                             {...field} 
                           />
                         )}
                       />
-                      <User className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
+                      <User className="absolute start-3 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
                     </div>
                     {form.formState.errors.name && <p className="text-destructive text-xs">{form.formState.errors.name.message}</p>}
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="iqamaId">Iqama / National ID</Label>
+                    <Label htmlFor="iqamaId">{t('register.iqamaNationalId')}</Label>
                     <div className="relative">
-                      <FileText className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
-                      <Input id="iqamaId" placeholder="10XXXXXXXX" className="pl-9" {...form.register("iqamaId")} />
+                      <FileText className="absolute start-3 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
+                      <Input id="iqamaId" placeholder="10XXXXXXXX" className="ps-9" {...form.register("iqamaId")} />
                     </div>
                     {form.formState.errors.iqamaId && <p className="text-destructive text-xs">{form.formState.errors.iqamaId.message}</p>}
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number</Label>
+                    <Label htmlFor="phone">{t('register.phoneNumber')}</Label>
                     <div className="relative">
-                      <span className="absolute left-3 top-2.5 text-xs font-bold text-muted-foreground">+966</span>
-                      <Input id="phone" placeholder="5XXXXXXXX" className="pl-12" {...form.register("phone")} />
+                      <span className="absolute start-3 top-2.5 text-xs font-bold text-muted-foreground">+966</span>
+                      <Input id="phone" placeholder="5XXXXXXXX" className="ps-12" {...form.register("phone")} />
                     </div>
                     {form.formState.errors.phone && <p className="text-destructive text-xs">{form.formState.errors.phone.message}</p>}
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email Address</Label>
+                    <Label htmlFor="email">{t('register.emailAddress')}</Label>
                     <Controller
                         control={form.control}
                         name="email"
@@ -402,46 +397,42 @@ export default function Register() {
                     {form.formState.errors.email && <p className="text-destructive text-xs">{form.formState.errors.email.message}</p>}
                   </div>
 
-                  {/* Password Field - Always Visible now */}
                   <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="password">Create Password</Label>
+                    <Label htmlFor="password">{t('register.createPassword')}</Label>
                     <div className="relative">
-                      <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Lock className="absolute start-3 top-2.5 h-4 w-4 text-muted-foreground" />
                       <Input 
                         id="password" 
                         type="password" 
-                        placeholder="Create a secure password" 
-                        className="pl-9" 
+                        placeholder="••••••••" 
+                        className="ps-9" 
                         {...form.register("password")} 
                       />
                     </div>
                     {form.formState.errors.password && <p className="text-destructive text-xs">{form.formState.errors.password.message}</p>}
-                    <p className="text-xs text-muted-foreground">Required for creating your account.</p>
+                    <p className="text-xs text-muted-foreground">{t('register.passwordRequired')}</p>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* STEP 2: Address & Passport Entity */}
             {step === 2 && (
               <div className="space-y-6 md:space-y-8 animate-in slide-in-from-right-4 duration-300 fade-in">
-                {/* Address Label */}
                 <div className="space-y-2">
-                  <Label htmlFor="addressLabel">Address Name</Label>
+                  <Label htmlFor="addressLabel">{t('register.addressName')}</Label>
                   <Input 
                     id="addressLabel"
-                    placeholder="e.g., Home, Office, Parents House..."
+                    placeholder={t('register.addressNamePlaceholder')}
                     {...form.register("addressLabel")}
                     data-testid="input-address-label"
                   />
-                  <p className="text-xs text-muted-foreground">Give this address a friendly name to identify it easily</p>
+                  <p className="text-xs text-muted-foreground">{t('register.addressNameHint')}</p>
                 </div>
 
-                {/* Map Section */}
                 <div className="space-y-3">
                   <Label className="flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-primary" />
-                    Map Location
+                    {t('register.mapLocation')}
                   </Label>
                   <div className="overflow-hidden border-2 border-muted hover:border-primary/20 transition-colors rounded-lg">
                     <AddressMap 
@@ -454,12 +445,11 @@ export default function Register() {
                       }}
                     />
                   </div>
-                  <p className="text-xs text-muted-foreground text-right">Tap on the map to pin your location</p>
+                  <p className="text-xs text-muted-foreground text-end">{t('register.tapToPin')}</p>
                 </div>
 
-                {/* Text Address */}
                 <div className="space-y-2">
-                  <Label htmlFor="textAddress">Detailed Address</Label>
+                  <Label htmlFor="textAddress">{t('register.detailedAddress')}</Label>
                   <Controller
                     control={form.control}
                     name="textAddress"
@@ -467,7 +457,7 @@ export default function Register() {
                       <VoiceInput 
                         as="textarea"
                         id="textAddress" 
-                        placeholder="Building No., Street Name, District, Landmarks..." 
+                        placeholder={t('register.addressPlaceholder')}
                         className="resize-none h-24"
                         {...field} 
                       />
@@ -478,72 +468,73 @@ export default function Register() {
 
                 <Separator />
 
-                {/* Photos Grid */}
                 <div className="space-y-4">
                   <h3 className="text-sm font-semibold flex items-center gap-2 text-primary">
                     <Camera className="w-4 h-4" />
-                    Location Photos
+                    {t('register.locationPhotos')}
                   </h3>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
                     <FileUploadBox 
-                      label="Building" 
+                      label={t('register.building')}
                       icon={Upload} 
                       processedImage={images.building || null}
                       onDrop={(f) => handleImageUpload('building', f)}
                       onRemove={() => handleRemoveImage('building')}
                       isProcessing={processing.building}
+                      t={t}
                     />
                     <FileUploadBox 
-                      label="Main Gate" 
+                      label={t('register.mainGate')}
                       icon={Upload} 
                       processedImage={images.gate || null}
                       onDrop={(f) => handleImageUpload('gate', f)}
                       onRemove={() => handleRemoveImage('gate')}
                       isProcessing={processing.gate}
+                      t={t}
                     />
                     <FileUploadBox 
-                      label="Flat Door" 
+                      label={t('register.flatDoor')}
                       icon={Upload} 
                       processedImage={images.door || null}
                       onDrop={(f) => handleImageUpload('door', f)}
                       onRemove={() => handleRemoveImage('door')}
                       isProcessing={processing.door}
+                      t={t}
                     />
                   </div>
                 </div>
               </div>
             )}
 
-            {/* STEP 3: Preferences & Summary */}
             {step === 3 && (
               <div className="space-y-6 animate-in slide-in-from-right-4 duration-300 fade-in">
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-foreground">Delivery Instructions</h3>
+                  <h3 className="text-lg font-semibold text-foreground">{t('register.deliveryInstructions')}</h3>
                   
                   <div className="space-y-3">
-                    <Label>Preferred Delivery Time</Label>
+                    <Label>{t('register.preferredDeliveryTime')}</Label>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      {['Morning (8am - 12pm)', 'Afternoon (1pm - 5pm)', 'Evening (6pm - 9pm)'].map((time) => (
+                      {timeOptions.map((option) => (
                         <div 
-                          key={time}
+                          key={option.key}
                           className={`
                             p-3 rounded-lg border-2 text-sm font-medium cursor-pointer transition-all
                             flex items-center justify-center text-center gap-2
-                            ${form.watch('preferredTime') === time 
+                            ${form.watch('preferredTime') === option.key 
                               ? 'border-primary bg-primary/5 text-primary' 
                               : 'border-muted hover:border-muted-foreground/30'}
                           `}
-                          onClick={() => form.setValue('preferredTime', time)}
+                          onClick={() => form.setValue('preferredTime', option.key)}
                         >
                           <Clock className="w-4 h-4" />
-                          {time.split(' (')[0]} <span className="hidden md:inline text-xs text-muted-foreground">({time.split(' (')[1]}</span>
+                          {option.label} <span className="hidden md:inline text-xs text-muted-foreground">({option.time})</span>
                         </div>
                       ))}
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="specialNote">Special Notes</Label>
+                    <Label htmlFor="specialNote">{t('register.specialNotes')}</Label>
                     <Controller
                       control={form.control}
                       name="specialNote"
@@ -551,7 +542,7 @@ export default function Register() {
                         <VoiceInput 
                           as="textarea"
                           id="specialNote" 
-                          placeholder="e.g., Leave at the reception, call before arrival..." 
+                          placeholder={t('register.specialNotesPlaceholder')}
                           className="h-24"
                           {...field} 
                         />
@@ -561,84 +552,108 @@ export default function Register() {
                 </div>
 
                 <div className="bg-muted/50 p-4 rounded-lg space-y-2 border border-border/50">
-                  <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wider">Quick Summary</h4>
+                  <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wider">{t('common.quickSummary')}</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4 text-sm">
                     <div>
-                      <span className="text-muted-foreground">Name:</span> 
-                      <span className="ml-2 font-medium">{form.getValues("name")}</span>
+                      <span className="text-muted-foreground">{t('common.name')}:</span> 
+                      <span className="ms-2 font-medium">{form.getValues("name")}</span>
                     </div>
                     <div>
-                      <span className="text-muted-foreground">Phone:</span> 
-                      <span className="ml-2 font-medium">{form.getValues("phone")}</span>
+                      <span className="text-muted-foreground">{t('common.phone')}:</span> 
+                      <span className="ms-2 font-medium">{form.getValues("phone")}</span>
                     </div>
                     <div className="md:col-span-2">
-                      <span className="text-muted-foreground block md:inline">Address:</span> 
-                      <p className="font-medium truncate mt-1 md:mt-0">{form.getValues("textAddress")}</p>
+                      <span className="text-muted-foreground block md:inline">{t('common.address')}:</span> 
+                      <span className="ms-2 font-medium text-xs">{form.getValues("textAddress")?.slice(0, 100)}...</span>
                     </div>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Navigation Buttons */}
-            <div className="flex flex-col sm:flex-row justify-between mt-8 pt-4 border-t border-border/50 gap-3 sm:gap-0">
-              {/* Back Button Logic */}
-              {step > 1 ? (
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={prevStep}
-                  className="w-full sm:w-28 order-2 sm:order-1"
-                >
-                  <ChevronLeft className="w-4 h-4 mr-2" /> Back
-                </Button>
-              ) : (
-                 // Spacer for desktop, hidden for mobile if not needed
-                 <div className="hidden sm:block w-28 order-1" /> 
-              )}
-              
-              {/* Step 1 Action Buttons */}
+            <Separator className="my-6" />
+
+            <div className="flex flex-col gap-3">
               {step === 1 && (
-                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto order-1 sm:order-2">
-                  <Button 
-                    type="button" 
-                    variant="secondary"
-                    onClick={handleQuickRegister} 
-                    className="w-full sm:w-auto"
-                    disabled={registerMutation.isPending}
-                  >
-                    Quick Register <CheckCircle2 className="w-4 h-4 ml-2" />
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      className="gap-2"
+                      onClick={handleQuickRegister}
+                      disabled={registerMutation.isPending}
+                      data-testid="button-quick-register"
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      {t('register.quickRegister')}
+                    </Button>
+                    <Button 
+                      type="button" 
+                      className="gap-2"
+                      onClick={handleFullRegistration}
+                      disabled={registerMutation.isPending}
+                      data-testid="button-next-step"
+                    >
+                      {t('register.registerWithAddress')}
+                      <ChevronRight className="w-4 h-4 rtl:rotate-180" />
+                    </Button>
+                  </div>
+                  {registerMutation.isPending && (
+                    <p className="text-sm text-muted-foreground text-center">{t('common.registering')}</p>
+                  )}
+                </>
+              )}
+
+              {step === 2 && (
+                <div className="flex gap-3">
+                  <Button type="button" variant="outline" onClick={prevStep} className="gap-2">
+                    <ChevronLeft className="w-4 h-4 rtl:rotate-180" />
+                    {t('common.back')}
                   </Button>
                   <Button 
                     type="button" 
-                    onClick={handleFullRegistration} 
-                    className="w-full sm:w-auto bg-primary hover:bg-primary/90"
-                    disabled={registerMutation.isPending}
+                    className="flex-1 gap-2"
+                    onClick={handleFullRegistration}
+                    data-testid="button-continue-step-2"
                   >
-                    Add Address Details <ChevronRight className="w-4 h-4 ml-2" />
+                    {t('common.next')}
+                    <ChevronRight className="w-4 h-4 rtl:rotate-180" />
                   </Button>
                 </div>
               )}
 
-              {/* Step 2+ Action Buttons */}
-              {step > 1 && step < 3 && (
-                <Button type="button" onClick={handleFullRegistration} className="w-full sm:w-28 order-1 sm:order-2">
-                  Next <ChevronRight className="w-4 h-4 ml-2" />
-                </Button>
-              )}
-
               {step === 3 && (
-                <Button 
-                  type="button" 
-                  onClick={form.handleSubmit(onSubmit)} 
-                  className="w-full sm:w-40 bg-primary hover:bg-primary/90 order-1 sm:order-2"
-                  disabled={registerMutation.isPending}
-                >
-                  {registerMutation.isPending ? "Submitting..." : "Submit"} <CheckCircle2 className="w-4 h-4 ml-2" />
-                </Button>
+                <div className="flex gap-3">
+                  <Button type="button" variant="outline" onClick={prevStep} className="gap-2">
+                    <ChevronLeft className="w-4 h-4 rtl:rotate-180" />
+                    {t('common.back')}
+                  </Button>
+                  <Button 
+                    type="submit"
+                    className="flex-1 gap-2"
+                    disabled={registerMutation.isPending}
+                    onClick={() => {
+                      setRegType("full");
+                      form.handleSubmit(onSubmit)();
+                    }}
+                    data-testid="button-complete-registration"
+                  >
+                    {registerMutation.isPending ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        {t('common.registering')}
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-4 h-4" />
+                        {t('register.completeRegistration')}
+                      </>
+                    )}
+                  </Button>
+                </div>
               )}
             </div>
-
           </form>
         </CardContent>
       </Card>

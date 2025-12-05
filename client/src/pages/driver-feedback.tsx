@@ -3,6 +3,7 @@ import { useParams } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import { MessageSquare, Star, MapPin, Package, CheckCircle2, AlertCircle, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { LanguageSwitcher } from "@/components/language-switcher";
 
 const feedbackSchema = z.object({
   deliveryStatus: z.enum(["delivered", "failed"], { required_error: "Please select delivery status" }),
@@ -32,35 +34,36 @@ const feedbackSchema = z.object({
 
 type FeedbackFormValues = z.infer<typeof feedbackSchema>;
 
-const deliveryStatusOptions = [
-  { value: "delivered", label: "Successfully Delivered", color: "text-green-600" },
-  { value: "failed", label: "Failed to Deliver", color: "text-red-600" },
-];
-
-const failureReasonOptions = [
-  { value: "wrong_address", label: "Wrong/Incorrect Address" },
-  { value: "customer_unavailable", label: "Customer Not Available" },
-  { value: "access_denied", label: "Access Denied to Building/Area" },
-  { value: "dangerous_area", label: "Unsafe/Dangerous Area" },
-  { value: "address_not_found", label: "Address Not Found" },
-  { value: "weather_conditions", label: "Bad Weather Conditions" },
-  { value: "vehicle_issue", label: "Vehicle/Transport Issue" },
-  { value: "other", label: "Other Reason" },
-];
-
-const customerBehaviorOptions = [
-  { value: "cooperative", label: "Cooperative - Easy to work with" },
-  { value: "neutral", label: "Neutral - Standard interaction" },
-  { value: "difficult", label: "Difficult - Required extra effort" },
-  { value: "unavailable", label: "Unavailable - Customer not present" },
-  { value: "aggressive", label: "Aggressive - Hostile behavior" },
-];
-
 export default function DriverFeedback() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const { toast } = useToast();
   const lookupId = parseInt(id || "0");
   const [submitted, setSubmitted] = useState(false);
+
+  const deliveryStatusOptions = [
+    { value: "delivered", label: t('feedback.delivered'), color: "text-green-600" },
+    { value: "failed", label: t('feedback.failed'), color: "text-red-600" },
+  ];
+
+  const failureReasonOptions = [
+    { value: "wrong_address", label: t('feedback.wrongAddress') },
+    { value: "customer_unavailable", label: t('feedback.customerUnavailable') },
+    { value: "access_denied", label: t('feedback.accessDenied') },
+    { value: "dangerous_area", label: t('feedback.dangerousArea') },
+    { value: "address_not_found", label: t('feedback.addressNotFound') },
+    { value: "weather_conditions", label: t('feedback.weatherConditions') },
+    { value: "vehicle_issue", label: t('feedback.vehicleIssue') },
+    { value: "other", label: t('feedback.other') },
+  ];
+
+  const customerBehaviorOptions = [
+    { value: "cooperative", label: t('feedback.cooperative') },
+    { value: "neutral", label: t('feedback.neutral') },
+    { value: "difficult", label: t('feedback.difficult') },
+    { value: "unavailable", label: t('feedback.unavailable') },
+    { value: "aggressive", label: t('feedback.aggressive') },
+  ];
 
   const { data: lookupData, isLoading, error } = useQuery({
     queryKey: ["/api/driver/pending-lookup", lookupId],
@@ -107,13 +110,13 @@ export default function DriverFeedback() {
     onSuccess: () => {
       setSubmitted(true);
       toast({
-        title: "Feedback Submitted",
-        description: "Thank you for your feedback!",
+        title: t('feedback.feedbackSubmitted'),
+        description: t('feedback.thankYouFeedback'),
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Submission Failed",
+        title: t('errors.somethingWentWrong'),
         description: error.message,
         variant: "destructive",
       });
@@ -134,14 +137,17 @@ export default function DriverFeedback() {
 
   if (error || !lookupData) {
     return (
-      <div className="min-h-screen bg-background p-4">
+      <div className="min-h-screen bg-background p-4 relative">
+        <div className="absolute top-4 end-4">
+          <LanguageSwitcher />
+        </div>
         <div className="max-w-md mx-auto mt-20">
           <Card className="border-red-200">
             <CardContent className="pt-6 text-center">
               <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-              <h2 className="text-lg font-semibold mb-2">Lookup Not Found</h2>
+              <h2 className="text-lg font-semibold mb-2">{t('errors.notFound')}</h2>
               <p className="text-muted-foreground mb-4">
-                {error?.message || "This feedback request is no longer valid or feedback has already been submitted."}
+                {error?.message || t('errors.somethingWentWrong')}
               </p>
             </CardContent>
           </Card>
@@ -152,19 +158,19 @@ export default function DriverFeedback() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-background p-4">
+      <div className="min-h-screen bg-background p-4 relative">
+        <div className="absolute top-4 end-4">
+          <LanguageSwitcher />
+        </div>
         <div className="max-w-md mx-auto mt-20">
-          <Card className="border-green-200 bg-green-50/50">
+          <Card className="border-green-200 bg-green-50/50 dark:bg-green-950/20">
             <CardContent className="pt-8 pb-8 text-center">
-              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
                 <CheckCircle className="w-10 h-10 text-green-600" />
               </div>
-              <h2 className="text-2xl font-bold text-green-800 mb-3">Thank You!</h2>
-              <p className="text-green-700 mb-2">
-                Your feedback has been submitted successfully.
-              </p>
-              <p className="text-sm text-green-600">
-                Your input helps improve delivery accuracy for everyone.
+              <h2 className="text-2xl font-bold text-green-800 dark:text-green-200 mb-3">{t('feedback.thankYouFeedback')}</h2>
+              <p className="text-green-700 dark:text-green-300 mb-2">
+                {t('feedback.feedbackSubmitted')}
               </p>
             </CardContent>
           </Card>
@@ -174,14 +180,17 @@ export default function DriverFeedback() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-4">
+    <div className="min-h-screen bg-background p-4 relative">
+      <div className="absolute top-4 end-4">
+        <LanguageSwitcher />
+      </div>
       <div className="max-w-lg mx-auto space-y-6">
         <div className="text-center space-y-2">
           <div className="mx-auto w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
             <MessageSquare className="w-7 h-7" />
           </div>
-          <h1 className="text-2xl font-bold">Delivery Feedback</h1>
-          <p className="text-muted-foreground">Share your experience for this delivery</p>
+          <h1 className="text-2xl font-bold">{t('feedback.deliveryFeedback')}</h1>
+          <p className="text-muted-foreground">{t('feedback.locationScoreDesc')}</p>
         </div>
 
         <Card className="bg-muted/30">
@@ -189,7 +198,7 @@ export default function DriverFeedback() {
             <div className="flex items-center gap-3">
               <Package className="w-5 h-5 text-muted-foreground" />
               <div>
-                <p className="font-medium">Shipment: {lookupData.lookup.shipmentNumber}</p>
+                <p className="font-medium">{t('driver.shipmentNumber')}: {lookupData.lookup.shipmentNumber}</p>
                 {lookupData.address && (
                   <p className="text-sm text-muted-foreground flex items-center gap-1">
                     <MapPin className="w-3 h-3" />
@@ -203,8 +212,8 @@ export default function DriverFeedback() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Rate Your Experience</CardTitle>
-            <CardDescription>Your feedback helps improve future deliveries</CardDescription>
+            <CardTitle>{t('feedback.deliveryFeedback')}</CardTitle>
+            <CardDescription>{t('feedback.locationScoreDesc')}</CardDescription>
           </CardHeader>
           <CardContent>
             <Form {...form}>
@@ -214,8 +223,7 @@ export default function DriverFeedback() {
                   name="deliveryStatus"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Delivery Status</FormLabel>
-                      <FormDescription>Was the delivery successful?</FormDescription>
+                      <FormLabel>{t('feedback.deliveryStatus')}</FormLabel>
                       <FormControl>
                         <RadioGroup
                           onValueChange={field.onChange}
@@ -252,8 +260,7 @@ export default function DriverFeedback() {
                     name="failureReason"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Reason for {deliveryStatus === "failed" ? "Failure" : "Partial Delivery"}</FormLabel>
-                        <FormDescription>What prevented complete delivery?</FormDescription>
+                        <FormLabel>{t('feedback.failureReason')}</FormLabel>
                         <FormControl>
                           <RadioGroup
                             onValueChange={field.onChange}
@@ -290,8 +297,8 @@ export default function DriverFeedback() {
                   name="locationScore"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Location Accuracy</FormLabel>
-                      <FormDescription>How accurate was the address information?</FormDescription>
+                      <FormLabel>{t('feedback.locationScore')}</FormLabel>
+                      <FormDescription>{t('feedback.locationScoreDesc')}</FormDescription>
                       <FormControl>
                         <div className="flex gap-2 pt-2">
                           {[1, 2, 3, 4, 5].map((score) => (
@@ -324,8 +331,7 @@ export default function DriverFeedback() {
                   name="customerBehavior"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Customer Behavior</FormLabel>
-                      <FormDescription>How was the customer's behavior during delivery?</FormDescription>
+                      <FormLabel>{t('feedback.customerBehavior')}</FormLabel>
                       <FormControl>
                         <RadioGroup
                           onValueChange={field.onChange}
@@ -361,11 +367,10 @@ export default function DriverFeedback() {
                   name="additionalNotes"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Additional Notes (Optional)</FormLabel>
-                      <FormDescription>Any other observations or issues?</FormDescription>
+                      <FormLabel>{t('feedback.additionalNotes')}</FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder="e.g., Building entrance was hard to find, parking was limited..."
+                          placeholder=""
                           className="min-h-[100px]"
                           {...field}
                         />
@@ -382,11 +387,11 @@ export default function DriverFeedback() {
                   data-testid="button-submit-feedback"
                 >
                   {submitMutation.isPending ? (
-                    "Submitting..."
+                    t('common.loading')
                   ) : (
                     <>
-                      <CheckCircle2 className="w-4 h-4 mr-2" />
-                      Submit Feedback
+                      <CheckCircle2 className="w-4 h-4 me-2" />
+                      {t('driver.submitFeedback')}
                     </>
                   )}
                 </Button>
