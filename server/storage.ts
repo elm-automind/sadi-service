@@ -1,7 +1,8 @@
 import { 
   type User, type InsertUser, type Address, type InsertAddress,
   type FallbackContact, type InsertFallbackContact, type PasswordResetOtp,
-  users, addresses, fallbackContacts, passwordResetOtps 
+  type CompanyProfile, type InsertCompanyProfile,
+  users, addresses, fallbackContacts, passwordResetOtps, companyProfiles
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, gt, lt } from "drizzle-orm";
@@ -11,8 +12,13 @@ export interface IStorage {
   getUserByIqama(iqamaId: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserByPhone(phone: string): Promise<User | undefined>;
+  getUserByUnifiedNumber(unifiedNumber: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUserPassword(userId: number, hashedPassword: string): Promise<void>;
+  
+  createCompanyProfile(profile: InsertCompanyProfile): Promise<CompanyProfile>;
+  getCompanyProfileByUserId(userId: number): Promise<CompanyProfile | undefined>;
+  getCompanyProfileByUnifiedNumber(unifiedNumber: string): Promise<CompanyProfile | undefined>;
   
   createAddress(address: InsertAddress): Promise<Address>;
   getAddressById(id: number): Promise<Address | undefined>;
@@ -67,6 +73,31 @@ export class DatabaseStorage implements IStorage {
       .update(users)
       .set({ password: hashedPassword })
       .where(eq(users.id, userId));
+  }
+
+  async getUserByUnifiedNumber(unifiedNumber: string): Promise<User | undefined> {
+    const [profile] = await db.select().from(companyProfiles).where(eq(companyProfiles.unifiedNumber, unifiedNumber));
+    if (!profile) return undefined;
+    const [user] = await db.select().from(users).where(eq(users.id, profile.userId));
+    return user || undefined;
+  }
+
+  async createCompanyProfile(insertProfile: InsertCompanyProfile): Promise<CompanyProfile> {
+    const [profile] = await db
+      .insert(companyProfiles)
+      .values(insertProfile)
+      .returning();
+    return profile;
+  }
+
+  async getCompanyProfileByUserId(userId: number): Promise<CompanyProfile | undefined> {
+    const [profile] = await db.select().from(companyProfiles).where(eq(companyProfiles.userId, userId));
+    return profile || undefined;
+  }
+
+  async getCompanyProfileByUnifiedNumber(unifiedNumber: string): Promise<CompanyProfile | undefined> {
+    const [profile] = await db.select().from(companyProfiles).where(eq(companyProfiles.unifiedNumber, unifiedNumber));
+    return profile || undefined;
   }
 
   async createAddress(insertAddress: InsertAddress): Promise<Address> {

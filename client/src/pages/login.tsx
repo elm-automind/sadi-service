@@ -42,8 +42,12 @@ export default function Login() {
         description: `Welcome back, ${data.user.name}`,
       });
       
-      // Go to dashboard
-      setLocation("/dashboard");
+      // Redirect to appropriate dashboard based on account type
+      if (data.user.accountType === "company") {
+        setLocation("/company-dashboard");
+      } else {
+        setLocation("/dashboard");
+      }
     },
     onError: (error: any) => {
       toast({
@@ -115,7 +119,7 @@ export default function Login() {
             
             <div className="text-center text-sm text-muted-foreground pt-4 border-t mt-4">
               Don't have an account?{" "}
-              <Link href="/register">
+              <Link href="/register-type">
                 <Button variant="link" className="p-0 h-auto font-medium text-primary">
                   Register
                 </Button>

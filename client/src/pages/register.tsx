@@ -6,7 +6,7 @@ import * as z from "zod";
 import { useDropzone } from "react-dropzone";
 import { 
   User, MapPin, Camera, Clock, CheckCircle2, 
-  ChevronRight, ChevronLeft, Upload, FileText, Lock, LogIn
+  ChevronRight, ChevronLeft, Upload, FileText, Lock, LogIn, ArrowLeft
 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -211,6 +211,12 @@ export default function Register() {
       <PageNavigation className="absolute top-4 left-4" />
 
       <div className="absolute top-4 right-4 flex gap-2">
+        <Link href="/register-type">
+           <Button variant="ghost" size="sm" className="gap-2" data-testid="button-back-to-type">
+            <ArrowLeft className="w-4 h-4" />
+            <span className="hidden sm:inline">Back</span>
+           </Button>
+        </Link>
         <Link href="/login">
            <Button variant="ghost" size="sm" className="gap-2 text-primary">
             <LogIn className="w-4 h-4" />

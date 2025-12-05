@@ -6,7 +6,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useSessionActivity } from "@/hooks/use-session-activity";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
+import RegisterType from "@/pages/register-type";
 import Register from "@/pages/register";
+import RegisterCompany from "@/pages/register-company";
 import Success from "@/pages/success";
 import Login from "@/pages/login";
 import ResetPassword from "@/pages/reset-password";
@@ -14,6 +16,7 @@ import AddAddress from "@/pages/add-address";
 import DeliveryPreferences from "@/pages/delivery-preferences";
 import ViewAddress from "@/pages/view-address";
 import Dashboard from "@/pages/dashboard";
+import CompanyDashboard from "@/pages/company-dashboard";
 import FallbackContact from "@/pages/fallback-contact";
 import ViewFallback from "@/pages/view-fallback";
 
@@ -21,11 +24,14 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/register-type" component={RegisterType} />
       <Route path="/register" component={Register} />
+      <Route path="/register/company" component={RegisterCompany} />
       <Route path="/success" component={Success} />
       <Route path="/login" component={Login} />
       <Route path="/reset-password" component={ResetPassword} />
       <Route path="/dashboard" component={Dashboard} />
+      <Route path="/company-dashboard" component={CompanyDashboard} />
       <Route path="/add-address" component={AddAddress} />
       <Route path="/preferences" component={DeliveryPreferences} />
       <Route path="/fallback-contact" component={FallbackContact} />

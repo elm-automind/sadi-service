@@ -4,7 +4,7 @@ import bcrypt from "bcrypt";
 import crypto from "crypto";
 import { Resend } from "resend";
 import { storage } from "./storage";
-import { insertUserSchema, insertAddressSchema, insertFallbackContactSchema } from "@shared/schema";
+import { insertUserSchema, insertAddressSchema, insertFallbackContactSchema, companyRegistrationSchema } from "@shared/schema";
 import { calculateDistanceKm } from "@shared/utils";
 import { z } from "zod";
 
@@ -37,9 +37,11 @@ export async function registerRoutes(httpServer: Server, app: Express) {
       // 1. Validate User Data
       const userData = insertUserSchema.parse(req.body);
 
-      // 2. Check Duplicates
-      const existingIqama = await storage.getUserByIqama(userData.iqamaId);
-      if (existingIqama) return res.status(400).json({ message: "ID already registered" });
+      // 2. Check Duplicates (only for individual accounts with iqamaId)
+      if (userData.iqamaId) {
+        const existingIqama = await storage.getUserByIqama(userData.iqamaId);
+        if (existingIqama) return res.status(400).json({ message: "ID already registered" });
+      }
 
       const existingEmail = await storage.getUserByEmail(userData.email);
       if (existingEmail) return res.status(400).json({ message: "Email already registered" });
@@ -72,6 +74,55 @@ export async function registerRoutes(httpServer: Server, app: Express) {
         res.status(400).json({ message: "Validation Error", errors: error.errors });
       } else {
         console.error("Register Error:", error);
+        res.status(500).json({ message: "Internal Server Error" });
+      }
+    }
+  });
+
+  // Company Registration
+  app.post("/api/register/company", async (req, res) => {
+    try {
+      // 1. Validate company data
+      const companyData = companyRegistrationSchema.parse(req.body);
+
+      // 2. Check duplicates
+      const existingUnified = await storage.getCompanyProfileByUnifiedNumber(companyData.unifiedNumber);
+      if (existingUnified) return res.status(400).json({ message: "Unified number already registered" });
+
+      const existingEmail = await storage.getUserByEmail(companyData.email);
+      if (existingEmail) return res.status(400).json({ message: "Email already registered" });
+
+      const existingPhone = await storage.getUserByPhone(companyData.phone);
+      if (existingPhone) return res.status(400).json({ message: "Mobile number already registered" });
+
+      // 3. Hash password and create user
+      const hashedPassword = await bcrypt.hash(companyData.password, SALT_ROUNDS);
+      const newUser = await storage.createUser({
+        accountType: "company",
+        iqamaId: null,
+        email: companyData.email,
+        phone: companyData.phone,
+        name: companyData.companyName,
+        password: hashedPassword,
+      });
+
+      // 4. Create company profile
+      const companyProfile = await storage.createCompanyProfile({
+        userId: newUser.id,
+        companyName: companyData.companyName,
+        unifiedNumber: companyData.unifiedNumber,
+        companyType: companyData.companyType,
+      });
+
+      // 5. Login
+      req.session.userId = newUser.id;
+
+      res.status(201).json({ user: newUser, companyProfile });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Validation Error", errors: error.errors });
+      } else {
+        console.error("Company Register Error:", error);
         res.status(500).json({ message: "Internal Server Error" });
       }
     }

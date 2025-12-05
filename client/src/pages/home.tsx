@@ -60,7 +60,7 @@ export default function Home() {
         </div>
 
         <div className="pt-4 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200">
-          <Link href="/register">
+          <Link href="/register-type">
             <Button size="lg" className="w-full text-lg h-12 shadow-lg hover:shadow-xl transition-all duration-300 group" data-testid="button-start-registration">
               Start Registration
               <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
