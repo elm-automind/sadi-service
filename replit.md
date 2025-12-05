@@ -127,6 +127,22 @@ Zod schemas generated from Drizzle tables using drizzle-zod for consistent valid
 - OpenStreetMap tiles (via tile server)
 - Nominatim API for reverse geocoding (converting coordinates to addresses)
 
+**Billing API Integration:**
+- External billing service at https://billing-qa-api.apps.devocp4.elm.sa:443/billing/v3/api/invoice/generateinvoicewithcustomer
+- Generates invoices when companies select subscription plans
+- Environment variables required:
+  - BILLING_API_URL - API endpoint URL
+  - BILLING_PRODUCT_CODE - Product code header
+  - BILLING_CLIENT_KEY - Client key header
+  - BILLING_APP_ID - Application ID header
+  - BILLING_APP_KEY - Application key header
+- Billing service module (server/billing.ts) handles:
+  - Payload construction with company info, address, and transaction details
+  - Request timeout (30 seconds) with AbortController
+  - Graceful error handling for non-JSON responses
+  - User-friendly error messages (no raw API errors exposed)
+- Invoice generation is required before subscription persistence
+
 **UI Component Libraries:**
 - Radix UI for accessible component primitives
 - Lucide React for icons
