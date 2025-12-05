@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation, Link } from "wouter";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -6,9 +6,10 @@ import * as z from "zod";
 import { useDropzone } from "react-dropzone";
 import { 
   User, MapPin, Camera, Clock, CheckCircle2, 
-  ChevronRight, ChevronLeft, Upload, FileText, Lock, LogIn, ArrowLeft
+  ChevronRight, ChevronLeft, Upload, FileText, Lock, LogIn, ArrowLeft, X
 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { processImage, revokePreviewUrl, type ProcessedImage } from "@/lib/image";
 
 import { Button } from "@/components/ui/button";
 import { PageNavigation } from "@/components/page-navigation";
@@ -47,7 +48,16 @@ const registrationSchema = z.object({
 
 type FormData = z.infer<typeof registrationSchema>;
 
-const FileUploadBox = ({ label, icon: Icon, onDrop, file }: { label: string, icon: any, onDrop: (files: File[]) => void, file: File | null }) => {
+interface FileUploadBoxProps {
+  label: string;
+  icon: any;
+  onDrop: (files: File[]) => void;
+  processedImage: ProcessedImage | null;
+  onRemove: () => void;
+  isProcessing?: boolean;
+}
+
+const FileUploadBox = ({ label, icon: Icon, onDrop, processedImage, onRemove, isProcessing }: FileUploadBoxProps) => {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
     onDrop,
     maxFiles: 1,
@@ -57,33 +67,57 @@ const FileUploadBox = ({ label, icon: Icon, onDrop, file }: { label: string, ico
   return (
     <div className="space-y-2">
       <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</Label>
-      <div 
-        {...getRootProps()} 
-        className={`
-          border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-all duration-200
-          flex flex-col items-center justify-center gap-2 h-24 md:h-32
-          ${isDragActive ? 'border-primary bg-primary/5' : 'border-muted-foreground/20 hover:border-primary/50 hover:bg-muted/50'}
-          ${file ? 'bg-blue-50/50 border-blue-200' : ''}
-        `}
-      >
-        <input {...getInputProps()} />
-        {file ? (
-          <>
-            <CheckCircle2 className="w-6 h-6 md:w-8 md:h-8 text-green-500" />
-            <p className="text-xs font-medium text-foreground truncate max-w-[120px] md:max-w-[150px]">{file.name}</p>
-            <p className="text-[10px] text-muted-foreground">Click to replace</p>
-          </>
-        ) : (
-          <>
-            <div className="p-2 bg-muted rounded-full">
-              <Icon className="w-4 h-4 md:w-5 md:h-5 text-muted-foreground" />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {isDragActive ? "Drop here" : "Tap to upload"}
-            </p>
-          </>
-        )}
-      </div>
+      {processedImage ? (
+        <div className="relative rounded-lg overflow-hidden h-24 md:h-32 border-2 border-green-200 bg-green-50/50">
+          <img 
+            src={processedImage.previewUrl} 
+            alt={label}
+            className="w-full h-full object-cover"
+            data-testid={`preview-${label.toLowerCase().replace(' ', '-')}`}
+          />
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemove();
+            }}
+            className="absolute top-1 right-1 p-1 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-md transition-colors"
+            data-testid={`remove-${label.toLowerCase().replace(' ', '-')}`}
+          >
+            <X className="w-3 h-3" />
+          </button>
+          <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[10px] p-1 text-center truncate">
+            {processedImage.originalName}
+          </div>
+        </div>
+      ) : (
+        <div 
+          {...getRootProps()} 
+          className={`
+            border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-all duration-200
+            flex flex-col items-center justify-center gap-2 h-24 md:h-32
+            ${isDragActive ? 'border-primary bg-primary/5' : 'border-muted-foreground/20 hover:border-primary/50 hover:bg-muted/50'}
+            ${isProcessing ? 'opacity-50 pointer-events-none' : ''}
+          `}
+        >
+          <input {...getInputProps()} />
+          {isProcessing ? (
+            <>
+              <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              <p className="text-xs text-muted-foreground">Compressing...</p>
+            </>
+          ) : (
+            <>
+              <div className="p-2 bg-muted rounded-full">
+                <Icon className="w-4 h-4 md:w-5 md:h-5 text-muted-foreground" />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {isDragActive ? "Drop here" : "Tap to upload"}
+              </p>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 };
@@ -94,11 +128,66 @@ export default function Register() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [files, setFiles] = useState<{
-    building?: File;
-    gate?: File;
-    door?: File;
+  
+  const [images, setImages] = useState<{
+    building?: ProcessedImage;
+    gate?: ProcessedImage;
+    door?: ProcessedImage;
   }>({});
+  
+  const imagesRef = useRef(images);
+  useEffect(() => {
+    imagesRef.current = images;
+  }, [images]);
+  
+  const [processing, setProcessing] = useState<{
+    building?: boolean;
+    gate?: boolean;
+    door?: boolean;
+  }>({});
+
+  const handleImageUpload = async (type: 'building' | 'gate' | 'door', files: File[]) => {
+    if (files.length === 0) return;
+    
+    setProcessing(p => ({ ...p, [type]: true }));
+    try {
+      const processed = await processImage(files[0]);
+      setImages(p => {
+        if (p[type]) {
+          revokePreviewUrl(p[type]!.previewUrl);
+        }
+        return { ...p, [type]: processed };
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Image Error",
+        description: "Failed to process image. Please try again."
+      });
+    } finally {
+      setProcessing(p => ({ ...p, [type]: false }));
+    }
+  };
+
+  const handleRemoveImage = (type: 'building' | 'gate' | 'door') => {
+    const img = images[type];
+    if (img) {
+      revokePreviewUrl(img.previewUrl);
+      setImages(p => {
+        const updated = { ...p };
+        delete updated[type];
+        return updated;
+      });
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      Object.values(imagesRef.current).forEach(img => {
+        if (img) revokePreviewUrl(img.previewUrl);
+      });
+    };
+  }, []);
 
   const form = useForm<FormData>({
     resolver: zodResolver(registrationSchema),
@@ -117,18 +206,14 @@ export default function Register() {
 
   const registerMutation = useMutation({
     mutationFn: async (data: FormData) => {
-      // Upload images first if needed (Mocking image upload by just using names/urls for now)
-      // In a real app, we'd upload files to an endpoint and get URLs back.
-      // For now we just send the filenames in the register request.
-      
       const payload = {
         ...data,
         label: data.addressLabel,
         lat: data.latitude,
         lng: data.longitude,
-        photoBuilding: files.building?.name,
-        photoGate: files.gate?.name,
-        photoDoor: files.door?.name,
+        photoBuilding: images.building?.dataUri,
+        photoGate: images.gate?.dataUri,
+        photoDoor: images.door?.dataUri,
       };
 
       const res = await apiRequest("POST", "/api/register", payload);
@@ -402,20 +487,26 @@ export default function Register() {
                     <FileUploadBox 
                       label="Building" 
                       icon={Upload} 
-                      file={files.building || null}
-                      onDrop={(f) => setFiles(p => ({...p, building: f[0]}))} 
+                      processedImage={images.building || null}
+                      onDrop={(f) => handleImageUpload('building', f)}
+                      onRemove={() => handleRemoveImage('building')}
+                      isProcessing={processing.building}
                     />
                     <FileUploadBox 
                       label="Main Gate" 
                       icon={Upload} 
-                      file={files.gate || null}
-                      onDrop={(f) => setFiles(p => ({...p, gate: f[0]}))} 
+                      processedImage={images.gate || null}
+                      onDrop={(f) => handleImageUpload('gate', f)}
+                      onRemove={() => handleRemoveImage('gate')}
+                      isProcessing={processing.gate}
                     />
                     <FileUploadBox 
                       label="Flat Door" 
                       icon={Upload} 
-                      file={files.door || null}
-                      onDrop={(f) => setFiles(p => ({...p, door: f[0]}))} 
+                      processedImage={images.door || null}
+                      onDrop={(f) => handleImageUpload('door', f)}
+                      onRemove={() => handleRemoveImage('door')}
+                      isProcessing={processing.door}
                     />
                   </div>
                 </div>
