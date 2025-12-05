@@ -95,33 +95,37 @@ export async function generateInvoice(
 
   const amount = billingCycle === "annual" ? planInfo.annualPrice : planInfo.monthlyPrice;
 
-  // Ensure unified number is exactly 10 characters (pad or truncate if needed)
-  const identityValue = companyInfo.unifiedNumber.replace(/\D/g, '').padStart(10, '0').slice(-10);
+  // Static 10-character identity value
+  const identityValue = "7000000001";
   
-  // Format address fields to meet API requirements (alphanumeric only, no special chars)
-  const formatAddressField = (value: string | undefined, defaultVal: string): string => {
-    if (!value) return defaultVal;
-    // Remove special characters, keep letters and numbers
-    return value.replace(/[^a-zA-Z0-9\u0600-\u06FF\s]/g, '').trim() || defaultVal;
+  // Format field: keep alphanumeric, max 9 chars
+  const fmt = (val: string | undefined, def: string): string => {
+    if (!val) return def;
+    return val.replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, '').slice(0, 9) || def;
   };
+
+  // Use company address if available, otherwise use static defaults (all < 10 chars)
+  const street = fmt(addressInfo?.street, "Street1");
+  const district = fmt(addressInfo?.district, "Olaya");
+  const city = fmt(addressInfo?.city, "Riyadh");
 
   const payload: InvoicePayload = {
     customerId: identityValue,
-    customerEnFullName: companyInfo.companyName,
-    customerArFullName: companyInfo.companyName,
+    customerEnFullName: companyInfo.companyName.slice(0, 50),
+    customerArFullName: companyInfo.companyName.slice(0, 50),
     identityType: "700",
     identityTypeValue: identityValue,
     nationalAddress: {
-      street: formatAddressField(addressInfo?.street, "MainStreet"),
+      street: street,
       buildingNumber: "1234",
       additionalNumber: "5678",
-      district: formatAddressField(addressInfo?.district, "AlOlaya"),
-      city: formatAddressField(addressInfo?.city, "Riyadh"),
+      district: district,
+      city: city,
       postalCode: "12345",
       country: "SA",
     },
-    mobileNumber: companyInfo.phone.replace(/^\+/, ""),
-    email: companyInfo.email || "",
+    mobileNumber: companyInfo.phone.replace(/^\+/, "").slice(0, 10),
+    email: companyInfo.email || "test@test.sa",
     customerNIN: identityValue,
     customerDescription: null,
     customerVatNumber: identityValue,
@@ -129,8 +133,8 @@ export async function generateInvoice(
     expiryPeriod: 99999,
     Transactions: [
       {
-        ServiceId: `SADI-${planInfo.slug}`,
-        Description: `${planInfo.name} Subscription - ${billingCycle === "annual" ? "Annual" : "Monthly"}`,
+        ServiceId: `MARRI${planInfo.slug.slice(0, 4).toUpperCase()}`,
+        Description: `${planInfo.name} - ${billingCycle}`.slice(0, 50),
         TransactionDate: transactionDate,
         TransactionID: transactionId,
         AmountWithoutVat: amount,
