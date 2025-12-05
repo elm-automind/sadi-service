@@ -30,9 +30,7 @@ const registrationSchema = z.object({
     .max(10, "National ID must be 10 digits")
     .regex(/^\d+$/, "National ID must contain only numbers"),
   phone: z.string()
-    .min(9, "Phone number is too short")
-    .max(14, "Phone number is too long")
-    .regex(/^\+?[\d\s]+$/, "Invalid phone number format"),
+    .regex(/^(0\d{9}|\+966\d{9})$/, "Phone must start with 0 or +966 followed by 9 digits"),
   email: z.string().email("Valid email is required"),
   name: z.string().min(2, "Full name is required"),
   password: z.string().min(6, "Password must be at least 6 characters"),

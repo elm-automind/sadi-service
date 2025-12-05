@@ -29,7 +29,7 @@ const companyRegisterSchema = z.object({
   unifiedNumber: z.string().min(5, "Unified number is required"),
   companyType: z.enum(companyTypeOptions, { required_error: "Company type is required" }),
   email: z.string().email("Invalid email address"),
-  phone: z.string().min(9, "Mobile number is required"),
+  phone: z.string().regex(/^(0\d{9}|\+966\d{9})$/, "Phone must start with 0 or +966 followed by 9 digits"),
   password: z.string().min(6, "Password must be at least 6 characters"),
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
