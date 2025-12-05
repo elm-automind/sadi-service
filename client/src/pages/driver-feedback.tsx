@@ -226,20 +226,21 @@ export default function DriverFeedback() {
                           className="space-y-2 pt-2"
                         >
                           {customerBehaviorOptions.map((option) => (
-                            <div
+                            <Label
                               key={option.value}
+                              htmlFor={`behavior-${option.value}`}
                               className={`flex items-center space-x-3 p-3 rounded-lg border transition-all cursor-pointer ${
                                 field.value === option.value
                                   ? "border-primary bg-primary/5"
                                   : "border-muted hover:border-primary/50"
                               }`}
-                              onClick={() => field.onChange(option.value)}
+                              data-testid={`radio-behavior-${option.value}`}
                             >
-                              <RadioGroupItem value={option.value} id={option.value} />
-                              <Label htmlFor={option.value} className="flex-1 cursor-pointer">
+                              <RadioGroupItem value={option.value} id={`behavior-${option.value}`} />
+                              <span className="flex-1">
                                 {option.label}
-                              </Label>
-                            </div>
+                              </span>
+                            </Label>
                           ))}
                         </RadioGroup>
                       </FormControl>
