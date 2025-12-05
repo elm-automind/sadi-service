@@ -65,6 +65,11 @@ export const companySubscriptions = pgTable("company_subscriptions", {
   status: text("status").notNull().default("active"),
   startDate: timestamp("start_date").defaultNow(),
   endDate: timestamp("end_date"),
+  sadadNumber: text("sadad_number"),
+  totalDueAmount: doublePrecision("total_due_amount"),
+  totalDueAmountBeforeVat: doublePrecision("total_due_amount_before_vat"),
+  vatAmount: doublePrecision("vat_amount"),
+  accountNumber: text("account_number"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -245,6 +250,11 @@ export const insertCompanySubscriptionSchema = createInsertSchema(companySubscri
   pricingPlanId: true,
   billingCycle: true,
   status: true,
+  sadadNumber: true,
+  totalDueAmount: true,
+  totalDueAmountBeforeVat: true,
+  vatAmount: true,
+  accountNumber: true,
 });
 
 export const subscriptionFormSchema = z.object({

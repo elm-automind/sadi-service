@@ -750,6 +750,11 @@ export async function registerRoutes(httpServer: Server, app: Express) {
         result = await storage.updateCompanySubscription(req.companyProfile.id, {
           pricingPlanId: subscriptionData.pricingPlanId,
           billingCycle: subscriptionData.billingCycle,
+          sadadNumber: billingResult.sadadNumber,
+          totalDueAmount: billingResult.totalDueAmount,
+          totalDueAmountBeforeVat: billingResult.totalDueAmountBeforeVat,
+          vatAmount: billingResult.vatAmount,
+          accountNumber: billingResult.accountNumber,
         });
       } else {
         result = await storage.createCompanySubscription({
@@ -757,6 +762,11 @@ export async function registerRoutes(httpServer: Server, app: Express) {
           pricingPlanId: subscriptionData.pricingPlanId,
           billingCycle: subscriptionData.billingCycle,
           status: "active",
+          sadadNumber: billingResult.sadadNumber,
+          totalDueAmount: billingResult.totalDueAmount,
+          totalDueAmountBeforeVat: billingResult.totalDueAmountBeforeVat,
+          vatAmount: billingResult.vatAmount,
+          accountNumber: billingResult.accountNumber,
         });
       }
       

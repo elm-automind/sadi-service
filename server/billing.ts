@@ -42,6 +42,11 @@ interface BillingResult {
   invoiceId?: string;
   message?: string;
   error?: string;
+  sadadNumber?: string;
+  totalDueAmount?: number;
+  totalDueAmountBeforeVat?: number;
+  vatAmount?: number;
+  accountNumber?: string;
 }
 
 interface CompanyInfo {
@@ -179,10 +184,28 @@ export async function generateInvoice(
 
     console.log(`Invoice generated successfully for ${companyInfo.companyName}`);
 
+    // Extract billing data from nested response structure
+    const body = responseData.body as Record<string, unknown> | undefined;
+    const data = body?.data as Record<string, unknown> | undefined;
+    const result = data?.result as Record<string, unknown> | undefined;
+
+    const sadadNumber = result?.sadadNumber as string | undefined;
+    const totalDueAmount = result?.totalDueAmount as number | undefined;
+    const totalDueAmountBeforeVat = result?.totalDueAmountBeforeVat as number | undefined;
+    const vatAmount = result?.vatAmount as number | undefined;
+    const accountNumber = result?.accountNumber as string | undefined;
+
+    console.log(`Billing data extracted - SADAD: ${sadadNumber}, Amount: ${totalDueAmount}, Account: ${accountNumber}`);
+
     return {
       success: true,
       invoiceId: (responseData.invoiceId as string) || (responseData.InvoiceId as string) || messageId,
       message: "Invoice generated successfully",
+      sadadNumber,
+      totalDueAmount,
+      totalDueAmountBeforeVat,
+      vatAmount,
+      accountNumber,
     };
   } catch (error) {
     console.error("Billing API call failed:", error);
