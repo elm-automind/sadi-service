@@ -6,7 +6,7 @@ import { Resend } from "resend";
 import { storage } from "./storage";
 import { 
   insertUserSchema, insertAddressSchema, insertFallbackContactSchema, 
-  companyRegistrationSchema, companyAddressFormSchema, subscriptionFormSchema, driverFormSchema 
+  companyRegistrationSchema, companyAddressFormSchema, subscriptionFormSchema, driverFormSchema, bulkDriverSchema 
 } from "@shared/schema";
 import { calculateDistanceKm } from "@shared/utils";
 import { z } from "zod";
@@ -672,6 +672,61 @@ export async function registerRoutes(httpServer: Server, app: Express) {
         res.status(400).json({ message: "Validation Error", errors: error.errors });
       } else {
         console.error("Create company driver error:", error);
+        res.status(500).json({ message: "Internal Server Error" });
+      }
+    }
+  });
+
+  // Bulk add drivers
+  app.post("/api/company/drivers/bulk", requireCompanyAuth, async (req: any, res) => {
+    try {
+      const { drivers } = bulkDriverSchema.parse(req.body);
+      
+      const results = {
+        success: [] as any[],
+        failed: [] as { driverId: string; name: string; reason: string }[],
+      };
+      
+      for (const driverData of drivers) {
+        try {
+          // Check if driver ID already exists for this company
+          const existingDriver = await storage.getCompanyDriverByDriverId(req.companyProfile.id, driverData.driverId);
+          if (existingDriver) {
+            results.failed.push({
+              driverId: driverData.driverId,
+              name: driverData.name,
+              reason: "Driver ID already exists",
+            });
+            continue;
+          }
+          
+          const driver = await storage.createCompanyDriver({
+            companyProfileId: req.companyProfile.id,
+            driverId: driverData.driverId,
+            name: driverData.name,
+            phone: driverData.phone || null,
+            status: "active",
+          });
+          
+          results.success.push(driver);
+        } catch (err) {
+          results.failed.push({
+            driverId: driverData.driverId,
+            name: driverData.name,
+            reason: "Failed to create driver",
+          });
+        }
+      }
+      
+      res.json({
+        message: `Added ${results.success.length} driver(s), ${results.failed.length} failed`,
+        ...results,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Validation Error", errors: error.errors });
+      } else {
+        console.error("Bulk create company drivers error:", error);
         res.status(500).json({ message: "Internal Server Error" });
       }
     }

@@ -208,6 +208,14 @@ export const driverFormSchema = z.object({
   status: z.enum(driverStatusEnum).default("active"),
 });
 
+export const bulkDriverSchema = z.object({
+  drivers: z.array(z.object({
+    driverId: z.string().min(1, "Driver ID is required"),
+    name: z.string().min(1, "Driver name is required"),
+    phone: z.string().optional(),
+  })).min(1, "At least one driver is required"),
+});
+
 export const insertAddressSchema = createInsertSchema(addresses).pick({
   digitalId: true,
   userId: true,
