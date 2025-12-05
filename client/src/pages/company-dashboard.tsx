@@ -10,6 +10,7 @@ import {
   MapPin, CreditCard, Edit2, Check, Loader2, Plus, Trash2, UserCog, Upload, Star, AlertTriangle, CheckCircle2
 } from "lucide-react";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { SarSymbol } from "@/components/sar-symbol";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -707,9 +708,9 @@ export default function CompanyDashboard() {
                       {plan.name}
                       {isSelected && <Check className="w-5 h-5 text-primary" />}
                     </CardTitle>
-                    <div className="mt-3">
-                      <span className="text-sm text-muted-foreground">{t('company.sar')}</span>
-                      <span className="text-4xl font-bold ms-1">{price}</span>
+                    <div className="mt-3 flex items-baseline gap-1">
+                      <SarSymbol size="lg" />
+                      <span className="text-4xl font-bold">{price}</span>
                       <span className="text-muted-foreground">/{isAnnual ? t('company.year') : t('company.month')}</span>
                     </div>
                   </CardHeader>
@@ -1526,8 +1527,9 @@ DRV003, Khalid Omar, 0551234567"
                         <h3 className="font-semibold text-lg">{currentPlan.name}</h3>
                         <Badge variant="secondary">{subscriptionData?.subscription.billingCycle}</Badge>
                       </div>
-                      <p className="text-2xl font-bold text-primary mt-1">
-                        <span className="text-sm font-normal">{t('company.sar')}</span> {subscriptionData?.subscription.billingCycle === "annual" ? currentPlan.annualPrice : currentPlan.monthlyPrice}
+                      <p className="text-2xl font-bold text-primary mt-1 flex items-baseline gap-1">
+                        <SarSymbol size="md" />
+                        <span>{subscriptionData?.subscription.billingCycle === "annual" ? currentPlan.annualPrice : currentPlan.monthlyPrice}</span>
                         <span className="text-sm font-normal text-muted-foreground">
                           /{subscriptionData?.subscription.billingCycle === "annual" ? t('company.year') : t('company.month')}
                         </span>
@@ -1609,9 +1611,9 @@ DRV003, Khalid Omar, 0551234567"
                         {plan.name}
                         {isSelected && <Check className="w-5 h-5 text-primary" />}
                       </CardTitle>
-                      <div className="mt-2">
-                        <span className="text-sm text-muted-foreground">{t('company.sar')}</span>
-                        <span className="text-3xl font-bold ms-1">{price}</span>
+                      <div className="mt-2 flex items-baseline gap-1">
+                        <SarSymbol size="md" />
+                        <span className="text-3xl font-bold">{price}</span>
                         <span className="text-muted-foreground">/{isAnnual ? t('company.year') : t('company.month')}</span>
                       </div>
                     </CardHeader>
