@@ -577,7 +577,7 @@
     "cancel": "Cancel",
     "returnToDashboard": "Return to Dashboard",
     "securePayment": "Secure Payment Gateway",
-    "securePaymentDesc": "Complete your payment securely using the form below.",
+    "securePaymentDesc": "Complete your payment securely through our secure payment partner.",
     "loadingPaymentPage": "Loading payment page...",
     "securityNote": "Your payment is secured with industry-standard encryption. We do not store your card details.",
     "completedPayment": "Already completed your payment?",
@@ -585,7 +585,17 @@
     "confirmPayment": "I've Completed Payment",
     "verifying": "Verifying...",
     "verificationError": "Could not verify payment. Please try again.",
-    "notYetCompleted": "Payment not yet completed. Please complete the payment first."
+    "notYetCompleted": "Payment not yet completed. Please complete the payment first.",
+    "readyToPay": "Ready to Complete Payment",
+    "clickToOpenGateway": "Click the button below to open the secure payment gateway in a new window.",
+    "total": "Total Amount",
+    "openPaymentGateway": "Open Payment Gateway",
+    "popupBlocked": "Pop-up was blocked. Please allow pop-ups for this site and try again.",
+    "waitingForPayment": "Waiting for Payment Completion",
+    "completeInNewWindow": "Please complete your payment in the new window. This page will automatically update once your payment is confirmed.",
+    "autoDetectWhenComplete": "We'll automatically detect when your payment is complete.",
+    "windowClosedAccidentally": "Window closed accidentally?",
+    "reopenPaymentWindow": "Reopen Payment Window"
   },
   "map": {
     "locateMe": "Locate Me",

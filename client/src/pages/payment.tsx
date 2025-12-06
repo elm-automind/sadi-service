@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, CreditCard, Loader2, CheckCircle, XCircle } from "lucide-react";
+import { ArrowLeft, CreditCard, Loader2, ExternalLink, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { SarSymbol } from "@/components/sar-symbol";
@@ -19,35 +19,35 @@ export default function Payment() {
     billingCycle: string;
   } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isVerifying, setIsVerifying] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<"pending" | "success" | "failed">("pending");
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [paymentWindowOpened, setPaymentWindowOpened] = useState(false);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
+  const paymentWindowRef = useRef<Window | null>(null);
 
-  // Clear payment data helper
   const clearPaymentData = useCallback(() => {
     sessionStorage.removeItem("paymentUrl");
     sessionStorage.removeItem("paymentRequestId");
     sessionStorage.removeItem("paymentDetails");
   }, []);
 
-  // Poll for payment completion
-  const checkPaymentStatus = useCallback(async () => {
-    const requestId = sessionStorage.getItem("paymentRequestId");
-    if (!requestId) return;
+  // Check if the payment window was closed and returned to our app
+  const checkPaymentWindow = useCallback(() => {
+    if (paymentWindowRef.current && paymentWindowRef.current.closed) {
+      // Window was closed - check subscription status
+      checkSubscriptionStatus();
+    }
+  }, []);
 
+  // Check subscription status directly from the API
+  const checkSubscriptionStatus = useCallback(async () => {
     try {
-      const response = await fetch("/api/company/verify-payment", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch("/api/company/subscription", {
         credentials: "include",
-        body: JSON.stringify({ paymentRequestId: requestId }),
       });
-
       const data = await response.json();
-
-      if (data.success && data.isPaid) {
-        // Payment complete - stop polling and redirect
+      
+      if (data.subscription?.status === "active" || data.subscription?.paymentStatus === "paid") {
+        // Payment completed!
         if (pollingRef.current) {
           clearInterval(pollingRef.current);
           pollingRef.current = null;
@@ -57,16 +57,18 @@ export default function Payment() {
         navigate("/company-dashboard?payment=success");
       }
     } catch (error) {
-      // Silently ignore polling errors
-      console.log("Payment status check:", error);
+      console.log("Subscription status check:", error);
     }
   }, [navigate, clearPaymentData]);
 
-  // Start polling when payment URL is available
+  // Start polling when payment window is opened
   useEffect(() => {
-    if (paymentUrl && paymentRequestId && !pollingRef.current) {
-      // Start polling every 3 seconds
-      pollingRef.current = setInterval(checkPaymentStatus, 3000);
+    if (paymentWindowOpened && !pollingRef.current) {
+      // Poll every 2 seconds to check subscription status and window state
+      pollingRef.current = setInterval(() => {
+        checkPaymentWindow();
+        checkSubscriptionStatus();
+      }, 2000);
     }
 
     return () => {
@@ -75,10 +77,9 @@ export default function Payment() {
         pollingRef.current = null;
       }
     };
-  }, [paymentUrl, paymentRequestId, checkPaymentStatus]);
+  }, [paymentWindowOpened, checkPaymentWindow, checkSubscriptionStatus]);
 
   useEffect(() => {
-    // Get payment data from sessionStorage
     const storedPaymentUrl = sessionStorage.getItem("paymentUrl");
     const storedPaymentRequestId = sessionStorage.getItem("paymentRequestId");
     const storedPaymentDetails = sessionStorage.getItem("paymentDetails");
@@ -87,7 +88,6 @@ export default function Payment() {
       setPaymentUrl(storedPaymentUrl);
       setIsLoading(false);
     } else {
-      // No payment URL, redirect back
       navigate("/company-dashboard");
       return;
     }
@@ -104,18 +104,18 @@ export default function Payment() {
       }
     }
 
-    // Listen for payment completion messages from iframe
-    const handleMessage = (event: MessageEvent) => {
-      if (event.data?.type === "PAYMENT_SUCCESS" || event.data?.type === "PAYMENT_COMPLETE") {
+    // Listen for storage changes (from payment redirect in new tab)
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === "paymentCompleted" && event.newValue === "true") {
+        sessionStorage.removeItem("paymentCompleted");
         clearPaymentData();
+        sessionStorage.setItem("paymentSuccess", "true");
         navigate("/company-dashboard?payment=success");
-      } else if (event.data?.type === "PAYMENT_FAILED") {
-        setPaymentStatus("failed");
       }
     };
 
-    window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
   }, [navigate, clearPaymentData]);
 
   const handleBack = () => {
@@ -128,51 +128,29 @@ export default function Payment() {
     navigate("/company-dashboard");
   };
 
-  const handleVerifyPayment = async () => {
-    if (!paymentRequestId) {
-      toast({
-        title: t('common.error'),
-        description: t('payment.verificationError'),
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsVerifying(true);
-    
-    try {
-      const response = await fetch("/api/company/verify-payment", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({ paymentRequestId }),
-      });
-
-      const data = await response.json();
-
-      if (data.success && data.isPaid) {
-        clearPaymentData();
-        sessionStorage.setItem("paymentSuccess", "true");
-        navigate("/company-dashboard?payment=success");
-        return;
-      } else {
+  const openPaymentWindow = () => {
+    if (paymentUrl) {
+      // Open payment in new window
+      const width = 600;
+      const height = 700;
+      const left = (window.screen.width - width) / 2;
+      const top = (window.screen.height - height) / 2;
+      
+      paymentWindowRef.current = window.open(
+        paymentUrl,
+        "PaymentWindow",
+        `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=yes`
+      );
+      
+      setPaymentWindowOpened(true);
+      
+      if (!paymentWindowRef.current) {
         toast({
-          title: t('payment.failed'),
-          description: data.message || t('payment.notYetCompleted'),
+          title: t('common.error'),
+          description: t('payment.popupBlocked'),
           variant: "destructive",
         });
       }
-    } catch (error) {
-      console.error("Payment verification error:", error);
-      toast({
-        title: t('common.error'),
-        description: t('payment.verificationError'),
-        variant: "destructive",
-      });
-    } finally {
-      setIsVerifying(false);
     }
   };
 
@@ -186,7 +164,6 @@ export default function Payment() {
       </div>
     );
   }
-
 
   if (paymentStatus === "failed") {
     return (
@@ -236,9 +213,9 @@ export default function Payment() {
         </div>
       </div>
 
-      {/* Payment iframe */}
-      <div className="max-w-4xl mx-auto p-4">
-        <Card className="overflow-hidden">
+      {/* Payment content */}
+      <div className="max-w-2xl mx-auto p-4">
+        <Card>
           <CardHeader className="bg-primary/5 border-b">
             <CardTitle className="flex items-center gap-2 text-lg">
               <CreditCard className="w-5 h-5 text-primary" />
@@ -248,27 +225,67 @@ export default function Payment() {
               {t('payment.securePaymentDesc')}
             </CardDescription>
           </CardHeader>
-          <CardContent className="p-0">
-            {paymentUrl ? (
-              <iframe
-                ref={iframeRef}
-                src={paymentUrl}
-                className="w-full border-0"
-                style={{ minHeight: "600px", height: "calc(100vh - 300px)" }}
-                title="Payment Gateway"
-                sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation"
-                data-testid="iframe-payment"
-              />
+          <CardContent className="p-6">
+            {!paymentWindowOpened ? (
+              <div className="text-center space-y-6">
+                <div className="p-6 bg-muted/50 rounded-lg">
+                  <CreditCard className="w-16 h-16 mx-auto text-primary mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">{t('payment.readyToPay')}</h3>
+                  <p className="text-muted-foreground mb-4">
+                    {t('payment.clickToOpenGateway')}
+                  </p>
+                  {paymentDetails && (
+                    <div className="bg-background border rounded-lg p-4 mb-4">
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">{t('payment.total')}</span>
+                        <span className="text-xl font-bold flex items-center gap-1">
+                          <SarSymbol size="sm" />
+                          {paymentDetails.amount}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  <Button 
+                    size="lg" 
+                    onClick={openPaymentWindow}
+                    className="w-full"
+                    data-testid="button-open-payment"
+                  >
+                    <ExternalLink className="w-5 h-5 mr-2" />
+                    {t('payment.openPaymentGateway')}
+                  </Button>
+                </div>
+              </div>
             ) : (
-              <div className="p-8 text-center">
-                <Loader2 className="w-8 h-8 animate-spin mx-auto text-muted-foreground" />
-                <p className="text-muted-foreground mt-2">{t('payment.loadingPaymentPage')}</p>
+              <div className="text-center space-y-6">
+                <div className="p-6">
+                  <Loader2 className="w-16 h-16 mx-auto text-primary mb-4 animate-spin" />
+                  <h3 className="text-lg font-semibold mb-2">{t('payment.waitingForPayment')}</h3>
+                  <p className="text-muted-foreground mb-4">
+                    {t('payment.completeInNewWindow')}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {t('payment.autoDetectWhenComplete')}
+                  </p>
+                </div>
+                
+                <div className="border-t pt-4">
+                  <p className="text-sm text-muted-foreground mb-3">
+                    {t('payment.windowClosedAccidentally')}
+                  </p>
+                  <Button 
+                    variant="outline"
+                    onClick={openPaymentWindow}
+                    data-testid="button-reopen-payment"
+                  >
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    {t('payment.reopenPaymentWindow')}
+                  </Button>
+                </div>
               </div>
             )}
           </CardContent>
         </Card>
-
-        {/* Manual confirmation button - hidden, auto-redirect used instead */}
         
         <p className="text-center text-sm text-muted-foreground mt-4">
           {t('payment.securityNote')}
