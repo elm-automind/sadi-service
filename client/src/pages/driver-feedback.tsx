@@ -75,6 +75,7 @@ export default function DriverFeedback() {
   const [activeAttempt, setActiveAttempt] = useState<AlternateAttempt | null>(null);
   const [showingAlternate, setShowingAlternate] = useState(false);
   const [wantsAlternate, setWantsAlternate] = useState(false);
+  const [showAlternateFeedbackForm, setShowAlternateFeedbackForm] = useState(false);
 
   const deliveryStatusOptions = [
     { value: "delivered", label: t('feedback.delivered'), color: "text-green-600" },
@@ -164,6 +165,8 @@ export default function DriverFeedback() {
       setActiveAttempt(data.attempt);
       setShowAlternateModal(false);
       setShowingAlternate(true);
+      setWantsAlternate(false);
+      setShowAlternateFeedbackForm(false);
       form.reset();
       toast({
         title: t('feedback.alternateLocationLoaded'),
@@ -470,10 +473,22 @@ export default function DriverFeedback() {
                   )}
                 </div>
               )}
+
+              {!showAlternateFeedbackForm && (
+                <Button
+                  onClick={() => setShowAlternateFeedbackForm(true)}
+                  className="w-full bg-orange-600 hover:bg-orange-700"
+                  data-testid="button-complete-alternate-delivery"
+                >
+                  <CheckCircle2 className="w-4 h-4 me-2" />
+                  {t('feedback.completeDeliverySubmitFeedback')}
+                </Button>
+              )}
             </CardContent>
           </Card>
         )}
 
+        {(!showingAlternate || showAlternateFeedbackForm) && (
         <Card className="border-0 shadow-lg bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm">
           <CardHeader>
             <CardTitle>{showingAlternate ? t('feedback.alternateFeedback') : t('feedback.deliveryFeedback')}</CardTitle>
@@ -713,6 +728,7 @@ export default function DriverFeedback() {
             </Form>
           </CardContent>
         </Card>
+        )}
       </div>
 
       <Dialog open={showAlternateModal} onOpenChange={setShowAlternateModal}>

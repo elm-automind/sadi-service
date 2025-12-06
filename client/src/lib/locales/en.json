@@ -405,7 +405,8 @@
     "alternateLocationLoaded": "Alternate Location Loaded",
     "proceedToAlternate": "Please proceed to the alternate drop location",
     "submitAndFetchAlternate": "Submit Feedback & Fetch Alternate",
-    "willFetchAlternate": "Will fetch alternate location after submitting feedback"
+    "willFetchAlternate": "Will fetch alternate location after submitting feedback",
+    "completeDeliverySubmitFeedback": "Complete Delivery & Submit Feedback"
   },
   "address": {
     "myAddresses": "My Addresses",

@@ -405,7 +405,8 @@
     "alternateLocationLoaded": "تم تحميل الموقع البديل",
     "proceedToAlternate": "يرجى التوجه إلى موقع التسليم البديل",
     "submitAndFetchAlternate": "إرسال التقييم وجلب البديل",
-    "willFetchAlternate": "سيتم جلب الموقع البديل بعد إرسال التقييم"
+    "willFetchAlternate": "سيتم جلب الموقع البديل بعد إرسال التقييم",
+    "completeDeliverySubmitFeedback": "إكمال التوصيل وإرسال التقييم"
   },
   "address": {
     "myAddresses": "عناويني",
