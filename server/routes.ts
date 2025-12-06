@@ -1797,20 +1797,20 @@ export async function registerRoutes(httpServer: Server, app: Express) {
           { lat: 24.6940, lng: 46.6900, name: "Olaya Street", successRate: 0.85, avgScore: 4.1 },
           { lat: 24.6860, lng: 46.6840, name: "Tahlia Street", successRate: 0.86, avgScore: 4.2 },
         ],
-        // Al Malaz - Residential (mixed success ~72%)
+        // Al Malaz - Residential (good success ~85%)
         alMalaz: [
-          { lat: 24.6600, lng: 46.7200, name: "Al Malaz Stadium", successRate: 0.72, avgScore: 3.6 },
-          { lat: 24.6580, lng: 46.7180, name: "Malaz Park", successRate: 0.74, avgScore: 3.7 },
-          { lat: 24.6620, lng: 46.7220, name: "King Fahd Library", successRate: 0.70, avgScore: 3.5 },
-          { lat: 24.6560, lng: 46.7160, name: "Malaz Residential", successRate: 0.73, avgScore: 3.6 },
+          { lat: 24.6600, lng: 46.7200, name: "Al Malaz Stadium", successRate: 0.85, avgScore: 4.2 },
+          { lat: 24.6580, lng: 46.7180, name: "Malaz Park", successRate: 0.87, avgScore: 4.3 },
+          { lat: 24.6620, lng: 46.7220, name: "King Fahd Library", successRate: 0.83, avgScore: 4.1 },
+          { lat: 24.6560, lng: 46.7160, name: "Malaz Residential", successRate: 0.86, avgScore: 4.2 },
         ],
-        // Industrial Area - South (high failure rate ~45%)
+        // Industrial Area - South (moderate success ~75%)
         industrial: [
-          { lat: 24.5800, lng: 46.7500, name: "Industrial City", successRate: 0.42, avgScore: 2.5 },
-          { lat: 24.5780, lng: 46.7480, name: "Warehouse District", successRate: 0.38, avgScore: 2.3 },
-          { lat: 24.5820, lng: 46.7520, name: "Factory Zone", successRate: 0.45, avgScore: 2.6 },
-          { lat: 24.5760, lng: 46.7460, name: "Logistics Hub", successRate: 0.50, avgScore: 2.8 },
-          { lat: 24.5740, lng: 46.7440, name: "Second Industrial", successRate: 0.40, avgScore: 2.4 },
+          { lat: 24.5800, lng: 46.7500, name: "Industrial City", successRate: 0.75, avgScore: 3.5 },
+          { lat: 24.5780, lng: 46.7480, name: "Warehouse District", successRate: 0.72, avgScore: 3.4 },
+          { lat: 24.5820, lng: 46.7520, name: "Factory Zone", successRate: 0.78, avgScore: 3.6 },
+          { lat: 24.5760, lng: 46.7460, name: "Logistics Hub", successRate: 0.80, avgScore: 3.7 },
+          { lat: 24.5740, lng: 46.7440, name: "Second Industrial", successRate: 0.73, avgScore: 3.5 },
         ],
         // Al Nakheel - North (excellent delivery area ~95%)
         alNakheel: [
@@ -1839,18 +1839,18 @@ export async function registerRoutes(httpServer: Server, app: Express) {
           { lat: 24.6730, lng: 46.6180, name: "DQ Residential", successRate: 0.93, avgScore: 4.6 },
           { lat: 24.6790, lng: 46.6240, name: "International School", successRate: 0.92, avgScore: 4.5 },
         ],
-        // Al Murabba - Central Historic (~68%)
+        // Al Murabba - Central Historic (~82%)
         alMurabba: [
-          { lat: 24.6450, lng: 46.7100, name: "Murabba Palace", successRate: 0.68, avgScore: 3.4 },
-          { lat: 24.6470, lng: 46.7120, name: "National Museum", successRate: 0.70, avgScore: 3.5 },
-          { lat: 24.6430, lng: 46.7080, name: "Old Murabba", successRate: 0.65, avgScore: 3.2 },
+          { lat: 24.6450, lng: 46.7100, name: "Murabba Palace", successRate: 0.82, avgScore: 4.0 },
+          { lat: 24.6470, lng: 46.7120, name: "National Museum", successRate: 0.84, avgScore: 4.1 },
+          { lat: 24.6430, lng: 46.7080, name: "Old Murabba", successRate: 0.80, avgScore: 3.9 },
         ],
-        // Al Rawdah - East Residential (~78%)
+        // Al Rawdah - East Residential (~88%)
         alRawdah: [
-          { lat: 24.7100, lng: 46.7400, name: "Rawdah Center", successRate: 0.78, avgScore: 3.9 },
-          { lat: 24.7120, lng: 46.7420, name: "Rawdah Park", successRate: 0.80, avgScore: 4.0 },
-          { lat: 24.7080, lng: 46.7380, name: "East Rawdah", successRate: 0.76, avgScore: 3.8 },
-          { lat: 24.7140, lng: 46.7440, name: "Rawdah Mall", successRate: 0.82, avgScore: 4.1 },
+          { lat: 24.7100, lng: 46.7400, name: "Rawdah Center", successRate: 0.88, avgScore: 4.3 },
+          { lat: 24.7120, lng: 46.7420, name: "Rawdah Park", successRate: 0.90, avgScore: 4.4 },
+          { lat: 24.7080, lng: 46.7380, name: "East Rawdah", successRate: 0.86, avgScore: 4.2 },
+          { lat: 24.7140, lng: 46.7440, name: "Rawdah Mall", successRate: 0.92, avgScore: 4.5 },
         ],
         // Al Narjis - North Residential (~89%)
         alNarjis: [
@@ -1858,18 +1858,18 @@ export async function registerRoutes(httpServer: Server, app: Express) {
           { lat: 24.8420, lng: 46.6520, name: "Narjis Villas", successRate: 0.91, avgScore: 4.5 },
           { lat: 24.8380, lng: 46.6480, name: "North Narjis", successRate: 0.88, avgScore: 4.3 },
         ],
-        // Al Quds - East (~60% - difficult area)
+        // Al Quds - East (~80%)
         alQuds: [
-          { lat: 24.7300, lng: 46.8200, name: "Quds Market", successRate: 0.58, avgScore: 3.0 },
-          { lat: 24.7320, lng: 46.8220, name: "East Quds", successRate: 0.55, avgScore: 2.8 },
-          { lat: 24.7280, lng: 46.8180, name: "Quds Residential", successRate: 0.62, avgScore: 3.1 },
-          { lat: 24.7340, lng: 46.8240, name: "Outer Quds", successRate: 0.52, avgScore: 2.7 },
+          { lat: 24.7300, lng: 46.8200, name: "Quds Market", successRate: 0.80, avgScore: 3.9 },
+          { lat: 24.7320, lng: 46.8220, name: "East Quds", successRate: 0.78, avgScore: 3.8 },
+          { lat: 24.7280, lng: 46.8180, name: "Quds Residential", successRate: 0.82, avgScore: 4.0 },
+          { lat: 24.7340, lng: 46.8240, name: "Outer Quds", successRate: 0.76, avgScore: 3.7 },
         ],
-        // Diriyah - Historic/Tourist (~75%)
+        // Diriyah - Historic/Tourist (~88%)
         diriyah: [
-          { lat: 24.7350, lng: 46.5700, name: "Diriyah Gate", successRate: 0.75, avgScore: 3.8 },
-          { lat: 24.7370, lng: 46.5720, name: "At-Turaif", successRate: 0.73, avgScore: 3.7 },
-          { lat: 24.7330, lng: 46.5680, name: "Wadi Hanifa", successRate: 0.77, avgScore: 3.9 },
+          { lat: 24.7350, lng: 46.5700, name: "Diriyah Gate", successRate: 0.88, avgScore: 4.3 },
+          { lat: 24.7370, lng: 46.5720, name: "At-Turaif", successRate: 0.86, avgScore: 4.2 },
+          { lat: 24.7330, lng: 46.5680, name: "Wadi Hanifa", successRate: 0.90, avgScore: 4.4 },
         ],
       };
 
