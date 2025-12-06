@@ -29,7 +29,7 @@ const companyRegisterSchema = z.object({
   unifiedNumber: z.string().min(5, "Unified number is required"),
   companyType: z.enum(companyTypeOptions, { required_error: "Company type is required" }),
   email: z.string().email("Invalid email address"),
-  phone: z.string().regex(/^(0\d{9}|\+966\d{9})$/, "Phone must start with 0 or +966 followed by 9 digits"),
+  phone: z.string().regex(/^5\d{8}$/, "Enter 9 digits starting with 5 (e.g., 512345678)"),
   password: z.string().min(6, "Password must be at least 6 characters"),
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -60,7 +60,10 @@ export default function RegisterCompany() {
   const registerMutation = useMutation({
     mutationFn: async (data: CompanyRegisterForm) => {
       const { confirmPassword, ...registerData } = data;
-      const response = await apiRequest("POST", "/api/register/company", registerData);
+      const response = await apiRequest("POST", "/api/register/company", {
+        ...registerData,
+        phone: `+966${data.phone}`,
+      });
       return response.json();
     },
     onSuccess: async () => {
@@ -166,13 +169,17 @@ export default function RegisterCompany() {
 
             <div className="space-y-2">
               <Label htmlFor="phone">{t('auth.mobileNumber')}</Label>
-              <Input
-                id="phone"
-                type="tel"
-                placeholder="05xxxxxxxx"
-                {...register("phone")}
-                data-testid="input-phone"
-              />
+              <div className="relative">
+                <span className="absolute start-3 top-2.5 text-xs font-bold text-muted-foreground">+966</span>
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder="5XXXXXXXX"
+                  className="ps-12"
+                  {...register("phone")}
+                  data-testid="input-phone"
+                />
+              </div>
               {errors.phone && (
                 <p className="text-sm text-destructive">{errors.phone.message}</p>
               )}

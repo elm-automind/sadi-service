@@ -35,7 +35,7 @@ interface UserWithAddresses extends User {
 const fallbackSchema = z.object({
   addressId: z.number().min(1, "Please select an address"),
   name: z.string().min(2, "Name is required"),
-  phone: z.string().min(9, "Phone number is required"),
+  phone: z.string().regex(/^5\d{8}$/, "Enter 9 digits starting with 5 (e.g., 512345678)"),
   relationship: z.string().optional(),
   textAddress: z.string().min(5, "Please provide an address or select on the map"),
   latitude: z.number({ required_error: "Please select a location on the map" }),
@@ -270,6 +270,7 @@ export default function FallbackContact() {
     mutationFn: async (data: FallbackData) => {
       const payload = {
         ...data,
+        phone: `+966${data.phone}`,
         lat: data.latitude,
         lng: data.longitude,
         distanceKm: distance,
@@ -477,11 +478,11 @@ export default function FallbackContact() {
                   <div className="space-y-2">
                     <Label htmlFor="phone">Phone Number</Label>
                     <div className="relative">
-                      <Phone className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <span className="absolute start-3 top-2.5 text-xs font-bold text-muted-foreground">+966</span>
                       <Input 
                         id="phone" 
-                        placeholder="+966 5XXXXXXXX" 
-                        className="pl-9"
+                        placeholder="5XXXXXXXX" 
+                        className="ps-12"
                         data-testid="input-contact-phone" 
                         {...form.register("phone")} 
                       />

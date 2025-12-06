@@ -30,7 +30,7 @@ const registrationSchema = z.object({
     .max(10, "National ID must be 10 digits")
     .regex(/^\d+$/, "National ID must contain only numbers"),
   phone: z.string()
-    .regex(/^(0\d{9}|\+966\d{9})$/, "Phone must start with 0 or +966 followed by 9 digits"),
+    .regex(/^5\d{8}$/, "Enter 9 digits starting with 5 (e.g., 512345678)"),
   email: z.string().email("Valid email is required"),
   name: z.string().min(2, "Full name is required"),
   password: z.string().min(6, "Password must be at least 6 characters"),
@@ -207,6 +207,7 @@ export default function Register() {
     mutationFn: async (data: FormData) => {
       const payload = {
         ...data,
+        phone: `+966${data.phone}`,
         label: data.addressLabel,
         lat: data.latitude,
         lng: data.longitude,
