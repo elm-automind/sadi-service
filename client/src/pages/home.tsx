@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowRight, MapPin, LogIn, CheckCircle, X, Truck, Package, Navigation, Clock, Star, QrCode, Award, Map, Shield, Users, Building2, Smartphone, Globe, BarChart3 } from "lucide-react";
+import { ArrowRight, MapPin, CheckCircle, X, Truck, Package, Navigation, Clock, Star, QrCode, Award, Map, Shield, Users, Building2, Smartphone, Globe, BarChart3 } from "lucide-react";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useEffect, useState } from "react";
 import marriLogo from "@assets/image_1764984639532.png";
@@ -100,11 +100,6 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-2 rtl-no-flip">
             <LanguageSwitcher />
-            <Link href="/login">
-              <Button variant="outline" className="gap-2 shadow-sm" data-testid="link-login">
-                <LogIn className="w-4 h-4" /> {t('auth.login')}
-              </Button>
-            </Link>
           </div>
         </div>
       </header>
@@ -141,7 +136,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="flex items-center justify-center animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200">
             <Link href="/register-type">
               <Button 
                 size="lg" 
@@ -150,6 +145,11 @@ export default function Home() {
               >
                 {t('home.getStarted')}
                 <ArrowRight className="ms-2 w-5 h-5 group-hover:translate-x-1 transition-transform rtl:rotate-180" />
+              </Button>
+            </Link>
+            <Link href="/login">
+              <Button variant="outline" size="lg" className="text-lg h-14 px-8 shadow-sm" data-testid="button-login-hero">
+                {t('auth.login')}
               </Button>
             </Link>
           </div>
