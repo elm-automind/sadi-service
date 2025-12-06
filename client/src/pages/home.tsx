@@ -95,9 +95,8 @@ export default function Home() {
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-border/50">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center">
             <img src={marriLogo} alt="Marri" className="w-10 h-10 rounded-lg" />
-            <span className="font-bold text-xl text-foreground hidden sm:block">Marri</span>
           </div>
           <div className="flex items-center gap-2 rtl-no-flip">
             <LanguageSwitcher />
@@ -452,9 +451,8 @@ export default function Home() {
       {/* Footer */}
       <footer className="py-8 px-4 border-t border-border/50 relative z-10">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center">
             <img src={marriLogo} alt="Marri" className="w-8 h-8 rounded-lg" />
-            <span className="font-semibold text-foreground">Marri</span>
           </div>
           <p className="text-sm text-muted-foreground">
             &copy; 2025 {isRTL ? 'مَرّي' : 'Marri'}. {t('home.copyright')}
