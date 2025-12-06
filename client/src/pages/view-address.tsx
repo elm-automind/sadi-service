@@ -8,7 +8,6 @@ import { Separator } from "@/components/ui/separator";
 import { Phone, MapPin, Clock, FileText, QrCode, Home, Building2, DoorOpen, Image, Truck, Package } from "lucide-react";
 import { AddressMap } from "@/components/address-map";
 import { PageNavigation } from "@/components/page-navigation";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LanguageSwitcher } from "@/components/language-switcher";
 
 export default function ViewAddress() {
@@ -109,115 +108,111 @@ export default function ViewAddress() {
           </div>
         </div>
 
-        <CardContent className="p-0">
-          <Tabs defaultValue="location" className="w-full">
-            <TabsList className="w-full justify-start rounded-none border-b bg-transparent p-0 h-auto">
-              <TabsTrigger 
-                value="location" 
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent py-3 px-6"
-              >
-                <MapPin className="w-4 h-4 me-2" /> {t('viewAddress.location')}
-              </TabsTrigger>
-              <TabsTrigger 
-                value="photos" 
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent py-3 px-6"
-              >
-                <Image className="w-4 h-4 me-2" /> {t('viewAddress.photos')}
-              </TabsTrigger>
-              <TabsTrigger 
-                value="instructions" 
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent py-3 px-6"
-              >
-                <FileText className="w-4 h-4 me-2" /> {t('viewAddress.instructions')}
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="location" className="p-4 md:p-6 space-y-4 mt-0">
-              <div className="rounded-lg overflow-hidden border border-border h-64">
-                <AddressMap 
-                  readOnly 
-                  initialLat={address.lat ?? undefined} 
-                  initialLng={address.lng ?? undefined} 
-                />
-              </div>
-
-              <div className="flex items-start gap-3 p-4 bg-muted/50 rounded-lg border border-border/50">
-                <MapPin className="w-5 h-5 text-primary mt-0.5 shrink-0" />
-                <div>
-                  <p className="font-medium text-foreground">{address.textAddress}</p>
-                  {address.lat && address.lng && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {t('viewAddress.coordinates')}: {address.lat.toFixed(6)}, {address.lng.toFixed(6)}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="photos" className="p-4 md:p-6 mt-0">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {[
-                  { label: t('viewAddress.buildingView'), icon: Building2, src: address.photoBuilding },
-                  { label: t('viewAddress.mainGate'), icon: DoorOpen, src: address.photoGate },
-                  { label: t('viewAddress.flatDoor'), icon: Home, src: address.photoDoor }
-                ].map((img, i) => (
-                  <div key={i} className="space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                      <img.icon className="w-4 h-4" /> {img.label}
-                    </p>
-                    <div className="aspect-video bg-muted rounded-lg flex items-center justify-center border border-border overflow-hidden">
-                      {img.src ? (
-                        <img 
-                          src={img.src} 
-                          alt={img.label}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="text-center text-muted-foreground">
-                          <Image className="w-8 h-8 mx-auto mb-1 opacity-30" />
-                          <p className="text-xs">{t('viewAddress.noPhoto')}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="instructions" className="p-4 md:p-6 space-y-4 mt-0">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 bg-muted/50 rounded-lg border border-border/50">
-                  <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-2">
-                    <Clock className="w-4 h-4" /> {t('viewAddress.preferredTime')}
-                  </div>
-                  <p className="font-medium text-foreground capitalize">
-                    {address.preferredTime || t('viewAddress.notSpecified')}
+        <CardContent className="p-4 md:p-6 space-y-6">
+          {/* Location Section */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-sm font-semibold text-primary uppercase tracking-wider">
+              <MapPin className="w-4 h-4" />
+              {t('viewAddress.location')}
+            </div>
+            <div className="rounded-lg overflow-hidden border border-border h-48 md:h-56">
+              <AddressMap 
+                readOnly 
+                initialLat={address.lat ?? undefined} 
+                initialLng={address.lng ?? undefined} 
+              />
+            </div>
+            <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg border border-border/50">
+              <MapPin className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+              <div>
+                <p className="font-medium text-foreground text-sm">{address.textAddress}</p>
+                {address.lat && address.lng && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {t('viewAddress.coordinates')}: {address.lat.toFixed(6)}, {address.lng.toFixed(6)}
                   </p>
-                </div>
-                <div className="p-4 bg-muted/50 rounded-lg border border-border/50">
-                  <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-2">
-                    <Home className="w-4 h-4" /> {t('viewAddress.ifNotHome')}
-                  </div>
-                  <p className="font-medium text-foreground capitalize">
-                    {address.fallbackOption === "door" ? t('viewAddress.leaveAtDoor') :
-                     address.fallbackOption === "neighbor" ? t('viewAddress.leaveWithNeighbor') :
-                     address.fallbackOption === "call" ? t('viewAddress.callReschedule') :
-                     address.fallbackOption === "security" ? t('viewAddress.leaveWithSecurity') :
-                     address.fallbackOption || t('viewAddress.notSpecified')}
-                  </p>
-                </div>
+                )}
               </div>
-              
-              {address.specialNote && (
-                <div className="p-4 bg-yellow-50 dark:bg-yellow-900/10 rounded-lg border border-yellow-200 dark:border-yellow-900/30">
-                  <div className="flex items-center gap-2 text-sm font-medium text-yellow-700 dark:text-yellow-400 mb-2">
-                    <FileText className="w-4 h-4" /> {t('viewAddress.specialNotes')}
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Photos Section */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-sm font-semibold text-primary uppercase tracking-wider">
+              <Image className="w-4 h-4" />
+              {t('viewAddress.photos')}
+            </div>
+            <div className="grid grid-cols-3 gap-2 md:gap-3">
+              {[
+                { label: t('viewAddress.buildingView'), icon: Building2, src: address.photoBuilding },
+                { label: t('viewAddress.mainGate'), icon: DoorOpen, src: address.photoGate },
+                { label: t('viewAddress.flatDoor'), icon: Home, src: address.photoDoor }
+              ].map((img, i) => (
+                <div key={i} className="space-y-1">
+                  <p className="text-[10px] md:text-xs font-medium text-muted-foreground flex items-center gap-1 truncate">
+                    <img.icon className="w-3 h-3 shrink-0" /> 
+                    <span className="truncate">{img.label}</span>
+                  </p>
+                  <div className="aspect-square bg-muted rounded-lg flex items-center justify-center border border-border overflow-hidden">
+                    {img.src ? (
+                      <img 
+                        src={img.src} 
+                        alt={img.label}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="text-center text-muted-foreground p-2">
+                        <Image className="w-6 h-6 mx-auto opacity-30" />
+                        <p className="text-[8px] md:text-[10px] mt-1">{t('viewAddress.noPhoto')}</p>
+                      </div>
+                    )}
                   </div>
-                  <p className="text-foreground">{address.specialNote}</p>
                 </div>
-              )}
-            </TabsContent>
-          </Tabs>
+              ))}
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Instructions Section */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-sm font-semibold text-primary uppercase tracking-wider">
+              <FileText className="w-4 h-4" />
+              {t('viewAddress.instructions')}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="p-3 bg-muted/50 rounded-lg border border-border/50">
+                <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground mb-1">
+                  <Clock className="w-3.5 h-3.5" /> {t('viewAddress.preferredTime')}
+                </div>
+                <p className="font-medium text-foreground text-sm capitalize">
+                  {address.preferredTime || t('viewAddress.notSpecified')}
+                </p>
+              </div>
+              <div className="p-3 bg-muted/50 rounded-lg border border-border/50">
+                <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground mb-1">
+                  <Home className="w-3.5 h-3.5" /> {t('viewAddress.ifNotHome')}
+                </div>
+                <p className="font-medium text-foreground text-sm capitalize">
+                  {address.fallbackOption === "door" ? t('viewAddress.leaveAtDoor') :
+                   address.fallbackOption === "neighbor" ? t('viewAddress.leaveWithNeighbor') :
+                   address.fallbackOption === "call" ? t('viewAddress.callReschedule') :
+                   address.fallbackOption === "security" ? t('viewAddress.leaveWithSecurity') :
+                   address.fallbackOption || t('viewAddress.notSpecified')}
+                </p>
+              </div>
+            </div>
+            
+            {address.specialNote && (
+              <div className="p-3 bg-yellow-50 dark:bg-yellow-900/10 rounded-lg border border-yellow-200 dark:border-yellow-900/30">
+                <div className="flex items-center gap-2 text-xs font-medium text-yellow-700 dark:text-yellow-400 mb-1">
+                  <FileText className="w-3.5 h-3.5" /> {t('viewAddress.specialNotes')}
+                </div>
+                <p className="text-foreground text-sm">{address.specialNote}</p>
+              </div>
+            )}
+          </div>
 
           <Separator />
 
