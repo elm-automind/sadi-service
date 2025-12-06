@@ -1787,47 +1787,94 @@ export async function registerRoutes(httpServer: Server, app: Express) {
 
       const companies = companyConfigs.map(c => c.companyName);
       
-      // Riyadh area clusters with realistic coordinates
+      // Expanded Riyadh area clusters with realistic coordinates - 12 districts, ~50 locations
       const riyadhClusters = {
-        // Al Olaya - Business District (high traffic, good success rate)
+        // Al Olaya - Business District (high traffic, good success rate ~88%)
         alOlaya: [
-          { lat: 24.6900, lng: 46.6850, name: "Al Olaya Tower" },
-          { lat: 24.6920, lng: 46.6880, name: "Kingdom Centre Area" },
-          { lat: 24.6880, lng: 46.6820, name: "Al Faisaliyah" },
-          { lat: 24.6940, lng: 46.6900, name: "Olaya Street" },
-          { lat: 24.6860, lng: 46.6840, name: "Tahlia Street" },
+          { lat: 24.6900, lng: 46.6850, name: "Al Olaya Tower", successRate: 0.88, avgScore: 4.3 },
+          { lat: 24.6920, lng: 46.6880, name: "Kingdom Centre", successRate: 0.90, avgScore: 4.5 },
+          { lat: 24.6880, lng: 46.6820, name: "Al Faisaliyah", successRate: 0.87, avgScore: 4.2 },
+          { lat: 24.6940, lng: 46.6900, name: "Olaya Street", successRate: 0.85, avgScore: 4.1 },
+          { lat: 24.6860, lng: 46.6840, name: "Tahlia Street", successRate: 0.86, avgScore: 4.2 },
         ],
-        // Al Malaz - Residential (mixed success)
+        // Al Malaz - Residential (mixed success ~72%)
         alMalaz: [
-          { lat: 24.6600, lng: 46.7200, name: "Al Malaz Stadium" },
-          { lat: 24.6580, lng: 46.7180, name: "Malaz Park" },
-          { lat: 24.6620, lng: 46.7220, name: "King Fahd Library" },
-          { lat: 24.6560, lng: 46.7160, name: "Malaz Residential" },
+          { lat: 24.6600, lng: 46.7200, name: "Al Malaz Stadium", successRate: 0.72, avgScore: 3.6 },
+          { lat: 24.6580, lng: 46.7180, name: "Malaz Park", successRate: 0.74, avgScore: 3.7 },
+          { lat: 24.6620, lng: 46.7220, name: "King Fahd Library", successRate: 0.70, avgScore: 3.5 },
+          { lat: 24.6560, lng: 46.7160, name: "Malaz Residential", successRate: 0.73, avgScore: 3.6 },
         ],
-        // Industrial Area - South (high failure rate)
+        // Industrial Area - South (high failure rate ~45%)
         industrial: [
-          { lat: 24.5800, lng: 46.7500, name: "Industrial City" },
-          { lat: 24.5780, lng: 46.7480, name: "Warehouse District" },
-          { lat: 24.5820, lng: 46.7520, name: "Factory Zone" },
-          { lat: 24.5760, lng: 46.7460, name: "Logistics Hub" },
+          { lat: 24.5800, lng: 46.7500, name: "Industrial City", successRate: 0.42, avgScore: 2.5 },
+          { lat: 24.5780, lng: 46.7480, name: "Warehouse District", successRate: 0.38, avgScore: 2.3 },
+          { lat: 24.5820, lng: 46.7520, name: "Factory Zone", successRate: 0.45, avgScore: 2.6 },
+          { lat: 24.5760, lng: 46.7460, name: "Logistics Hub", successRate: 0.50, avgScore: 2.8 },
+          { lat: 24.5740, lng: 46.7440, name: "Second Industrial", successRate: 0.40, avgScore: 2.4 },
         ],
-        // Al Nakheel - North (excellent delivery area)
+        // Al Nakheel - North (excellent delivery area ~95%)
         alNakheel: [
-          { lat: 24.7800, lng: 46.6300, name: "Al Nakheel Mall" },
-          { lat: 24.7820, lng: 46.6320, name: "Nakheel Villas" },
-          { lat: 24.7780, lng: 46.6280, name: "Palm Gardens" },
-          { lat: 24.7840, lng: 46.6340, name: "North Ring Road" },
+          { lat: 24.7800, lng: 46.6300, name: "Al Nakheel Mall", successRate: 0.95, avgScore: 4.8 },
+          { lat: 24.7820, lng: 46.6320, name: "Nakheel Villas", successRate: 0.96, avgScore: 4.9 },
+          { lat: 24.7780, lng: 46.6280, name: "Palm Gardens", successRate: 0.94, avgScore: 4.7 },
+          { lat: 24.7840, lng: 46.6340, name: "North Ring Road", successRate: 0.93, avgScore: 4.6 },
         ],
-        // Al Yasmin - West (good area)
+        // Al Yasmin - West (good area ~92%)
         alYasmin: [
-          { lat: 24.8200, lng: 46.6000, name: "Al Yasmin District" },
-          { lat: 24.8180, lng: 46.5980, name: "Yasmin Gardens" },
-          { lat: 24.8220, lng: 46.6020, name: "Western Boulevard" },
+          { lat: 24.8200, lng: 46.6000, name: "Al Yasmin District", successRate: 0.92, avgScore: 4.6 },
+          { lat: 24.8180, lng: 46.5980, name: "Yasmin Gardens", successRate: 0.94, avgScore: 4.7 },
+          { lat: 24.8220, lng: 46.6020, name: "Western Boulevard", successRate: 0.91, avgScore: 4.5 },
+          { lat: 24.8160, lng: 46.5960, name: "Yasmin Plaza", successRate: 0.93, avgScore: 4.6 },
+        ],
+        // King Abdullah Financial District - Premium (~97%)
+        kafd: [
+          { lat: 24.7650, lng: 46.6400, name: "KAFD Tower", successRate: 0.97, avgScore: 4.9 },
+          { lat: 24.7670, lng: 46.6420, name: "KAFD Metro", successRate: 0.96, avgScore: 4.8 },
+          { lat: 24.7630, lng: 46.6380, name: "Financial Plaza", successRate: 0.98, avgScore: 5.0 },
+        ],
+        // Diplomatic Quarter - High-end (~94%)
+        diplomaticQuarter: [
+          { lat: 24.6750, lng: 46.6200, name: "DQ Main Gate", successRate: 0.94, avgScore: 4.7 },
+          { lat: 24.6770, lng: 46.6220, name: "Embassy Row", successRate: 0.95, avgScore: 4.8 },
+          { lat: 24.6730, lng: 46.6180, name: "DQ Residential", successRate: 0.93, avgScore: 4.6 },
+          { lat: 24.6790, lng: 46.6240, name: "International School", successRate: 0.92, avgScore: 4.5 },
+        ],
+        // Al Murabba - Central Historic (~68%)
+        alMurabba: [
+          { lat: 24.6450, lng: 46.7100, name: "Murabba Palace", successRate: 0.68, avgScore: 3.4 },
+          { lat: 24.6470, lng: 46.7120, name: "National Museum", successRate: 0.70, avgScore: 3.5 },
+          { lat: 24.6430, lng: 46.7080, name: "Old Murabba", successRate: 0.65, avgScore: 3.2 },
+        ],
+        // Al Rawdah - East Residential (~78%)
+        alRawdah: [
+          { lat: 24.7100, lng: 46.7400, name: "Rawdah Center", successRate: 0.78, avgScore: 3.9 },
+          { lat: 24.7120, lng: 46.7420, name: "Rawdah Park", successRate: 0.80, avgScore: 4.0 },
+          { lat: 24.7080, lng: 46.7380, name: "East Rawdah", successRate: 0.76, avgScore: 3.8 },
+          { lat: 24.7140, lng: 46.7440, name: "Rawdah Mall", successRate: 0.82, avgScore: 4.1 },
+        ],
+        // Al Narjis - North Residential (~89%)
+        alNarjis: [
+          { lat: 24.8400, lng: 46.6500, name: "Narjis Center", successRate: 0.89, avgScore: 4.4 },
+          { lat: 24.8420, lng: 46.6520, name: "Narjis Villas", successRate: 0.91, avgScore: 4.5 },
+          { lat: 24.8380, lng: 46.6480, name: "North Narjis", successRate: 0.88, avgScore: 4.3 },
+        ],
+        // Al Quds - East (~60% - difficult area)
+        alQuds: [
+          { lat: 24.7300, lng: 46.8200, name: "Quds Market", successRate: 0.58, avgScore: 3.0 },
+          { lat: 24.7320, lng: 46.8220, name: "East Quds", successRate: 0.55, avgScore: 2.8 },
+          { lat: 24.7280, lng: 46.8180, name: "Quds Residential", successRate: 0.62, avgScore: 3.1 },
+          { lat: 24.7340, lng: 46.8240, name: "Outer Quds", successRate: 0.52, avgScore: 2.7 },
+        ],
+        // Diriyah - Historic/Tourist (~75%)
+        diriyah: [
+          { lat: 24.7350, lng: 46.5700, name: "Diriyah Gate", successRate: 0.75, avgScore: 3.8 },
+          { lat: 24.7370, lng: 46.5720, name: "At-Turaif", successRate: 0.73, avgScore: 3.7 },
+          { lat: 24.7330, lng: 46.5680, name: "Wadi Hanifa", successRate: 0.77, avgScore: 3.9 },
         ],
       };
 
-      // Create test users with addresses
-      const testAddresses: { digitalId: string; lat: number; lng: number; textAddress: string }[] = [];
+      // Create test users with addresses - store success rate and score for each
+      const testAddresses: { digitalId: string; lat: number; lng: number; textAddress: string; successRate: number; avgScore: number }[] = [];
       let userCounter = 1;
 
       for (const [clusterName, locations] of Object.entries(riyadhClusters)) {
@@ -1868,9 +1915,11 @@ export async function registerRoutes(httpServer: Server, app: Express) {
               lat: loc.lat,
               lng: loc.lng,
               textAddress: `${loc.name}, Riyadh`,
+              successRate: loc.successRate,
+              avgScore: loc.avgScore,
             });
           } else {
-            // Get existing address
+            // Get existing address - use location's success rate
             const addresses = await storage.getAddressesByUserId(existingUser.id);
             if (addresses.length > 0) {
               testAddresses.push({
@@ -1878,6 +1927,8 @@ export async function registerRoutes(httpServer: Server, app: Express) {
                 lat: addresses[0].lat || loc.lat,
                 lng: addresses[0].lng || loc.lng,
                 textAddress: addresses[0].textAddress,
+                successRate: loc.successRate,
+                avgScore: loc.avgScore,
               });
             }
           }
@@ -1885,11 +1936,13 @@ export async function registerRoutes(httpServer: Server, app: Express) {
         }
       }
 
-      // Generate delivery data for each company
+      // Generate delivery data for each company with more deliveries
       for (const companyName of companies) {
         const driverIds = [`DRV-${companyName.substring(0, 2).toUpperCase()}-001`, 
                           `DRV-${companyName.substring(0, 2).toUpperCase()}-002`,
-                          `DRV-${companyName.substring(0, 2).toUpperCase()}-003`];
+                          `DRV-${companyName.substring(0, 2).toUpperCase()}-003`,
+                          `DRV-${companyName.substring(0, 2).toUpperCase()}-004`,
+                          `DRV-${companyName.substring(0, 2).toUpperCase()}-005`];
 
         // Generate shipment lookups and feedback for test addresses
         for (const addr of testAddresses) {
@@ -1897,23 +1950,12 @@ export async function registerRoutes(httpServer: Server, app: Express) {
           const address = await storage.getAddressByDigitalId(addr.digitalId);
           if (!address) continue;
 
-          // Determine success rate based on cluster
-          let successRate = 0.85; // default
-          let avgScore = 4.2;
-          
-          if (addr.textAddress.includes("Industrial") || addr.textAddress.includes("Warehouse")) {
-            successRate = 0.45; // Low success in industrial areas
-            avgScore = 2.8;
-          } else if (addr.textAddress.includes("Nakheel") || addr.textAddress.includes("Yasmin")) {
-            successRate = 0.95; // High success in upscale areas
-            avgScore = 4.8;
-          } else if (addr.textAddress.includes("Olaya") || addr.textAddress.includes("Kingdom")) {
-            successRate = 0.88; // Good success in business district
-            avgScore = 4.3;
-          }
+          // Use the stored success rate and score from the location
+          const successRate = addr.successRate;
+          const avgScore = addr.avgScore;
 
-          // Generate 3-8 deliveries per address
-          const deliveryCount = Math.floor(Math.random() * 6) + 3;
+          // Generate 5-15 deliveries per address for more map coverage
+          const deliveryCount = Math.floor(Math.random() * 11) + 5;
           
           for (let i = 0; i < deliveryCount; i++) {
             const shipmentNumber = `SHP-${Date.now()}-${Math.random().toString(36).substring(7).toUpperCase()}`;
