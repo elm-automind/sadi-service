@@ -403,7 +403,9 @@
     "completeFormFirstDesc": "يرجى ملء جميع حقول التقييم المطلوبة (تقييم الموقع، سلوك العميل، سبب الفشل) قبل طلب موقع بديل",
     "getAlternateLocation": "الحصول على الموقع البديل",
     "alternateLocationLoaded": "تم تحميل الموقع البديل",
-    "proceedToAlternate": "يرجى التوجه إلى موقع التسليم البديل"
+    "proceedToAlternate": "يرجى التوجه إلى موقع التسليم البديل",
+    "submitAndFetchAlternate": "إرسال التقييم وجلب البديل",
+    "willFetchAlternate": "سيتم جلب الموقع البديل بعد إرسال التقييم"
   },
   "address": {
     "myAddresses": "عناويني",

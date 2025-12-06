@@ -403,7 +403,9 @@
     "completeFormFirstDesc": "Please fill in all required feedback fields (location score, customer behavior, failure reason) before requesting an alternate location",
     "getAlternateLocation": "Get Alternate Location",
     "alternateLocationLoaded": "Alternate Location Loaded",
-    "proceedToAlternate": "Please proceed to the alternate drop location"
+    "proceedToAlternate": "Please proceed to the alternate drop location",
+    "submitAndFetchAlternate": "Submit Feedback & Fetch Alternate",
+    "willFetchAlternate": "Will fetch alternate location after submitting feedback"
   },
   "address": {
     "myAddresses": "My Addresses",

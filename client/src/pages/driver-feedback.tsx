@@ -74,6 +74,7 @@ export default function DriverFeedback() {
   const [alternateLocation, setAlternateLocation] = useState<AlternateLocation | null>(null);
   const [activeAttempt, setActiveAttempt] = useState<AlternateAttempt | null>(null);
   const [showingAlternate, setShowingAlternate] = useState(false);
+  const [wantsAlternate, setWantsAlternate] = useState(false);
 
   const deliveryStatusOptions = [
     { value: "delivered", label: t('feedback.delivered'), color: "text-green-600" },
@@ -246,6 +247,8 @@ export default function DriverFeedback() {
   const onSubmit = (data: FeedbackFormValues) => {
     if (showingAlternate && activeAttempt) {
       completeAlternateMutation.mutate(data);
+    } else if (wantsAlternate) {
+      requestAlternateMutation.mutate(data);
     } else {
       submitMutation.mutate(data);
     }
@@ -517,7 +520,7 @@ export default function DriverFeedback() {
                   )}
                 />
 
-                {deliveryStatus === "failed" && !showingAlternate && hasAlternateLocations && (
+                {deliveryStatus === "failed" && !showingAlternate && hasAlternateLocations && !wantsAlternate && (
                   <Card className="border border-orange-200 dark:border-orange-800 bg-orange-50/50 dark:bg-orange-950/20">
                     <CardContent className="pt-4 pb-4">
                       <div className="flex items-center gap-3 mb-3">
@@ -533,22 +536,31 @@ export default function DriverFeedback() {
                         type="button"
                         variant="outline"
                         className="w-full border-orange-300 dark:border-orange-700 text-orange-700 dark:text-orange-300"
-                        onClick={handleRequestAlternate}
-                        disabled={requestAlternateMutation.isPending}
+                        onClick={() => setWantsAlternate(true)}
                         data-testid="button-request-alternate"
                       >
-                        {requestAlternateMutation.isPending ? (
-                          t('common.loading')
-                        ) : (
-                          <>
-                            <MapPinOff className="w-4 h-4 me-2" />
-                            {t('feedback.requestAlternate')}
-                            <ArrowRight className="w-4 h-4 ms-2" />
-                          </>
-                        )}
+                        <MapPinOff className="w-4 h-4 me-2" />
+                        {t('feedback.requestAlternate')}
+                        <ArrowRight className="w-4 h-4 ms-2" />
                       </Button>
                     </CardContent>
                   </Card>
+                )}
+
+                {wantsAlternate && !showingAlternate && (
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800">
+                    <Navigation className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                    <span className="text-sm text-orange-700 dark:text-orange-300 flex-1">{t('feedback.willFetchAlternate')}</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setWantsAlternate(false)}
+                      className="text-orange-600 dark:text-orange-400"
+                    >
+                      {t('common.cancel')}
+                    </Button>
+                  </div>
                 )}
 
                 {deliveryStatus === "failed" && (
@@ -679,12 +691,17 @@ export default function DriverFeedback() {
 
                 <Button
                   type="submit"
-                  className="w-full"
-                  disabled={submitMutation.isPending || completeAlternateMutation.isPending}
+                  className={`w-full ${wantsAlternate ? 'bg-orange-600 hover:bg-orange-700' : ''}`}
+                  disabled={submitMutation.isPending || completeAlternateMutation.isPending || requestAlternateMutation.isPending}
                   data-testid="button-submit-feedback"
                 >
-                  {(submitMutation.isPending || completeAlternateMutation.isPending) ? (
+                  {(submitMutation.isPending || completeAlternateMutation.isPending || requestAlternateMutation.isPending) ? (
                     t('common.loading')
+                  ) : wantsAlternate ? (
+                    <>
+                      <Navigation className="w-4 h-4 me-2" />
+                      {t('feedback.submitAndFetchAlternate')}
+                    </>
                   ) : (
                     <>
                       <CheckCircle2 className="w-4 h-4 me-2" />
