@@ -66,8 +66,8 @@ export default function RegisterCompany() {
       });
       return response.json();
     },
-    onSuccess: async () => {
-      await queryClient.resetQueries();
+    onSuccess: async (response) => {
+      queryClient.setQueryData(["/api/user"], { ...response.user, addresses: [] });
       toast({
         title: t('auth.registrationSuccessful'),
         description: t('auth.welcomeCompany'),
