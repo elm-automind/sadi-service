@@ -286,6 +286,7 @@ export default function FallbackContact() {
     },
     onSuccess: (newContact) => {
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/fallback-contacts"] });
       toast({
         title: t('fallback.contactAdded'),
         description: isOverMaxDistance 
