@@ -141,7 +141,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200">
+          <div className="flex items-center justify-center animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200">
             <Link href="/register-type">
               <Button 
                 size="lg" 
@@ -150,11 +150,6 @@ export default function Home() {
               >
                 {t('home.getStarted')}
                 <ArrowRight className="ms-2 w-5 h-5 group-hover:translate-x-1 transition-transform rtl:rotate-180" />
-              </Button>
-            </Link>
-            <Link href="/login">
-              <Button variant="outline" size="lg" className="text-lg h-14 px-8 shadow-sm" data-testid="button-login-hero">
-                {t('auth.login')}
               </Button>
             </Link>
           </div>

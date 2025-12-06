@@ -28,14 +28,14 @@ export function LanguageSwitcher() {
           data-testid="menu-language-en"
           className={i18n.language === 'en' ? 'bg-accent' : ''}
         >
-          {t('common.english')}
+          English
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => changeLanguage('ar')}
           data-testid="menu-language-ar"
           className={i18n.language === 'ar' ? 'bg-accent' : ''}
         >
-          {t('common.arabic')}
+          العربية
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
