@@ -11,7 +11,11 @@ import { PageNavigation } from "@/components/page-navigation";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { PhotoGallery } from "@/components/photo-gallery";
 
-export default function ViewAddress() {
+interface ViewAddressProps {
+  isInternalAccess?: boolean;
+}
+
+export default function ViewAddress({ isInternalAccess = false }: ViewAddressProps) {
   const { t } = useTranslation();
   const [, params] = useRoute("/view/:digitalId");
   const digitalId = params?.digitalId;
@@ -194,8 +198,8 @@ export default function ViewAddress() {
             )}
           </div>
 
-          {/* Driver Actions Section - Shows when there's a pending delivery */}
-          {pendingLookupData?.hasPendingLookup && (
+          {/* Driver Actions Section - Shows only on static link access when there's a pending delivery */}
+          {!isInternalAccess && pendingLookupData?.hasPendingLookup && (
             <>
               <Separator />
               <div className="space-y-3">

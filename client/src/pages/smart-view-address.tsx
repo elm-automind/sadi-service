@@ -35,7 +35,7 @@ export default function SmartViewAddress() {
   }
 
   if (isInternal) {
-    return <ViewAddress />;
+    return <ViewAddress isInternalAccess={true} />;
   }
 
   return <AddressCapture />;
