@@ -45,7 +45,8 @@ React Hook Form with Zod schema validation handles all form inputs. The `@hookfo
 - Local component state for UI interactions
 
 **Key Features:**
-- Interactive maps using Leaflet with react-leaflet for location selection
+- Interactive maps using MapLibre GL with react-map-gl for location selection (free, open-source)
+- CARTO basemap tiles for map rendering (no API key required)
 - Voice input capability using Web Speech API for accessibility
 - File upload with drag-and-drop using react-dropzone
 - QR code generation using react-qr-code for address sharing
@@ -136,8 +137,9 @@ Zod schemas generated from Drizzle tables using drizzle-zod for consistent valid
 ### Third-Party Services
 
 **Mapping Services:**
-- Leaflet for interactive maps
-- OpenStreetMap tiles (via tile server)
+- MapLibre GL JS for interactive maps (free, open-source fork of Mapbox GL JS)
+- react-map-gl for React integration with MapLibre
+- CARTO basemap tiles (positron style) for map rendering (no API key required)
 - Nominatim API for reverse geocoding (converting coordinates to addresses)
 
 **Billing API Integration:**

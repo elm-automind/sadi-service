@@ -1,5 +1,7 @@
 import { useState, useCallback, useRef } from "react";
-import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
+import Map, { Marker, NavigationControl, MapRef } from "react-map-gl/maplibre";
+import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogHeader, DialogDescription } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -7,22 +9,8 @@ import { Maximize2, Crosshair, MapPin, Loader2, Navigation, ExternalLink, Share2
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 
-const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
-
 const DEFAULT_CENTER = { lat: 24.7136, lng: 46.6753 };
-
-const mapContainerStyle = {
-  width: "100%",
-  height: "100%",
-};
-
-const mapOptions: google.maps.MapOptions = {
-  disableDefaultUI: true,
-  zoomControl: true,
-  streetViewControl: false,
-  mapTypeControl: false,
-  fullscreenControl: false,
-};
+const MAP_STYLE = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
 
 interface AddressMapProps {
   onLocationSelect?: (lat: number, lng: number, address?: string) => void;
@@ -34,12 +22,18 @@ interface AddressMapProps {
 
 async function reverseGeocode(lat: number, lng: number): Promise<string | null> {
   try {
-    const geocoder = new google.maps.Geocoder();
-    const response = await geocoder.geocode({ location: { lat, lng } });
-    if (response.results && response.results[0]) {
-      return response.results[0].formatted_address;
-    }
-    return null;
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+      {
+        headers: {
+          "Accept-Language": "en",
+          "User-Agent": "Marri-Delivery-App/1.0 (contact@marri.app)",
+        },
+      }
+    );
+    if (!response.ok) return null;
+    const data = await response.json();
+    return data.display_name || null;
   } catch (error) {
     console.error("Geocoding error:", error);
     return null;
@@ -97,16 +91,17 @@ export function AddressMap({ onLocationSelect, initialLat, initialLng, readOnly 
   const [isLocating, setIsLocating] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
   const [isLoadingAddress, setIsLoadingAddress] = useState(false);
-  const mapRef = useRef<google.maps.Map | null>(null);
-
-  const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+  const mapRef = useRef<MapRef>(null);
+  const [viewState, setViewState] = useState({
+    longitude: initialLng || DEFAULT_CENTER.lng,
+    latitude: initialLat || DEFAULT_CENTER.lat,
+    zoom: 15,
   });
 
-  const handleMapClick = useCallback((e: google.maps.MapMouseEvent) => {
-    if (readOnly || !e.latLng) return;
+  const handleMapClick = useCallback((e: maplibregl.MapMouseEvent) => {
+    if (readOnly) return;
     
-    const newPos = { lat: e.latLng.lat(), lng: e.latLng.lng() };
+    const newPos = { lat: e.lngLat.lat, lng: e.lngLat.lng };
     setPosition(newPos);
     
     if (onLocationSelect) {
@@ -117,10 +112,6 @@ export function AddressMap({ onLocationSelect, initialLat, initialLng, readOnly 
       });
     }
   }, [readOnly, onLocationSelect]);
-
-  const handleMapLoad = useCallback((map: google.maps.Map) => {
-    mapRef.current = map;
-  }, []);
 
   const handleCurrentLocation = (e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -139,10 +130,11 @@ export function AddressMap({ onLocationSelect, initialLat, initialLng, readOnly 
       (pos) => {
         const newPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         setPosition(newPos);
-        
-        if (mapRef.current) {
-          mapRef.current.panTo(newPos);
-        }
+        setViewState(prev => ({
+          ...prev,
+          longitude: newPos.lng,
+          latitude: newPos.lat,
+        }));
         
         if (onLocationSelect) {
           setIsLoadingAddress(true);
@@ -171,41 +163,35 @@ export function AddressMap({ onLocationSelect, initialLat, initialLng, readOnly 
     );
   };
 
-  if (loadError) {
-    return (
-      <div className="w-full h-64 rounded-lg border border-border shadow-sm overflow-hidden flex items-center justify-center bg-muted">
-        <p className="text-sm text-muted-foreground">{t("map.errorLoading")}</p>
-      </div>
-    );
-  }
-
-  if (!isLoaded) {
-    return (
-      <div className="w-full h-64 rounded-lg border border-border shadow-sm overflow-hidden flex items-center justify-center bg-muted">
-        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
   const MapComponent = ({ className, controls = true }: { className?: string, controls?: boolean }) => (
     <div className={`relative w-full h-full bg-muted ${className}`}>
-      <GoogleMap
-        mapContainerStyle={mapContainerStyle}
-        center={position || DEFAULT_CENTER}
-        zoom={15}
+      <Map
+        ref={mapRef}
+        {...viewState}
+        onMove={evt => setViewState(evt.viewState)}
         onClick={readOnly ? undefined : handleMapClick}
-        onLoad={handleMapLoad}
-        options={{
-          ...mapOptions,
-          draggable: !readOnly,
-          scrollwheel: !readOnly,
-          disableDoubleClickZoom: readOnly,
-        }}
+        mapLib={maplibregl}
+        mapStyle={MAP_STYLE}
+        style={{ width: "100%", height: "100%" }}
+        interactive={!readOnly}
+        dragPan={!readOnly}
+        scrollZoom={!readOnly}
+        doubleClickZoom={!readOnly}
       >
+        <NavigationControl position="bottom-left" />
+        
         {position && (
-          <Marker position={position} />
+          <Marker
+            longitude={position.lng}
+            latitude={position.lat}
+            anchor="bottom"
+          >
+            <div className="flex flex-col items-center">
+              <MapPin className="h-8 w-8 text-primary fill-primary" />
+            </div>
+          </Marker>
         )}
-      </GoogleMap>
+      </Map>
 
       {controls && (
         <div className="absolute top-2 right-2 flex flex-col gap-2 z-[10]">

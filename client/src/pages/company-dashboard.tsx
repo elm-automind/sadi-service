@@ -12,9 +12,11 @@ import {
 } from "lucide-react";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { SarSymbol } from "@/components/sar-symbol";
-import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from "@react-google-maps/api";
+import Map, { Marker, Popup, NavigationControl } from "react-map-gl/maplibre";
+import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
 
-const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
+const MAP_STYLE = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -125,47 +127,24 @@ interface DeliveryHotspots {
   };
 }
 
-const getHotspotMarkerIcon = (successRate: number, totalDeliveries: number) => {
-  let color = "#3b82f6";
-  let scale = 1;
-  
+const getHotspotMarkerColor = (successRate: number, totalDeliveries: number) => {
   if (successRate >= 70) {
-    color = "#22c55e";
+    return "#22c55e";
   } else if (successRate >= 40) {
-    color = "#eab308";
+    return "#eab308";
   } else if (totalDeliveries > 0) {
-    color = "#ef4444";
-  } else {
-    color = "#3b82f6";
+    return "#ef4444";
   }
-  
+  return "#3b82f6";
+};
+
+const getHotspotMarkerSize = (totalDeliveries: number) => {
   if (totalDeliveries >= 10) {
-    scale = 1.5;
+    return 24;
   } else if (totalDeliveries >= 5) {
-    scale = 1.25;
+    return 20;
   }
-  
-  return {
-    path: google.maps.SymbolPath.CIRCLE,
-    fillColor: color,
-    fillOpacity: 0.85,
-    strokeColor: "#ffffff",
-    strokeWeight: 2,
-    scale: 10 * scale,
-  };
-};
-
-const mapContainerStyle = {
-  width: "100%",
-  height: "100%",
-};
-
-const mapOptions: google.maps.MapOptions = {
-  disableDefaultUI: false,
-  zoomControl: true,
-  streetViewControl: false,
-  mapTypeControl: false,
-  fullscreenControl: false,
+  return 16;
 };
 
 const getSuccessRateKey = (successRate: number, totalDeliveries: number): { key: string; color: string } => {
@@ -220,9 +199,15 @@ export default function CompanyDashboard() {
   const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
   const [selectedCreditMarker, setSelectedCreditMarker] = useState<string | null>(null);
   const [selectedHotspotMarker, setSelectedHotspotMarker] = useState<string | null>(null);
-
-  const { isLoaded: isMapLoaded } = useJsApiLoader({
-    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+  const [creditMapViewState, setCreditMapViewState] = useState({
+    longitude: 46.6753,
+    latitude: 24.7136,
+    zoom: 10,
+  });
+  const [hotspotMapViewState, setHotspotMapViewState] = useState({
+    longitude: 46.6753,
+    latitude: 24.7136,
+    zoom: 11,
   });
 
   useEffect(() => {
@@ -1092,63 +1077,77 @@ export default function CompanyDashboard() {
             {addressDeliveryStats.length > 0 ? (
               <div className="space-y-6">
                 <div className="h-[300px] rounded-lg overflow-hidden border">
-                  {isMapLoaded ? (
-                    <GoogleMap
-                      mapContainerStyle={mapContainerStyle}
-                      center={{
-                        lat: addressDeliveryStats[0]?.lat || 24.7136,
-                        lng: addressDeliveryStats[0]?.lng || 46.6753
-                      }}
-                      zoom={10}
-                      options={mapOptions}
-                    >
-                      {addressDeliveryStats.filter(addr => addr.lat && addr.lng).map((addr) => (
-                        <Marker 
-                          key={addr.addressDigitalId} 
-                          position={{ lat: addr.lat!, lng: addr.lng! }}
-                          onClick={() => setSelectedCreditMarker(addr.addressDigitalId)}
+                  <Map
+                    {...creditMapViewState}
+                    onMove={evt => setCreditMapViewState(evt.viewState)}
+                    mapLib={maplibregl}
+                    mapStyle={MAP_STYLE}
+                    style={{ width: "100%", height: "100%" }}
+                    initialViewState={{
+                      longitude: addressDeliveryStats[0]?.lng || 46.6753,
+                      latitude: addressDeliveryStats[0]?.lat || 24.7136,
+                      zoom: 10,
+                    }}
+                  >
+                    <NavigationControl position="bottom-left" />
+                    {addressDeliveryStats.filter(addr => addr.lat && addr.lng).map((addr) => (
+                      <Marker 
+                        key={addr.addressDigitalId} 
+                        longitude={addr.lng!}
+                        latitude={addr.lat!}
+                        anchor="bottom"
+                        onClick={(e) => {
+                          e.originalEvent.stopPropagation();
+                          setSelectedCreditMarker(addr.addressDigitalId);
+                        }}
+                      >
+                        <MapPin className="h-6 w-6 text-primary fill-primary cursor-pointer" />
+                      </Marker>
+                    ))}
+                    {selectedCreditMarker && (() => {
+                      const addr = addressDeliveryStats.find(a => a.addressDigitalId === selectedCreditMarker);
+                      if (!addr || !addr.lat || !addr.lng) return null;
+                      return (
+                        <Popup
+                          longitude={addr.lng}
+                          latitude={addr.lat}
+                          anchor="bottom"
+                          onClose={() => setSelectedCreditMarker(null)}
+                          closeOnClick={false}
                         >
-                          {selectedCreditMarker === addr.addressDigitalId && (
-                            <InfoWindow onCloseClick={() => setSelectedCreditMarker(null)}>
-                              <div className="p-1 min-w-[180px]">
-                                <p className="font-semibold text-sm">{addr.addressDigitalId}</p>
-                                <p className="text-xs text-gray-500 mb-2">{addr.textAddress || "Address"}</p>
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className="text-xs">Credit Score:</span>
-                                  <span className={`font-bold ${getCreditScoreColor(addr.creditScore)}`}>{addr.creditScore}</span>
-                                </div>
-                                <div className="text-xs mb-3">
-                                  <span className="text-green-600">{addr.successfulDeliveries} delivered</span>
-                                  {" / "}
-                                  <span className="text-red-600">{addr.failedDeliveries} failed</span>
-                                </div>
-                                <div className="flex gap-1 border-t pt-2">
-                                  <button 
-                                    className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                                    onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${addr.lat},${addr.lng}`, '_blank')}
-                                  >
-                                    <Navigation className="w-3 h-3" />
-                                    {t("map.getDirections")}
-                                  </button>
-                                  <button 
-                                    className="flex items-center justify-center p-1.5 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
-                                    onClick={() => window.open(`https://www.google.com/maps?q=${addr.lat},${addr.lng}`, '_blank')}
-                                    title={t("map.openInGoogleMaps")}
-                                  >
-                                    <ExternalLink className="w-3.5 h-3.5" />
-                                  </button>
-                                </div>
-                              </div>
-                            </InfoWindow>
-                          )}
-                        </Marker>
-                      ))}
-                    </GoogleMap>
-                  ) : (
-                    <div className="h-full flex items-center justify-center bg-muted">
-                      <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                    </div>
-                  )}
+                          <div className="p-1 min-w-[180px]">
+                            <p className="font-semibold text-sm">{addr.addressDigitalId}</p>
+                            <p className="text-xs text-gray-500 mb-2">{addr.textAddress || "Address"}</p>
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-xs">Credit Score:</span>
+                              <span className={`font-bold ${getCreditScoreColor(addr.creditScore)}`}>{addr.creditScore}</span>
+                            </div>
+                            <div className="text-xs mb-3">
+                              <span className="text-green-600">{addr.successfulDeliveries} delivered</span>
+                              {" / "}
+                              <span className="text-red-600">{addr.failedDeliveries} failed</span>
+                            </div>
+                            <div className="flex gap-1 border-t pt-2">
+                              <button 
+                                className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                                onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${addr.lat},${addr.lng}`, '_blank')}
+                              >
+                                <Navigation className="w-3 h-3" />
+                                {t("map.getDirections")}
+                              </button>
+                              <button 
+                                className="flex items-center justify-center p-1.5 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+                                onClick={() => window.open(`https://www.google.com/maps?q=${addr.lat},${addr.lng}`, '_blank')}
+                                title={t("map.openInGoogleMaps")}
+                              >
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        </Popup>
+                      );
+                    })()}
+                  </Map>
                 </div>
 
                 <Table>
@@ -1249,90 +1248,113 @@ export default function CompanyDashboard() {
             {deliveryHotspots?.points && deliveryHotspots.points.length > 0 ? (
               <div className="space-y-6">
                 <div className="h-[400px] rounded-lg overflow-hidden border">
-                  {isMapLoaded ? (
-                    <GoogleMap
-                      mapContainerStyle={mapContainerStyle}
-                      center={{
-                        lat: deliveryHotspots.points[0]?.lat || 24.7136,
-                        lng: deliveryHotspots.points[0]?.lng || 46.6753
-                      }}
-                      zoom={11}
-                      options={mapOptions}
-                    >
-                      {deliveryHotspots.points.map((point) => {
-                        const totalDeliveries = point.completedCount + point.failedCount;
-                        const statusKey = getSuccessRateKey(point.successRate, totalDeliveries);
-                        return (
-                          <Marker 
-                            key={point.addressDigitalId} 
-                            position={{ lat: point.lat, lng: point.lng }}
-                            icon={getHotspotMarkerIcon(point.successRate, totalDeliveries)}
-                            onClick={() => setSelectedHotspotMarker(point.addressDigitalId)}
-                          >
-                            {selectedHotspotMarker === point.addressDigitalId && (
-                              <InfoWindow onCloseClick={() => setSelectedHotspotMarker(null)}>
-                                <div className="p-2 min-w-[200px]">
-                                  <p className="font-semibold text-sm mb-1">{point.addressDigitalId}</p>
-                                  <p className="text-xs text-gray-500 mb-3">{point.textAddress || t("common.address")}</p>
-                                  
-                                  <div className="space-y-2">
-                                    <div className="flex items-center justify-between text-xs">
-                                      <span className="text-gray-500">{t("dashboard.totalLookups")}:</span>
-                                      <span className="font-semibold text-blue-600">{point.lookupCount}</span>
-                                    </div>
-                                    <div className="flex items-center justify-between text-xs">
-                                      <span className="text-gray-500">{t("dashboard.completedDeliveries")}:</span>
-                                      <span className="font-semibold text-green-600">{point.completedCount}</span>
-                                    </div>
-                                    <div className="flex items-center justify-between text-xs">
-                                      <span className="text-gray-500">{t("dashboard.failedDeliveries")}:</span>
-                                      <span className="font-semibold text-red-600">{point.failedCount}</span>
-                                    </div>
-                                    <div className="flex items-center justify-between text-xs">
-                                      <span className="text-gray-500">{t("dashboard.successRate")}:</span>
-                                      <span className={`font-semibold ${statusKey.color}`}>{point.successRate}%</span>
-                                    </div>
-                                    <div className="flex items-center justify-between text-xs">
-                                      <span className="text-gray-500">{t("dashboard.status")}:</span>
-                                      <span className={`font-semibold ${statusKey.color}`}>
-                                        {t(`dashboard.${statusKey.key}`)}
-                                      </span>
-                                    </div>
-                                    {point.lastEventAt && (
-                                      <div className="flex items-center justify-between text-xs pt-1 border-t">
-                                        <span className="text-gray-500">{t("dashboard.lastActivity")}:</span>
-                                        <span className="text-gray-500">{new Date(point.lastEventAt).toLocaleDateString()}</span>
-                                      </div>
-                                    )}
-                                  </div>
-                                  <div className="flex gap-1 border-t mt-3 pt-2">
-                                    <button 
-                                      className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                                      onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${point.lat},${point.lng}`, '_blank')}
-                                    >
-                                      <Navigation className="w-3 h-3" />
-                                      {t("map.getDirections")}
-                                    </button>
-                                    <button 
-                                      className="flex items-center justify-center p-1.5 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
-                                      onClick={() => window.open(`https://www.google.com/maps?q=${point.lat},${point.lng}`, '_blank')}
-                                      title={t("map.openInGoogleMaps")}
-                                    >
-                                      <ExternalLink className="w-3.5 h-3.5" />
-                                    </button>
-                                  </div>
+                  <Map
+                    {...hotspotMapViewState}
+                    onMove={evt => setHotspotMapViewState(evt.viewState)}
+                    mapLib={maplibregl}
+                    mapStyle={MAP_STYLE}
+                    style={{ width: "100%", height: "100%" }}
+                    initialViewState={{
+                      longitude: deliveryHotspots.points[0]?.lng || 46.6753,
+                      latitude: deliveryHotspots.points[0]?.lat || 24.7136,
+                      zoom: 11,
+                    }}
+                  >
+                    <NavigationControl position="bottom-left" />
+                    {deliveryHotspots.points.map((point) => {
+                      const totalDeliveries = point.completedCount + point.failedCount;
+                      const markerColor = getHotspotMarkerColor(point.successRate, totalDeliveries);
+                      const markerSize = getHotspotMarkerSize(totalDeliveries);
+                      return (
+                        <Marker 
+                          key={point.addressDigitalId} 
+                          longitude={point.lng}
+                          latitude={point.lat}
+                          anchor="center"
+                          onClick={(e) => {
+                            e.originalEvent.stopPropagation();
+                            setSelectedHotspotMarker(point.addressDigitalId);
+                          }}
+                        >
+                          <div 
+                            className="rounded-full border-2 border-white shadow-md cursor-pointer"
+                            style={{ 
+                              backgroundColor: markerColor,
+                              width: markerSize,
+                              height: markerSize,
+                            }}
+                          />
+                        </Marker>
+                      );
+                    })}
+                    {selectedHotspotMarker && (() => {
+                      const point = deliveryHotspots.points.find(p => p.addressDigitalId === selectedHotspotMarker);
+                      if (!point) return null;
+                      const totalDeliveries = point.completedCount + point.failedCount;
+                      const statusKey = getSuccessRateKey(point.successRate, totalDeliveries);
+                      return (
+                        <Popup
+                          longitude={point.lng}
+                          latitude={point.lat}
+                          anchor="bottom"
+                          onClose={() => setSelectedHotspotMarker(null)}
+                          closeOnClick={false}
+                        >
+                          <div className="p-2 min-w-[200px]">
+                            <p className="font-semibold text-sm mb-1">{point.addressDigitalId}</p>
+                            <p className="text-xs text-gray-500 mb-3">{point.textAddress || t("common.address")}</p>
+                            
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="text-gray-500">{t("dashboard.totalLookups")}:</span>
+                                <span className="font-semibold text-blue-600">{point.lookupCount}</span>
+                              </div>
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="text-gray-500">{t("dashboard.completedDeliveries")}:</span>
+                                <span className="font-semibold text-green-600">{point.completedCount}</span>
+                              </div>
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="text-gray-500">{t("dashboard.failedDeliveries")}:</span>
+                                <span className="font-semibold text-red-600">{point.failedCount}</span>
+                              </div>
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="text-gray-500">{t("dashboard.successRate")}:</span>
+                                <span className={`font-semibold ${statusKey.color}`}>{point.successRate}%</span>
+                              </div>
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="text-gray-500">{t("dashboard.status")}:</span>
+                                <span className={`font-semibold ${statusKey.color}`}>
+                                  {t(`dashboard.${statusKey.key}`)}
+                                </span>
+                              </div>
+                              {point.lastEventAt && (
+                                <div className="flex items-center justify-between text-xs pt-1 border-t">
+                                  <span className="text-gray-500">{t("dashboard.lastActivity")}:</span>
+                                  <span className="text-gray-500">{new Date(point.lastEventAt).toLocaleDateString()}</span>
                                 </div>
-                              </InfoWindow>
-                            )}
-                          </Marker>
-                        );
-                      })}
-                    </GoogleMap>
-                  ) : (
-                    <div className="h-full flex items-center justify-center bg-muted">
-                      <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                    </div>
-                  )}
+                              )}
+                            </div>
+                            <div className="flex gap-1 border-t mt-3 pt-2">
+                              <button 
+                                className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                                onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${point.lat},${point.lng}`, '_blank')}
+                              >
+                                <Navigation className="w-3 h-3" />
+                                {t("map.getDirections")}
+                              </button>
+                              <button 
+                                className="flex items-center justify-center p-1.5 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+                                onClick={() => window.open(`https://www.google.com/maps?q=${point.lat},${point.lng}`, '_blank')}
+                                title={t("map.openInGoogleMaps")}
+                              >
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        </Popup>
+                      );
+                    })()}
+                  </Map>
                 </div>
 
                 {/* Legend */}
