@@ -341,18 +341,16 @@ export default function DriverLookup() {
                   </div>
                 </div>
 
-                {addressResult.address.preferredTime && (
-                  <div className="border-t pt-4">
-                    <h4 className="font-semibold flex items-center gap-2 mb-2 rtl-no-flip">
-                      <Clock className="w-4 h-4" />
-                      {t('address.deliveryPreferences')}
-                    </h4>
-                    <p className="text-sm text-muted-foreground">
-                      {t('address.preferredTime')}: {addressResult.address.preferredTime}
-                      {addressResult.address.preferredTimeSlot && ` (${addressResult.address.preferredTimeSlot})`}
-                    </p>
-                  </div>
-                )}
+                <div className="border-t pt-4">
+                  <h4 className="font-semibold flex items-center gap-2 mb-2 rtl-no-flip">
+                    <Clock className="w-4 h-4" />
+                    {t('address.deliveryPreferences')}
+                  </h4>
+                  <p className="text-sm text-muted-foreground">
+                    {t('address.preferredTime')}: {addressResult.address.preferredTime || t('viewAddress.notSpecified', 'Not specified')}
+                    {addressResult.address.preferredTimeSlot && ` (${addressResult.address.preferredTimeSlot})`}
+                  </p>
+                </div>
 
                 {addressResult.address.specialNote && (
                   <div className="border-t pt-4">

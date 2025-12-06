@@ -348,11 +348,10 @@ export default function Dashboard() {
                             <Star className="w-3 h-3" /> Default
                           </Badge>
                         )}
-                        {address.preferredTime && (
-                          <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded capitalize">
-                            {address.preferredTime}
-                          </span>
-                        )}
+                        <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded capitalize flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {address.preferredTime || "Not specified"}
+                        </span>
                       </div>
                       <p className="text-sm text-foreground truncate">
                         {address.textAddress}
