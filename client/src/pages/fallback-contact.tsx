@@ -44,6 +44,9 @@ const fallbackSchema = z.object({
   scheduledDate: z.string().optional(),
   scheduledTimeSlot: z.string().optional(),
   extraFeeAcknowledged: z.boolean().optional(),
+  consentAcknowledged: z.boolean().refine(val => val === true, {
+    message: "You must agree to the consent terms to add an alternate drop location"
+  }),
 });
 
 type FallbackData = z.infer<typeof fallbackSchema>;
@@ -219,6 +222,7 @@ export default function FallbackContact() {
       scheduledDate: "",
       scheduledTimeSlot: "",
       extraFeeAcknowledged: false,
+      consentAcknowledged: false,
     }
   });
 
@@ -283,18 +287,18 @@ export default function FallbackContact() {
     onSuccess: (newContact) => {
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       toast({
-        title: "Fallback Contact Added!",
+        title: t('fallback.contactAdded'),
         description: isOverMaxDistance 
-          ? "Your backup contact has been saved with scheduled delivery."
-          : "Your backup contact has been saved.",
+          ? "Your alternate drop location has been saved with scheduled delivery."
+          : "Your alternate drop location has been saved.",
       });
       setLocation(`/view-fallback/${newContact.id}`);
     },
     onError: (error: any) => {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: error.message || "Failed to add fallback contact"
+        title: t('common.error'),
+        description: error.message || "Failed to add alternate drop location"
       });
     }
   });
@@ -306,7 +310,7 @@ export default function FallbackContact() {
       toast({
         variant: "destructive",
         title: "Location Required",
-        description: "Please select a location on the map for the fallback contact."
+        description: "Please select a location on the map for the alternate drop location."
       });
       return;
     }
@@ -335,7 +339,7 @@ export default function FallbackContact() {
       toast({
         variant: "destructive",
         title: "Location Required",
-        description: "Please select a location on the map for the fallback contact."
+        description: "Please select a location on the map for the alternate drop location."
       });
       return false;
     }
@@ -370,8 +374,8 @@ export default function FallbackContact() {
           <div className="w-16 h-16 rounded-xl icon-container-purple text-white flex items-center justify-center mx-auto mb-4 shadow-lg shadow-purple-500/30">
             <Users className="w-8 h-8" />
           </div>
-          <h2 className="text-xl font-bold mb-2">Add an Address First</h2>
-          <p className="text-muted-foreground mb-4">You need to register at least one address before adding a fallback contact.</p>
+          <h2 className="text-xl font-bold mb-2">{t('address.addAddress')} First</h2>
+          <p className="text-muted-foreground mb-4">You need to register at least one address before adding an alternate drop location.</p>
           <Link href="/add-address">
             <Button>Add Address</Button>
           </Link>
@@ -403,8 +407,8 @@ export default function FallbackContact() {
               <Users className="w-6 h-6" />
             </div>
             <div>
-              <CardTitle className="text-xl font-bold bg-gradient-to-r from-slate-800 to-purple-800 dark:from-white dark:to-purple-200 bg-clip-text text-transparent">Add Fallback Contact</CardTitle>
-              <CardDescription>Provide an alternative person/location for deliveries</CardDescription>
+              <CardTitle className="text-xl font-bold bg-gradient-to-r from-slate-800 to-purple-800 dark:from-white dark:to-purple-200 bg-clip-text text-transparent">{t('fallback.title')}</CardTitle>
+              <CardDescription>{t('fallback.subtitle')}</CardDescription>
             </div>
           </div>
           
@@ -423,7 +427,7 @@ export default function FallbackContact() {
             {step === 1 && (
               <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
                 <div className="space-y-2">
-                  <Label>Select Address This Fallback is For</Label>
+                  <Label>{t('address.selectAddress')} - Primary Address for This Drop Location</Label>
                   <Controller
                     control={form.control}
                     name="addressId"
@@ -517,7 +521,7 @@ export default function FallbackContact() {
                 <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 flex items-start gap-3">
                   <Info className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
                   <div className="text-sm text-blue-800 dark:text-blue-200">
-                    <p className="font-medium">Fallback locations within 3km are free.</p>
+                    <p className="font-medium">Alternate drop locations within 3km are free.</p>
                     <p className="text-xs mt-1 opacity-80">Locations beyond 3km require scheduling and an extra fee of SAR {EXTRA_FEE_AMOUNT}.</p>
                   </div>
                 </div>
@@ -526,7 +530,7 @@ export default function FallbackContact() {
                 <div className="space-y-3">
                   <Label className="flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-purple-500" />
-                    Fallback Location
+                    {t('fallback.contactLocation')}
                   </Label>
                   <div className="overflow-hidden border-2 border-muted hover:border-purple-300 transition-colors rounded-lg">
                     <AddressMap 
@@ -537,7 +541,7 @@ export default function FallbackContact() {
                       }}
                     />
                   </div>
-                  <p className="text-xs text-muted-foreground text-right">Tap on the map to pin the fallback location</p>
+                  <p className="text-xs text-muted-foreground text-right">Tap on the map to pin the alternate drop location</p>
                 </div>
 
                 {/* Distance Badge */}
@@ -654,7 +658,7 @@ export default function FallbackContact() {
                       />
                       <label htmlFor="extraFeeAcknowledged" className="text-sm leading-tight cursor-pointer">
                         I understand and agree to pay the extra delivery fee of <strong>SAR {EXTRA_FEE_AMOUNT}</strong> for 
-                        this fallback location that exceeds the {MAX_FREE_DISTANCE_KM}km free zone.
+                        this alternate drop location that exceeds the {MAX_FREE_DISTANCE_KM}km free zone.
                       </label>
                     </div>
                   </div>
@@ -697,7 +701,7 @@ export default function FallbackContact() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="specialNote">Special Notes (Optional)</Label>
+                  <Label htmlFor="specialNote">{t('fallback.specialNotes')} ({t('common.optional')})</Label>
                   <Controller
                     control={form.control}
                     name="specialNote"
@@ -705,7 +709,7 @@ export default function FallbackContact() {
                       <VoiceInput 
                         as="textarea"
                         id="specialNote" 
-                        placeholder="Any special instructions for this fallback..." 
+                        placeholder="Any special instructions for this location..." 
                         className="resize-none h-20"
                         data-testid="input-special-note"
                         {...field}
@@ -713,6 +717,44 @@ export default function FallbackContact() {
                       />
                     )}
                   />
+                </div>
+
+                <Separator />
+
+                {/* Consent Agreement Section */}
+                <div className="space-y-4 p-4 bg-purple-50/50 dark:bg-purple-900/10 border-2 border-purple-200 dark:border-purple-800 rounded-lg">
+                  <h3 className="font-semibold text-purple-800 dark:text-purple-400 flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4" />
+                    {t('fallback.consentTitle')}
+                  </h3>
+                  
+                  <div className="text-sm text-purple-700 dark:text-purple-300 bg-white/80 dark:bg-slate-800/80 p-3 rounded-md border border-purple-100 dark:border-purple-900">
+                    {t('fallback.consentDescription')}
+                  </div>
+
+                  <div className="flex items-start gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-purple-200 dark:border-purple-700">
+                    <Controller
+                      control={form.control}
+                      name="consentAcknowledged"
+                      render={({ field }) => (
+                        <Checkbox
+                          id="consentAcknowledged"
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          data-testid="checkbox-consent"
+                        />
+                      )}
+                    />
+                    <label htmlFor="consentAcknowledged" className="text-sm leading-tight cursor-pointer font-medium text-purple-800 dark:text-purple-300">
+                      I have read and agree to the above consent terms for using this alternate drop location.
+                    </label>
+                  </div>
+                  {form.formState.errors.consentAcknowledged && (
+                    <p className="text-destructive text-xs flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3" />
+                      {form.formState.errors.consentAcknowledged.message}
+                    </p>
+                  )}
                 </div>
               </div>
             )}
@@ -738,8 +780,8 @@ export default function FallbackContact() {
                   disabled={fallbackMutation.isPending || (requiresScheduling && !canSubmit)}
                   data-testid="button-submit"
                 >
-                  {fallbackMutation.isPending ? "Saving..." : (
-                    isOverMaxDistance ? "Schedule & Save" : "Save Contact"
+                  {fallbackMutation.isPending ? t('common.saving') : (
+                    isOverMaxDistance ? "Schedule & Save" : t('fallback.addContact')
                   )} <CheckCircle2 className="w-4 h-4 ml-2" />
                 </Button>
               )}

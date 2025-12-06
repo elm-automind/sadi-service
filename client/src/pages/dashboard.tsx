@@ -88,7 +88,7 @@ export default function Dashboard() {
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       toast({
         title: "Address Deleted",
-        description: "The address and its fallback contacts have been removed.",
+        description: "The address and its alternate drop locations have been removed.",
       });
       setDeleteDialogOpen(false);
       setAddressToDelete(null);
@@ -110,8 +110,8 @@ export default function Dashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/fallback-contacts", selectedFallbackAddressId] });
       toast({
-        title: "Fallback Contact Deleted",
-        description: "The fallback contact has been removed.",
+        title: t('fallback.contactDeleted'),
+        description: "The alternate drop location has been removed.",
       });
       setDeleteFallbackDialogOpen(false);
       setFallbackToDelete(null);
@@ -119,8 +119,8 @@ export default function Dashboard() {
     onError: (error: any) => {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: error.message || "Failed to delete fallback contact",
+        title: t('common.error'),
+        description: error.message || "Failed to delete alternate drop location",
       });
     }
   });
@@ -154,15 +154,15 @@ export default function Dashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/fallback-contacts", selectedFallbackAddressId] });
       toast({
-        title: "Default Fallback Set",
-        description: "This fallback contact is now your default for this address.",
+        title: "Default Location Set",
+        description: "This alternate drop location is now your default for this address.",
       });
     },
     onError: (error: any) => {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: error.message || "Failed to set default fallback",
+        title: t('common.error'),
+        description: error.message || "Failed to set default location",
       });
     }
   });
@@ -410,17 +410,17 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Fallback Contacts */}
+        {/* Alternate Drop Locations */}
         <Card>
           <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Users className="w-5 h-5 text-purple-600" />
-                  Fallback Contacts
+                  {t('fallback.title')}
                 </CardTitle>
                 <CardDescription>
-                  Alternative people who can receive deliveries when you're not available
+                  Alternative locations for deliveries when you're not available at primary address
                 </CardDescription>
               </div>
               {user.addresses.length > 0 && selectedFallbackAddressId && (
@@ -436,7 +436,7 @@ export default function Dashboard() {
             {user.addresses.length === 0 ? (
               <div className="text-center py-6 text-muted-foreground">
                 <Users className="w-10 h-10 mx-auto mb-2 opacity-20" />
-                <p className="text-sm">Register an address first to add fallback contacts.</p>
+                <p className="text-sm">Register an address first to add alternate drop locations.</p>
               </div>
             ) : (
               <>
@@ -465,16 +465,16 @@ export default function Dashboard() {
                   </Select>
                 </div>
 
-                {/* Fallback Contacts for Selected Address */}
+                {/* Alternate Drop Locations for Selected Address */}
                 {selectedAddress && (
                   <div className="space-y-3 pt-2">
                     {!fallbackContacts || fallbackContacts.length === 0 ? (
                       <div className="p-4 bg-muted/30 rounded-lg border border-dashed border-border/50 text-center">
                         <Users className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                        <p className="text-sm text-muted-foreground">No fallback contacts for this address</p>
+                        <p className="text-sm text-muted-foreground">{t('fallback.noContacts')}</p>
                         <Link href={`/fallback-contact?addressId=${selectedFallbackAddressId}`}>
                           <Button variant="link" size="sm" className="mt-2 gap-1">
-                            <UserPlus className="w-3 h-3" /> Add Fallback Contact
+                            <UserPlus className="w-3 h-3" /> {t('fallback.addContact')}
                           </Button>
                         </Link>
                       </div>
@@ -566,7 +566,7 @@ export default function Dashboard() {
                         ))}
                         <Link href={`/fallback-contact?addressId=${selectedFallbackAddressId}`}>
                           <Button variant="ghost" size="sm" className="w-full gap-1 text-purple-600 hover:text-purple-700 hover:bg-purple-50">
-                            <UserPlus className="w-3 h-3" /> Add Another Fallback
+                            <UserPlus className="w-3 h-3" /> {t('fallback.addContact')}
                           </Button>
                         </Link>
                       </div>
@@ -587,7 +587,7 @@ export default function Dashboard() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Address?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the address "{addressToDelete?.digitalId}" and all its fallback contacts. This action cannot be undone.
+              This will permanently delete the address "{addressToDelete?.digitalId}" and all its alternate drop locations. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -602,13 +602,13 @@ export default function Dashboard() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Delete Fallback Contact Confirmation Dialog */}
+      {/* Delete Alternate Drop Location Confirmation Dialog */}
       <AlertDialog open={deleteFallbackDialogOpen} onOpenChange={setDeleteFallbackDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Fallback Contact?</AlertDialogTitle>
+            <AlertDialogTitle>{t('fallback.deleteContact')}?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the fallback contact "{fallbackToDelete?.name}". This action cannot be undone.
+              This will permanently delete the alternate drop location "{fallbackToDelete?.name}". This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -326,7 +326,7 @@ export default function EditFallback() {
       queryClient.invalidateQueries({ queryKey: ["/api/fallback-contact", contactId] });
       queryClient.invalidateQueries({ queryKey: ["/api/fallback-contacts"] });
       toast({
-        title: "Fallback Contact Updated!",
+        title: t('fallback.contactUpdated'),
         description: "Your changes have been saved.",
       });
       setLocation(`/view-fallback/${contactId}`);
@@ -335,7 +335,7 @@ export default function EditFallback() {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message || "Failed to update fallback contact"
+        description: error.message || "Failed to update alternate drop location"
       });
     }
   });
@@ -346,7 +346,7 @@ export default function EditFallback() {
       toast({
         variant: "destructive",
         title: "Location Required",
-        description: "Please select a location on the map for the fallback contact."
+        description: "Please select a location on the map for the alternate drop location."
       });
       return;
     }
@@ -383,7 +383,7 @@ export default function EditFallback() {
         <Card className="w-full max-w-md p-8 text-center">
           <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
           <h2 className="text-xl font-bold mb-2">Contact Not Found</h2>
-          <p className="text-muted-foreground mb-4">The fallback contact you're looking for doesn't exist.</p>
+          <p className="text-muted-foreground mb-4">The alternate drop location you're looking for doesn't exist.</p>
           <Link href="/dashboard">
             <Button>Go to Dashboard</Button>
           </Link>
@@ -403,7 +403,7 @@ export default function EditFallback() {
               <Users className="w-6 h-6" />
             </div>
             <div>
-              <CardTitle className="text-xl font-bold text-primary">Edit Fallback Contact</CardTitle>
+              <CardTitle className="text-xl font-bold text-primary">{t('fallback.editContact')}</CardTitle>
               <CardDescription>Update contact details and location</CardDescription>
             </div>
           </div>
@@ -472,7 +472,7 @@ export default function EditFallback() {
             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 flex items-start gap-3">
               <Info className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
               <div className="text-sm text-blue-800 dark:text-blue-200">
-                <p className="font-medium">Fallback locations within 3km are free.</p>
+                <p className="font-medium">Alternate drop locations within 3km are free.</p>
                 <p className="text-xs mt-1 opacity-80">Locations beyond 3km require scheduling and an extra fee of SAR {EXTRA_FEE_AMOUNT}.</p>
               </div>
             </div>
@@ -480,7 +480,7 @@ export default function EditFallback() {
             <div className="space-y-3">
               <Label className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-purple-500" />
-                Fallback Location
+                Alternate Drop Location
               </Label>
               <div className="overflow-hidden border-2 border-muted hover:border-purple-300 transition-colors rounded-lg">
                 <AddressMap 
@@ -493,7 +493,7 @@ export default function EditFallback() {
                   }}
                 />
               </div>
-              <p className="text-xs text-muted-foreground text-right">Tap on the map to change the fallback location</p>
+              <p className="text-xs text-muted-foreground text-right">Tap on the map to change the alternate drop location</p>
             </div>
 
             {distance !== null && (
@@ -606,7 +606,7 @@ export default function EditFallback() {
                     )}
                   />
                   <label htmlFor="extraFeeAck" className="text-sm text-amber-800 dark:text-amber-300 cursor-pointer">
-                    I acknowledge and agree to pay the extra delivery fee of <strong>SAR {EXTRA_FEE_AMOUNT}</strong> for this fallback location.
+                    I acknowledge and agree to pay the extra delivery fee of <strong>SAR {EXTRA_FEE_AMOUNT}</strong> for this alternate drop location.
                   </label>
                 </div>
               </div>
