@@ -597,21 +597,38 @@ export default function CompanyDashboard() {
 
   const handleSelectPlan = (planId: number) => {
     if (!pricingPlans || pricingPlans.length === 0) return;
+    
+    const currentBillingCycle = isAnnual ? "annual" : "monthly";
+    const isCurrentPlan = hasSubscription && 
+      subscriptionData?.subscription.pricingPlanId === planId &&
+      subscriptionData?.subscription.billingCycle === currentBillingCycle;
+    
+    // Don't do anything if selecting the same plan with same billing cycle
+    if (isCurrentPlan) return;
+    
     setSelectedPlanId(planId);
     if (hasSubscription) {
+      // This is a plan change, not a new subscription
       subscriptionMutation.mutate({
         pricingPlanId: planId,
-        billingCycle: isAnnual ? "annual" : "monthly",
+        billingCycle: currentBillingCycle,
       });
     }
   };
 
   const handleBillingToggle = (annual: boolean) => {
+    const newBillingCycle = annual ? "annual" : "monthly";
+    
+    // Don't mutate if the billing cycle is already the same
+    const isSameBillingCycle = hasSubscription && 
+      subscriptionData?.subscription.billingCycle === newBillingCycle;
+    
     setIsAnnual(annual);
-    if (hasSubscription && selectedPlanId && pricingPlans && pricingPlans.length > 0) {
+    
+    if (hasSubscription && selectedPlanId && pricingPlans && pricingPlans.length > 0 && !isSameBillingCycle) {
       subscriptionMutation.mutate({
         pricingPlanId: selectedPlanId,
-        billingCycle: annual ? "annual" : "monthly",
+        billingCycle: newBillingCycle,
       });
     }
   };
@@ -693,7 +710,7 @@ export default function CompanyDashboard() {
     return (
       <div className="min-h-screen bg-muted/30 p-4 md:p-8">
         <div className="max-w-6xl mx-auto space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 font-bold text-2xl border-2 border-blue-200">
                 <Building2 className="w-7 h-7" />
@@ -847,108 +864,108 @@ export default function CompanyDashboard() {
       )}
       <div className="p-4 md:p-8">
         <div className="max-w-6xl mx-auto space-y-6">
-          <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 font-bold text-2xl border-2 border-blue-200">
-              <Building2 className="w-7 h-7" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">{user.name}</h1>
-              <p className="text-sm text-muted-foreground">{user.email}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 rtl-no-flip">
-            <LanguageSwitcher />
-            <Button variant="ghost" size="sm" onClick={handleLogout} data-testid="button-logout">
-              <LogOut className="w-4 h-4 me-2" /> {t('auth.logout')}
-            </Button>
-          </div>
-        </div>
-
-        <Separator />
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Deliveries</p>
-                  <p className="text-3xl font-bold text-foreground" data-testid="text-total-deliveries">{deliveryStats?.totalDeliveries || 0}</p>
-                </div>
-                <div className="p-3 bg-blue-100 dark:bg-blue-900/20 rounded-full">
-                  <Package className="w-6 h-6 text-blue-600" />
-                </div>
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 font-bold text-2xl border-2 border-blue-200">
+                <Building2 className="w-7 h-7" />
               </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Active Drivers</p>
-                  <p className="text-3xl font-bold text-foreground">{drivers.filter(d => d.status === "active").length}</p>
-                </div>
-                <div className="p-3 bg-green-100 dark:bg-green-900/20 rounded-full">
-                  <Users className="w-6 h-6 text-green-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Success Rate</p>
-                  <p className="text-3xl font-bold text-foreground" data-testid="text-success-rate">{deliveryStats?.successRate || 0}%</p>
-                </div>
-                <div className="p-3 bg-purple-100 dark:bg-purple-900/20 rounded-full">
-                  <TrendingUp className="w-6 h-6 text-purple-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Drivers</p>
-                  <p className="text-3xl font-bold text-foreground">{drivers.length}</p>
-                </div>
-                <div className="p-3 bg-orange-100 dark:bg-orange-900/20 rounded-full">
-                  <UserCog className="w-6 h-6 text-orange-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="flex items-center gap-2">
-                  <UserCog className="w-5 h-5 text-primary" />
-                  Driver Management
-                </CardTitle>
-                <CardDescription>
-                  Add and manage your delivery drivers
-                </CardDescription>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setIsBulkUploadDialogOpen(true)} data-testid="button-bulk-upload">
-                  <Upload className="w-4 h-4 mr-2" />
-                  Bulk Upload
-                </Button>
-                <Button onClick={openAddDriver} data-testid="button-add-driver">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Driver
-                </Button>
+                <h1 className="text-2xl font-bold text-foreground">{user.name}</h1>
+                <p className="text-sm text-muted-foreground">{user.email}</p>
               </div>
             </div>
-          </CardHeader>
+            <div className="flex items-center gap-2 rtl-no-flip">
+              <LanguageSwitcher />
+              <Button variant="ghost" size="sm" onClick={handleLogout} data-testid="button-logout">
+                <LogOut className="w-4 h-4 me-2" /> {t('auth.logout')}
+              </Button>
+            </div>
+          </div>
+
+          <Separator />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Deliveries</p>
+                    <p className="text-3xl font-bold text-foreground" data-testid="text-total-deliveries">{deliveryStats?.totalDeliveries || 0}</p>
+                  </div>
+                  <div className="p-3 bg-blue-100 dark:bg-blue-900/20 rounded-full flex-shrink-0">
+                    <Package className="w-6 h-6 text-blue-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Active Drivers</p>
+                    <p className="text-3xl font-bold text-foreground">{drivers.filter(d => d.status === "active").length}</p>
+                  </div>
+                  <div className="p-3 bg-green-100 dark:bg-green-900/20 rounded-full flex-shrink-0">
+                    <Users className="w-6 h-6 text-green-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Success Rate</p>
+                    <p className="text-3xl font-bold text-foreground" data-testid="text-success-rate">{deliveryStats?.successRate || 0}%</p>
+                  </div>
+                  <div className="p-3 bg-purple-100 dark:bg-purple-900/20 rounded-full flex-shrink-0">
+                    <TrendingUp className="w-6 h-6 text-purple-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Drivers</p>
+                    <p className="text-3xl font-bold text-foreground">{drivers.length}</p>
+                  </div>
+                  <div className="p-3 bg-orange-100 dark:bg-orange-900/20 rounded-full flex-shrink-0">
+                    <UserCog className="w-6 h-6 text-orange-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <UserCog className="w-5 h-5 text-primary" />
+                    Driver Management
+                  </CardTitle>
+                  <CardDescription>
+                    Add and manage your delivery drivers
+                  </CardDescription>
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  <Button variant="outline" onClick={() => setIsBulkUploadDialogOpen(true)} data-testid="button-bulk-upload">
+                    <Upload className="w-4 h-4 mr-2" />
+                    Bulk Upload
+                  </Button>
+                  <Button onClick={openAddDriver} data-testid="button-add-driver">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Driver
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
           <CardContent>
             {drivers.length > 0 ? (
               <Table>
@@ -1521,20 +1538,20 @@ DRV003, Khalid Omar, 0551234567"
           </DialogContent>
         </Dialog>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <MapPin className="w-5 h-5 text-primary" />
-                    Company Address
-                  </CardTitle>
-                  <CardDescription>
-                    Your registered business address
-                  </CardDescription>
-                </div>
-                <Dialog open={isAddressDialogOpen} onOpenChange={setIsAddressDialogOpen}>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between gap-4 flex-wrap">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <MapPin className="w-5 h-5 text-primary" />
+                      Company Address
+                    </CardTitle>
+                    <CardDescription>
+                      Your registered business address
+                    </CardDescription>
+                  </div>
+                  <Dialog open={isAddressDialogOpen} onOpenChange={setIsAddressDialogOpen}>
                   <DialogTrigger asChild>
                     <Button variant="outline" size="sm" data-testid="button-edit-address">
                       <Edit2 className="w-4 h-4 mr-2" />
@@ -1641,13 +1658,13 @@ DRV003, Khalid Omar, 0551234567"
             <CardContent>
               {currentPlan ? (
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between p-4 bg-primary/5 rounded-lg border border-primary/20">
+                  <div className="flex items-center justify-between gap-4 p-4 bg-primary/5 rounded-lg border border-primary/20">
                     <div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-semibold text-lg">{currentPlan.name}</h3>
                         <Badge variant="secondary">{subscriptionData?.subscription.billingCycle}</Badge>
                       </div>
-                      <p className="text-2xl font-bold text-primary mt-1 flex items-baseline gap-1">
+                      <p className="text-2xl font-bold text-primary mt-1 flex items-baseline gap-1 flex-wrap">
                         <SarSymbol size="md" />
                         <span>{subscriptionData?.subscription.billingCycle === "annual" ? currentPlan.annualPrice : currentPlan.monthlyPrice}</span>
                         <span className="text-sm font-normal text-muted-foreground">
@@ -1655,7 +1672,7 @@ DRV003, Khalid Omar, 0551234567"
                         </span>
                       </p>
                     </div>
-                    <Check className="w-6 h-6 text-green-600" />
+                    <Check className="w-6 h-6 text-green-600 flex-shrink-0" />
                   </div>
                   <div className="space-y-1">
                     {currentPlan.features.slice(0, 3).map((feature, i) => (
@@ -1709,27 +1726,51 @@ DRV003, Khalid Omar, 0551234567"
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {pricingPlans?.map((plan) => {
+                const currentBillingCycle = isAnnual ? "annual" : "monthly";
+                const isCurrentPlan = hasSubscription && 
+                  subscriptionData?.subscription.pricingPlanId === plan.id &&
+                  subscriptionData?.subscription.billingCycle === currentBillingCycle;
                 const isSelected = selectedPlanId === plan.id;
                 const price = isAnnual ? plan.annualPrice : plan.monthlyPrice;
+                
+                // Determine button text based on subscription state
+                let buttonText = "Select Plan";
+                if (isCurrentPlan) {
+                  buttonText = "Current Plan";
+                } else if (hasSubscription && isSelected) {
+                  buttonText = "Change Plan";
+                } else if (!hasSubscription && isSelected) {
+                  buttonText = "Selected";
+                }
                 
                 return (
                   <Card 
                     key={plan.id} 
-                    className={`relative cursor-pointer transition-all hover:shadow-lg ${
-                      isSelected ? 'border-primary ring-2 ring-primary/20' : 'hover:border-primary/50'
-                    } ${plan.isDefault ? 'border-primary/50' : ''}`}
+                    className={`relative transition-all ${
+                      isCurrentPlan 
+                        ? 'border-green-500 ring-2 ring-green-500/20 cursor-default' 
+                        : isSelected 
+                          ? 'border-primary ring-2 ring-primary/20 cursor-pointer hover:shadow-lg' 
+                          : 'cursor-pointer hover:shadow-lg hover:border-primary/50'
+                    } ${plan.isDefault && !isCurrentPlan ? 'border-primary/50' : ''}`}
                     onClick={() => handleSelectPlan(plan.id)}
                     data-testid={`card-plan-${plan.slug}`}
                   >
-                    {plan.isDefault && (
+                    {isCurrentPlan && (
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                        <Badge className="bg-green-600">Active</Badge>
+                      </div>
+                    )}
+                    {plan.isDefault && !isCurrentPlan && (
                       <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                         <Badge className="bg-primary">Popular</Badge>
                       </div>
                     )}
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-lg flex items-center justify-between">
+                      <CardTitle className="text-lg flex items-center justify-between gap-2">
                         {plan.name}
-                        {isSelected && <Check className="w-5 h-5 text-primary" />}
+                        {isCurrentPlan && <Check className="w-5 h-5 text-green-600" />}
+                        {!isCurrentPlan && isSelected && <Check className="w-5 h-5 text-primary" />}
                       </CardTitle>
                       <div className="mt-2 flex items-baseline gap-1">
                         <SarSymbol size="md" />
@@ -1748,16 +1789,14 @@ DRV003, Khalid Omar, 0551234567"
                       </ul>
                       <Button 
                         className="w-full mt-4" 
-                        variant={isSelected ? "default" : "outline"}
-                        disabled={subscriptionMutation.isPending}
+                        variant={isCurrentPlan ? "secondary" : isSelected ? "default" : "outline"}
+                        disabled={subscriptionMutation.isPending || isCurrentPlan}
                         data-testid={`button-select-${plan.slug}`}
                       >
                         {subscriptionMutation.isPending && selectedPlanId === plan.id ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : isSelected ? (
-                          "Current Plan"
                         ) : (
-                          "Select Plan"
+                          buttonText
                         )}
                       </Button>
                     </CardContent>
