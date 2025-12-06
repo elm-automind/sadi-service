@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -11,9 +11,9 @@ import {
 } from "lucide-react";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { SarSymbol } from "@/components/sar-symbol";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
+import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from "@react-google-maps/api";
+
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -124,55 +124,47 @@ interface DeliveryHotspots {
   };
 }
 
-const defaultIcon = L.icon({
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
-
-const getHotspotIcon = (successRate: number, totalDeliveries: number) => {
+const getHotspotMarkerIcon = (successRate: number, totalDeliveries: number) => {
   let color = "#3b82f6";
-  let size = 20;
+  let scale = 1;
   
-  // Color based on success rate: green for high success, yellow for medium, red for high failure
   if (successRate >= 70) {
-    color = "#22c55e"; // Green - good performance
+    color = "#22c55e";
   } else if (successRate >= 40) {
-    color = "#eab308"; // Yellow - medium performance
+    color = "#eab308";
   } else if (totalDeliveries > 0) {
-    color = "#ef4444"; // Red - poor performance (high failure rate)
+    color = "#ef4444";
   } else {
-    color = "#3b82f6"; // Blue - no deliveries yet, just lookups
+    color = "#3b82f6";
   }
   
-  // Size based on total delivery volume
   if (totalDeliveries >= 10) {
-    size = 30;
+    scale = 1.5;
   } else if (totalDeliveries >= 5) {
-    size = 25;
-  } else {
-    size = 20;
+    scale = 1.25;
   }
   
-  return L.divIcon({
-    className: "hotspot-marker",
-    html: `<div style="
-      width: ${size}px;
-      height: ${size}px;
-      background: ${color};
-      border: 2px solid white;
-      border-radius: 50%;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-      opacity: 0.85;
-    "></div>`,
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2],
-    popupAnchor: [0, -size / 2],
-  });
+  return {
+    path: google.maps.SymbolPath.CIRCLE,
+    fillColor: color,
+    fillOpacity: 0.85,
+    strokeColor: "#ffffff",
+    strokeWeight: 2,
+    scale: 10 * scale,
+  };
+};
+
+const mapContainerStyle = {
+  width: "100%",
+  height: "100%",
+};
+
+const mapOptions: google.maps.MapOptions = {
+  disableDefaultUI: false,
+  zoomControl: true,
+  streetViewControl: false,
+  mapTypeControl: false,
+  fullscreenControl: false,
 };
 
 const getSuccessRateKey = (successRate: number, totalDeliveries: number): { key: string; color: string } => {
@@ -225,6 +217,12 @@ export default function CompanyDashboard() {
   const [isAnnual, setIsAnnual] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
   const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
+  const [selectedCreditMarker, setSelectedCreditMarker] = useState<string | null>(null);
+  const [selectedHotspotMarker, setSelectedHotspotMarker] = useState<string | null>(null);
+
+  const { isLoaded: isMapLoaded } = useJsApiLoader({
+    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+  });
 
   useEffect(() => {
     const paymentSuccess = sessionStorage.getItem("paymentSuccess");
@@ -1008,42 +1006,47 @@ export default function CompanyDashboard() {
             {addressDeliveryStats.length > 0 ? (
               <div className="space-y-6">
                 <div className="h-[300px] rounded-lg overflow-hidden border">
-                  <MapContainer
-                    center={[
-                      addressDeliveryStats[0]?.lat || 24.7136,
-                      addressDeliveryStats[0]?.lng || 46.6753
-                    ]}
-                    zoom={10}
-                    style={{ height: "100%", width: "100%" }}
-                  >
-                    <TileLayer
-                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    />
-                    {addressDeliveryStats.filter(addr => addr.lat && addr.lng).map((addr) => (
-                      <Marker 
-                        key={addr.addressDigitalId} 
-                        position={[addr.lat!, addr.lng!]}
-                        icon={defaultIcon}
-                      >
-                        <Popup>
-                          <div className="p-1">
-                            <p className="font-semibold text-sm">{addr.addressDigitalId}</p>
-                            <p className="text-xs text-muted-foreground mb-2">{addr.textAddress || "Address"}</p>
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-xs">Credit Score:</span>
-                              <span className={`font-bold ${getCreditScoreColor(addr.creditScore)}`}>{addr.creditScore}</span>
-                            </div>
-                            <div className="text-xs">
-                              <span className="text-green-600">{addr.successfulDeliveries} delivered</span>
-                              {" / "}
-                              <span className="text-red-600">{addr.failedDeliveries} failed</span>
-                            </div>
-                          </div>
-                        </Popup>
-                      </Marker>
-                    ))}
-                  </MapContainer>
+                  {isMapLoaded ? (
+                    <GoogleMap
+                      mapContainerStyle={mapContainerStyle}
+                      center={{
+                        lat: addressDeliveryStats[0]?.lat || 24.7136,
+                        lng: addressDeliveryStats[0]?.lng || 46.6753
+                      }}
+                      zoom={10}
+                      options={mapOptions}
+                    >
+                      {addressDeliveryStats.filter(addr => addr.lat && addr.lng).map((addr) => (
+                        <Marker 
+                          key={addr.addressDigitalId} 
+                          position={{ lat: addr.lat!, lng: addr.lng! }}
+                          onClick={() => setSelectedCreditMarker(addr.addressDigitalId)}
+                        >
+                          {selectedCreditMarker === addr.addressDigitalId && (
+                            <InfoWindow onCloseClick={() => setSelectedCreditMarker(null)}>
+                              <div className="p-1">
+                                <p className="font-semibold text-sm">{addr.addressDigitalId}</p>
+                                <p className="text-xs text-gray-500 mb-2">{addr.textAddress || "Address"}</p>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="text-xs">Credit Score:</span>
+                                  <span className={`font-bold ${getCreditScoreColor(addr.creditScore)}`}>{addr.creditScore}</span>
+                                </div>
+                                <div className="text-xs">
+                                  <span className="text-green-600">{addr.successfulDeliveries} delivered</span>
+                                  {" / "}
+                                  <span className="text-red-600">{addr.failedDeliveries} failed</span>
+                                </div>
+                              </div>
+                            </InfoWindow>
+                          )}
+                        </Marker>
+                      ))}
+                    </GoogleMap>
+                  ) : (
+                    <div className="h-full flex items-center justify-center bg-muted">
+                      <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                    </div>
+                  )}
                 </div>
 
                 <Table>
@@ -1144,68 +1147,74 @@ export default function CompanyDashboard() {
             {deliveryHotspots?.points && deliveryHotspots.points.length > 0 ? (
               <div className="space-y-6">
                 <div className="h-[400px] rounded-lg overflow-hidden border">
-                  <MapContainer
-                    center={[
-                      deliveryHotspots.points[0]?.lat || 24.7136,
-                      deliveryHotspots.points[0]?.lng || 46.6753
-                    ]}
-                    zoom={11}
-                    style={{ height: "100%", width: "100%" }}
-                  >
-                    <TileLayer
-                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    />
-                    {deliveryHotspots.points.map((point) => {
-                      const totalDeliveries = point.completedCount + point.failedCount;
-                      const statusKey = getSuccessRateKey(point.successRate, totalDeliveries);
-                      return (
-                        <Marker 
-                          key={point.addressDigitalId} 
-                          position={[point.lat, point.lng]}
-                          icon={getHotspotIcon(point.successRate, totalDeliveries)}
-                        >
-                          <Popup>
-                            <div className="p-2 min-w-[200px]">
-                              <p className="font-semibold text-sm mb-1">{point.addressDigitalId}</p>
-                              <p className="text-xs text-muted-foreground mb-3">{point.textAddress || t("common.address")}</p>
-                              
-                              <div className="space-y-2">
-                                <div className="flex items-center justify-between text-xs">
-                                  <span className="text-muted-foreground">{t("dashboard.totalLookups")}:</span>
-                                  <span className="font-semibold text-blue-600">{point.lookupCount}</span>
-                                </div>
-                                <div className="flex items-center justify-between text-xs">
-                                  <span className="text-muted-foreground">{t("dashboard.completedDeliveries")}:</span>
-                                  <span className="font-semibold text-green-600">{point.completedCount}</span>
-                                </div>
-                                <div className="flex items-center justify-between text-xs">
-                                  <span className="text-muted-foreground">{t("dashboard.failedDeliveries")}:</span>
-                                  <span className="font-semibold text-red-600">{point.failedCount}</span>
-                                </div>
-                                <div className="flex items-center justify-between text-xs">
-                                  <span className="text-muted-foreground">{t("dashboard.successRate")}:</span>
-                                  <span className={`font-semibold ${statusKey.color}`}>{point.successRate}%</span>
-                                </div>
-                                <div className="flex items-center justify-between text-xs">
-                                  <span className="text-muted-foreground">{t("dashboard.status")}:</span>
-                                  <span className={`font-semibold ${statusKey.color}`}>
-                                    {t(`dashboard.${statusKey.key}`)}
-                                  </span>
-                                </div>
-                                {point.lastEventAt && (
-                                  <div className="flex items-center justify-between text-xs pt-1 border-t">
-                                    <span className="text-muted-foreground">{t("dashboard.lastActivity")}:</span>
-                                    <span className="text-muted-foreground">{new Date(point.lastEventAt).toLocaleDateString()}</span>
+                  {isMapLoaded ? (
+                    <GoogleMap
+                      mapContainerStyle={mapContainerStyle}
+                      center={{
+                        lat: deliveryHotspots.points[0]?.lat || 24.7136,
+                        lng: deliveryHotspots.points[0]?.lng || 46.6753
+                      }}
+                      zoom={11}
+                      options={mapOptions}
+                    >
+                      {deliveryHotspots.points.map((point) => {
+                        const totalDeliveries = point.completedCount + point.failedCount;
+                        const statusKey = getSuccessRateKey(point.successRate, totalDeliveries);
+                        return (
+                          <Marker 
+                            key={point.addressDigitalId} 
+                            position={{ lat: point.lat, lng: point.lng }}
+                            icon={getHotspotMarkerIcon(point.successRate, totalDeliveries)}
+                            onClick={() => setSelectedHotspotMarker(point.addressDigitalId)}
+                          >
+                            {selectedHotspotMarker === point.addressDigitalId && (
+                              <InfoWindow onCloseClick={() => setSelectedHotspotMarker(null)}>
+                                <div className="p-2 min-w-[200px]">
+                                  <p className="font-semibold text-sm mb-1">{point.addressDigitalId}</p>
+                                  <p className="text-xs text-gray-500 mb-3">{point.textAddress || t("common.address")}</p>
+                                  
+                                  <div className="space-y-2">
+                                    <div className="flex items-center justify-between text-xs">
+                                      <span className="text-gray-500">{t("dashboard.totalLookups")}:</span>
+                                      <span className="font-semibold text-blue-600">{point.lookupCount}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between text-xs">
+                                      <span className="text-gray-500">{t("dashboard.completedDeliveries")}:</span>
+                                      <span className="font-semibold text-green-600">{point.completedCount}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between text-xs">
+                                      <span className="text-gray-500">{t("dashboard.failedDeliveries")}:</span>
+                                      <span className="font-semibold text-red-600">{point.failedCount}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between text-xs">
+                                      <span className="text-gray-500">{t("dashboard.successRate")}:</span>
+                                      <span className={`font-semibold ${statusKey.color}`}>{point.successRate}%</span>
+                                    </div>
+                                    <div className="flex items-center justify-between text-xs">
+                                      <span className="text-gray-500">{t("dashboard.status")}:</span>
+                                      <span className={`font-semibold ${statusKey.color}`}>
+                                        {t(`dashboard.${statusKey.key}`)}
+                                      </span>
+                                    </div>
+                                    {point.lastEventAt && (
+                                      <div className="flex items-center justify-between text-xs pt-1 border-t">
+                                        <span className="text-gray-500">{t("dashboard.lastActivity")}:</span>
+                                        <span className="text-gray-500">{new Date(point.lastEventAt).toLocaleDateString()}</span>
+                                      </div>
+                                    )}
                                   </div>
-                                )}
-                              </div>
-                            </div>
-                          </Popup>
-                        </Marker>
-                      );
-                    })}
-                  </MapContainer>
+                                </div>
+                              </InfoWindow>
+                            )}
+                          </Marker>
+                        );
+                      })}
+                    </GoogleMap>
+                  ) : (
+                    <div className="h-full flex items-center justify-center bg-muted">
+                      <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                    </div>
+                  )}
                 </div>
 
                 {/* Legend */}

@@ -19,6 +19,10 @@ localPort = 5001
 externalPort = 3000
 
 [[ports]]
+localPort = 35287
+externalPort = 3003
+
+[[ports]]
 localPort = 36427
 externalPort = 3001
 
@@ -29,10 +33,6 @@ externalPort = 3002
 [[ports]]
 localPort = 40625
 externalPort = 4200
-
-[[ports]]
-localPort = 40907
-externalPort = 3003
 
 [env]
 PORT = "5000"
@@ -75,3 +75,4 @@ PAYMENT_API_URL = "https://pg-beta.api.elm.sa/payment/api/product/createpaymentr
 PAYMENT_APP_ID = "8ab5d791"
 PAYMENT_APP_KEY = "77a0e640a57cf7e166acfcb4645ddd8c"
 PAYMENT_CLIENT_KEY = "62E62894-F302-40CC-9F47-760B27BC7FBF"
+VITE_GOOGLE_MAPS_API_KEY = "AIzaSyC0WC4it2D_b4DMebFEoQ28yCzdvyPEaBI"

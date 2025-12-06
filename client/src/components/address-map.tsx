@@ -1,26 +1,26 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
-import L from "leaflet";
+import { GoogleMap, LoadScript, Marker, useJsApiLoader } from "@react-google-maps/api";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogHeader, DialogDescription } from "@/components/ui/dialog";
 import { Maximize2, Crosshair, MapPin, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-// Fix for default marker icon in Leaflet with Webpack/Vite
-import icon from "leaflet/dist/images/marker-icon.png";
-import iconShadow from "leaflet/dist/images/marker-shadow.png";
-
-let DefaultIcon = L.icon({
-  iconUrl: icon,
-  shadowUrl: iconShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-});
-
-L.Marker.prototype.options.icon = DefaultIcon;
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
 
 const DEFAULT_CENTER = { lat: 24.7136, lng: 46.6753 }; // Riyadh
+
+const mapContainerStyle = {
+  width: "100%",
+  height: "100%",
+};
+
+const mapOptions: google.maps.MapOptions = {
+  disableDefaultUI: true,
+  zoomControl: true,
+  streetViewControl: false,
+  mapTypeControl: false,
+  fullscreenControl: false,
+};
 
 interface AddressMapProps {
   onLocationSelect?: (lat: number, lng: number, address?: string) => void;
@@ -29,62 +29,18 @@ interface AddressMapProps {
   readOnly?: boolean;
 }
 
-// Helper to reverse geocode
 async function reverseGeocode(lat: number, lng: number): Promise<string | null> {
   try {
-    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, {
-      headers: {
-        'User-Agent': 'SecureDeliveryApp/1.0'
-      }
-    });
-    const data = await response.json();
-    return data.display_name || null;
+    const geocoder = new google.maps.Geocoder();
+    const response = await geocoder.geocode({ location: { lat, lng } });
+    if (response.results && response.results[0]) {
+      return response.results[0].formatted_address;
+    }
+    return null;
   } catch (error) {
     console.error("Geocoding error:", error);
     return null;
   }
-}
-
-// Component to handle map clicks and updates
-function LocationMarker({ 
-  position, 
-  setPosition, 
-  readOnly, 
-  onLocationSelect,
-  setLoadingAddress
-}: { 
-  position: { lat: number; lng: number } | null; 
-  setPosition: (pos: { lat: number; lng: number }) => void;
-  readOnly: boolean;
-  onLocationSelect?: (lat: number, lng: number, address?: string) => void;
-  setLoadingAddress: (loading: boolean) => void;
-}) {
-  const map = useMap();
-
-  useMapEvents({
-    click(e) {
-      if (readOnly) return;
-      const newPos = { lat: e.latlng.lat, lng: e.latlng.lng };
-      setPosition(newPos);
-      
-      if (onLocationSelect) {
-        setLoadingAddress(true);
-        reverseGeocode(newPos.lat, newPos.lng).then(address => {
-          onLocationSelect(newPos.lat, newPos.lng, address || undefined);
-          setLoadingAddress(false);
-        });
-      }
-    },
-  });
-
-  // Fly to position when it changes externally (e.g. geolocation)
-  useEffect(() => {
-    if (position) {
-      map.flyTo([position.lat, position.lng], map.getZoom());
-    }
-  }, [position, map]);
-
-  return position ? <Marker position={[position.lat, position.lng]} /> : null;
 }
 
 export function AddressMap({ onLocationSelect, initialLat, initialLng, readOnly = false }: AddressMapProps) {
@@ -95,9 +51,31 @@ export function AddressMap({ onLocationSelect, initialLat, initialLng, readOnly 
   const [isLocating, setIsLocating] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
   const [isLoadingAddress, setIsLoadingAddress] = useState(false);
-  const [key, setKey] = useState(0); // Force re-render map on resize/modal open
+  const mapRef = useRef<google.maps.Map | null>(null);
 
-  // Handle "Locate Me"
+  const { isLoaded, loadError } = useJsApiLoader({
+    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+  });
+
+  const handleMapClick = useCallback((e: google.maps.MapMouseEvent) => {
+    if (readOnly || !e.latLng) return;
+    
+    const newPos = { lat: e.latLng.lat(), lng: e.latLng.lng() };
+    setPosition(newPos);
+    
+    if (onLocationSelect) {
+      setIsLoadingAddress(true);
+      reverseGeocode(newPos.lat, newPos.lng).then(address => {
+        onLocationSelect(newPos.lat, newPos.lng, address || undefined);
+        setIsLoadingAddress(false);
+      });
+    }
+  }, [readOnly, onLocationSelect]);
+
+  const handleMapLoad = useCallback((map: google.maps.Map) => {
+    mapRef.current = map;
+  }, []);
+
   const handleCurrentLocation = (e?: React.MouseEvent) => {
     e?.stopPropagation();
     
@@ -115,6 +93,10 @@ export function AddressMap({ onLocationSelect, initialLat, initialLng, readOnly 
       (pos) => {
         const newPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         setPosition(newPos);
+        
+        if (mapRef.current) {
+          mapRef.current.panTo(newPos);
+        }
         
         if (onLocationSelect) {
           setIsLoadingAddress(true);
@@ -143,45 +125,44 @@ export function AddressMap({ onLocationSelect, initialLat, initialLng, readOnly 
     );
   };
 
-  // Force map resize when maximized
-  useEffect(() => {
-    if (isMaximized) {
-      setTimeout(() => {
-        window.dispatchEvent(new Event('resize'));
-        setKey(k => k + 1);
-      }, 100);
-    }
-  }, [isMaximized]);
+  if (loadError) {
+    return (
+      <div className="w-full h-64 rounded-lg border border-border shadow-sm overflow-hidden flex items-center justify-center bg-muted">
+        <p className="text-sm text-muted-foreground">Error loading map</p>
+      </div>
+    );
+  }
+
+  if (!isLoaded) {
+    return (
+      <div className="w-full h-64 rounded-lg border border-border shadow-sm overflow-hidden flex items-center justify-center bg-muted">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   const MapComponent = ({ className, controls = true }: { className?: string, controls?: boolean }) => (
     <div className={`relative w-full h-full bg-muted ${className}`}>
-      <MapContainer
-        key={key} // Force re-render to fix sizing issues in modals
+      <GoogleMap
+        mapContainerStyle={mapContainerStyle}
         center={position || DEFAULT_CENTER}
         zoom={13}
-        style={{ height: "100%", width: "100%", zIndex: 0 }}
-        scrollWheelZoom={!readOnly}
-        doubleClickZoom={!readOnly}
-        dragging={!readOnly}
-        zoomControl={false} // We'll add our own or rely on scroll
+        onClick={readOnly ? undefined : handleMapClick}
+        onLoad={handleMapLoad}
+        options={{
+          ...mapOptions,
+          draggable: !readOnly,
+          scrollwheel: !readOnly,
+          disableDoubleClickZoom: readOnly,
+        }}
       >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        
-        <LocationMarker 
-          position={position} 
-          setPosition={setPosition} 
-          readOnly={readOnly}
-          onLocationSelect={onLocationSelect}
-          setLoadingAddress={setIsLoadingAddress}
-        />
-      </MapContainer>
+        {position && (
+          <Marker position={position} />
+        )}
+      </GoogleMap>
 
-      {/* Controls Overlay */}
       {!readOnly && controls && (
-        <div className="absolute top-2 right-2 flex flex-col gap-2 z-[400]">
+        <div className="absolute top-2 right-2 flex flex-col gap-2 z-[10]">
           <Button 
             variant="secondary" 
             size="icon" 
@@ -214,8 +195,7 @@ export function AddressMap({ onLocationSelect, initialLat, initialLng, readOnly 
                 </DialogHeader>
                 <div className="flex-1 relative">
                   <MapComponent className="h-full rounded-none" controls={false} />
-                  {/* Floating locate button for maximized view */}
-                  <div className="absolute bottom-6 right-6 z-[500]">
+                  <div className="absolute bottom-6 right-6 z-[10]">
                     <Button 
                       size="lg" 
                       className="shadow-lg rounded-full"
@@ -237,7 +217,7 @@ export function AddressMap({ onLocationSelect, initialLat, initialLng, readOnly 
       )}
       
       {!readOnly && isLoadingAddress && (
-         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[400]">
+         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[10]">
             <span className="bg-background/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium shadow-sm flex items-center gap-2 border border-border">
                <Loader2 className="w-3 h-3 animate-spin" />
                Fetching address...
@@ -246,7 +226,7 @@ export function AddressMap({ onLocationSelect, initialLat, initialLng, readOnly 
       )}
 
       {!readOnly && !position && !isLoadingAddress && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-black/5 z-[400]">
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-black/5 z-[10]">
           <span className="bg-background/90 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium shadow-sm flex items-center gap-2">
             <MapPin className="w-4 h-4 text-primary" />
             Tap to set location
