@@ -1128,6 +1128,39 @@ export async function registerRoutes(httpServer: Server, app: Express) {
     }
   });
 
+  // Get pending delivery lookup for an address (for drivers accessing via static link)
+  app.get("/api/address/:digitalId/pending-lookup", async (req, res) => {
+    try {
+      const { digitalId } = req.params;
+      
+      // Find any pending lookup for this address
+      const pendingLookup = await storage.getPendingLookupByAddressDigitalId(digitalId);
+      
+      if (!pendingLookup) {
+        return res.json({ hasPendingLookup: false });
+      }
+
+      // Get the address for fallback contact info
+      const address = await storage.getAddressByDigitalId(digitalId);
+      const fallbackContacts = address ? await storage.getFallbackContactsByAddressId(address.id) : [];
+
+      res.json({
+        hasPendingLookup: true,
+        lookup: {
+          id: pendingLookup.id,
+          driverId: pendingLookup.driverId,
+          companyName: pendingLookup.companyName,
+          status: pendingLookup.status,
+          createdAt: pendingLookup.createdAt
+        },
+        hasAlternateLocations: fallbackContacts.length > 0
+      });
+    } catch (error) {
+      console.error("Check pending lookup error:", error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  });
+
   // --- Driver Address Lookup Routes (no auth, public for drivers) ---
 
   // Check if driver has pending feedback before allowing new lookup

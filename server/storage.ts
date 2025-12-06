@@ -75,6 +75,7 @@ export interface IStorage {
   createShipmentLookup(lookup: InsertShipmentLookup): Promise<ShipmentLookup>;
   getShipmentLookupById(id: number): Promise<ShipmentLookup | undefined>;
   getPendingFeedbackByDriver(driverId: string, companyName: string): Promise<ShipmentLookup | undefined>;
+  getPendingLookupByAddressDigitalId(addressDigitalId: string): Promise<ShipmentLookup | undefined>;
   updateShipmentLookupStatus(id: number, status: string): Promise<ShipmentLookup | undefined>;
   updateShipmentLookupDeliveryStatus(id: number, deliveryStatus: string): Promise<ShipmentLookup | undefined>;
   
@@ -490,6 +491,21 @@ export class DatabaseStorage implements IStorage {
     );
     
     return match || undefined;
+  }
+
+  async getPendingLookupByAddressDigitalId(addressDigitalId: string): Promise<ShipmentLookup | undefined> {
+    const [lookup] = await db
+      .select()
+      .from(shipmentLookups)
+      .where(
+        and(
+          eq(shipmentLookups.addressDigitalId, addressDigitalId),
+          eq(shipmentLookups.status, "pending_feedback")
+        )
+      )
+      .orderBy(desc(shipmentLookups.createdAt))
+      .limit(1);
+    return lookup || undefined;
   }
 
   async updateShipmentLookupStatus(id: number, status: string): Promise<ShipmentLookup | undefined> {

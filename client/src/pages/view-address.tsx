@@ -5,7 +5,7 @@ import QRCode from "react-qr-code";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Phone, MapPin, Clock, FileText, QrCode, Home, Building2, DoorOpen, Image, Truck, Package } from "lucide-react";
+import { Phone, MapPin, Clock, FileText, QrCode, Home, Building2, DoorOpen, Image, Truck, Package, AlertTriangle, Navigation } from "lucide-react";
 import { AddressMap } from "@/components/address-map";
 import { PageNavigation } from "@/components/page-navigation";
 import { LanguageSwitcher } from "@/components/language-switcher";
@@ -17,6 +17,12 @@ export default function ViewAddress() {
 
   const { data, isLoading, error } = useQuery<any>({
     queryKey: [`/api/address/${digitalId}`],
+    enabled: !!digitalId,
+    retry: false,
+  });
+
+  const { data: pendingLookupData } = useQuery<any>({
+    queryKey: [`/api/address/${digitalId}/pending-lookup`],
     enabled: !!digitalId,
     retry: false,
   });
@@ -213,6 +219,48 @@ export default function ViewAddress() {
               </div>
             )}
           </div>
+
+          {/* Driver Actions Section - Shows when there's a pending delivery */}
+          {pendingLookupData?.hasPendingLookup && (
+            <>
+              <Separator />
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm font-semibold text-primary uppercase tracking-wider">
+                  <Truck className="w-4 h-4" />
+                  {t('viewAddress.driverActions')}
+                </div>
+                <div className="p-4 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 rounded-lg border border-orange-200 dark:border-orange-800/50">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center shrink-0">
+                      <AlertTriangle className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-medium text-foreground mb-1">{t('viewAddress.deliveryIssue')}</h4>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        {t('viewAddress.deliveryIssueDesc')}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <Link href={`/driver-feedback/${pendingLookupData.lookup.id}`}>
+                          <Button data-testid="button-report-issue">
+                            <AlertTriangle className="w-4 h-4 me-2" />
+                            {t('viewAddress.reportDeliveryIssue')}
+                          </Button>
+                        </Link>
+                        {pendingLookupData.hasAlternateLocations && (
+                          <Link href={`/driver-feedback/${pendingLookupData.lookup.id}`}>
+                            <Button variant="outline" data-testid="button-get-alternate">
+                              <Navigation className="w-4 h-4 me-2" />
+                              {t('viewAddress.getAlternateLocation')}
+                            </Button>
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
 
           <Separator />
 

@@ -603,7 +603,12 @@
     "mainGate": "Main Gate",
     "flatDoor": "Flat Door",
     "noPhoto": "No photo",
-    "details": "Details"
+    "details": "Details",
+    "driverActions": "Driver Actions",
+    "deliveryIssue": "Having Trouble Delivering?",
+    "deliveryIssueDesc": "If you're unable to complete the delivery at this address, report the issue to access alternate drop locations.",
+    "reportDeliveryIssue": "Report Delivery Issue",
+    "getAlternateLocation": "Get Alternate Location"
   },
   "notFound": {
     "title": "404 - Page Not Found",

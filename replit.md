@@ -6,6 +6,9 @@ This is a full-stack web application for managing delivery registrations and add
 
 ## Recent Changes (December 2024)
 
+- **Static Link Driver Actions**: Drivers accessing addresses via static links (/view/:digitalId) now see a "Driver Actions" section when there's a pending delivery, with buttons to report delivery issues and access alternate drop locations
+- **Two-Stage Delivery Feedback Workflow**: Complete implementation of primary delivery feedback followed by alternate location request with full database linkage
+- Added new API endpoint: GET /api/address/:digitalId/pending-lookup for checking pending deliveries from static links
 - Updated home page with official Marri logo featuring 3D effects and intelligent floating particles
 - Feature cards now highlight actual platform capabilities:
   - Digital Address ID: QR codes for instant address lookup
