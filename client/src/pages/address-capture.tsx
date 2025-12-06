@@ -11,7 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Spinner } from "@/components/ui/spinner";
 import { Separator } from "@/components/ui/separator";
-import { Package, User, Smartphone, Globe, MapPin, AlertCircle, Phone, Clock, FileText, Image, Building2, DoorOpen, Home } from "lucide-react";
+import { Package, User, Smartphone, Globe, MapPin, AlertCircle, Phone, Clock, FileText, Image, Building2, DoorOpen, Home, AlertTriangle, Navigation, Truck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AddressMap } from "@/components/address-map";
 
@@ -381,6 +381,49 @@ export default function AddressCapture() {
                     <p className="text-foreground text-sm">{address.specialNote}</p>
                   </div>
                 )}
+              </div>
+
+              <Separator />
+
+              {/* Driver Actions Section */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm font-semibold text-primary uppercase tracking-wider">
+                  <Truck className="w-4 h-4" />
+                  Driver Actions
+                </div>
+                <div className="p-4 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 rounded-lg border border-orange-200 dark:border-orange-800/50">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center shrink-0">
+                      <AlertTriangle className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-medium text-foreground mb-1">Having Trouble Delivering?</h4>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        If you're unable to complete the delivery at this address, report the issue to access alternate drop locations.
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <Button 
+                          variant="destructive"
+                          onClick={() => setLocation(`/driver-feedback/${addressData.lookupId}`)}
+                          data-testid="button-report-issue"
+                        >
+                          <AlertTriangle className="w-4 h-4 me-2" />
+                          Report Delivery Issue
+                        </Button>
+                        {fallbackContacts && fallbackContacts.length > 0 && (
+                          <Button 
+                            variant="outline"
+                            onClick={() => setLocation(`/driver-feedback/${addressData.lookupId}`)}
+                            data-testid="button-get-alternate"
+                          >
+                            <Navigation className="w-4 h-4 me-2" />
+                            Get Alternate Location
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
