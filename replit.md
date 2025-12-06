@@ -1,8 +1,18 @@
-# Secure Delivery Registration System
+# Marri - Secure Delivery Registration System
 
 ## Overview
 
 This is a full-stack web application for managing delivery registrations and addresses. Users can register their profiles, add detailed delivery addresses with location data and photos, set delivery preferences, and manage fallback contacts. The system generates unique digital IDs for each address and provides QR codes for easy sharing with delivery services.
+
+## Recent Changes (December 2024)
+
+- Updated home page with official Marri logo featuring 3D effects and intelligent floating particles
+- Feature cards now highlight actual platform capabilities:
+  - Digital Address ID: QR codes for instant address lookup
+  - Driver Verification: Mandatory feedback system with credit scoring
+  - Delivery Hotspots: Interactive maps with success/failure rates
+- Enhanced company dashboard with gradient styling and polished stat cards
+- Custom CSS animations and glass-morphism effects for modern UI
 
 ## User Preferences
 

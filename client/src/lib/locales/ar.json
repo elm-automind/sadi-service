@@ -2,12 +2,12 @@
   "home": {
     "tagline": "الذكاء وراء كل عملية توصيل",
     "description": "إدارة عناوين ذكية مدعومة بالذكاء الاصطناعي. سجّل مرة واحدة، وصّل بشكل مثالي في كل مرة.",
-    "smartRouting": "توجيه ذكي",
-    "smartRoutingDesc": "ذكاء عناوين مدعوم بالذكاء الاصطناعي لتوصيل أسرع",
-    "preciseDelivery": "توصيل دقيق",
-    "preciseDeliveryDesc": "التحقق البصري يضمن النجاح من المحاولة الأولى",
-    "trustedNetwork": "شبكة موثوقة",
-    "trustedNetworkDesc": "سائقون معتمدون ومشاركة عناوين آمنة",
+    "digitalAddressId": "معرّف العنوان الرقمي",
+    "digitalAddressIdDesc": "رموز QR فريدة للبحث الفوري عن العناوين والتحقق منها",
+    "driverVerification": "التحقق من السائقين",
+    "driverVerificationDesc": "نظام ملاحظات إلزامي مع تقييم ائتماني لنتائج التوصيل",
+    "deliveryHotspots": "نقاط التوصيل الساخنة",
+    "deliveryHotspotsDesc": "خرائط تفاعلية تعرض معدلات النجاح وتحليلات التوصيل",
     "getStarted": "ابدأ الآن",
     "joinNetwork": "انضم لآلاف الشركات التي تحسّن توصيلاتها",
     "copyright": "جميع الحقوق محفوظة."

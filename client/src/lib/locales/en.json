@@ -2,12 +2,12 @@
   "home": {
     "tagline": "The Intelligence Behind Every Delivery",
     "description": "Smart address management powered by AI. Register once, deliver perfectly every time.",
-    "smartRouting": "Smart Routing",
-    "smartRoutingDesc": "AI-powered address intelligence for faster deliveries",
-    "preciseDelivery": "Precise Delivery",
-    "preciseDeliveryDesc": "Visual verification ensures first-attempt success",
-    "trustedNetwork": "Trusted Network",
-    "trustedNetworkDesc": "Verified drivers and secure address sharing",
+    "digitalAddressId": "Digital Address ID",
+    "digitalAddressIdDesc": "Unique QR codes for instant address lookup and verification",
+    "driverVerification": "Driver Verification",
+    "driverVerificationDesc": "Mandatory feedback system with credit scoring for delivery outcomes",
+    "deliveryHotspots": "Delivery Hotspots",
+    "deliveryHotspotsDesc": "Interactive maps showing success rates and delivery analytics",
     "getStarted": "Get Started",
     "joinNetwork": "Join thousands of businesses optimizing their deliveries",
     "copyright": "All rights reserved."

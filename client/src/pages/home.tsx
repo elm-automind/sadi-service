@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowRight, Zap, Target, Shield, MapPin, LogIn, Sparkles, CheckCircle, X, Truck, Package, Navigation, Clock, Star } from "lucide-react";
+import { ArrowRight, MapPin, LogIn, Sparkles, CheckCircle, X, Truck, Package, Navigation, Clock, Star, QrCode, UserCheck, Map } from "lucide-react";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useEffect, useState } from "react";
 import marriLogo from "@assets/image_1764984639532.png";
@@ -147,35 +147,23 @@ export default function Home() {
             <div className="absolute top-1/2 -right-3 w-2 h-2 bg-gradient-to-br from-purple-400 to-indigo-500 rounded-full shadow-lg shadow-purple-500/50 float-animation" style={{ animationDelay: '2s' }} />
           </div>
           
-          <div className="space-y-3">
-            <h1 className="text-6xl font-bold tracking-tight text-gradient-hero">
-              {isRTL ? 'مَرّي' : 'Marri'}
-            </h1>
-            
-            <p className="text-xl text-muted-foreground font-medium flex items-center justify-center gap-3">
-              <Sparkles className="w-5 h-5 text-amber-500" />
-              <span className="bg-gradient-to-r from-slate-600 to-slate-800 dark:from-slate-300 dark:to-slate-100 bg-clip-text text-transparent">
-                {t('home.tagline')}
-              </span>
-              <Sparkles className="w-5 h-5 text-amber-500" />
-            </p>
-            
+          <div className="space-y-3 mt-2">
             <p className="text-muted-foreground text-base max-w-md mx-auto leading-relaxed">
               {t('home.description')}
             </p>
           </div>
         </div>
 
-        {/* Feature Cards */}
+        {/* Feature Cards - Actual Platform Features */}
         <div className="grid grid-cols-1 gap-4 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100">
           <Card className="glass-card premium-card border-0 shadow-lg">
             <CardContent className="p-5 flex items-center gap-5 rtl-no-flip">
               <div className="p-3.5 icon-container-blue rounded-xl text-white">
-                <Zap className="w-6 h-6" />
+                <QrCode className="w-6 h-6" />
               </div>
               <div className="text-start flex-1">
-                <h3 className="font-semibold text-lg text-foreground">{t('home.smartRouting')}</h3>
-                <p className="text-sm text-muted-foreground">{t('home.smartRoutingDesc')}</p>
+                <h3 className="font-semibold text-lg text-foreground">{t('home.digitalAddressId')}</h3>
+                <p className="text-sm text-muted-foreground">{t('home.digitalAddressIdDesc')}</p>
               </div>
               <ArrowRight className="w-5 h-5 text-muted-foreground/40" />
             </CardContent>
@@ -184,11 +172,11 @@ export default function Home() {
           <Card className="glass-card premium-card border-0 shadow-lg">
             <CardContent className="p-5 flex items-center gap-5 rtl-no-flip">
               <div className="p-3.5 icon-container-green rounded-xl text-white">
-                <Target className="w-6 h-6" />
+                <UserCheck className="w-6 h-6" />
               </div>
               <div className="text-start flex-1">
-                <h3 className="font-semibold text-lg text-foreground">{t('home.preciseDelivery')}</h3>
-                <p className="text-sm text-muted-foreground">{t('home.preciseDeliveryDesc')}</p>
+                <h3 className="font-semibold text-lg text-foreground">{t('home.driverVerification')}</h3>
+                <p className="text-sm text-muted-foreground">{t('home.driverVerificationDesc')}</p>
               </div>
               <ArrowRight className="w-5 h-5 text-muted-foreground/40" />
             </CardContent>
@@ -197,11 +185,11 @@ export default function Home() {
           <Card className="glass-card premium-card border-0 shadow-lg">
             <CardContent className="p-5 flex items-center gap-5 rtl-no-flip">
               <div className="p-3.5 icon-container-purple rounded-xl text-white">
-                <Shield className="w-6 h-6" />
+                <Map className="w-6 h-6" />
               </div>
               <div className="text-start flex-1">
-                <h3 className="font-semibold text-lg text-foreground">{t('home.trustedNetwork')}</h3>
-                <p className="text-sm text-muted-foreground">{t('home.trustedNetworkDesc')}</p>
+                <h3 className="font-semibold text-lg text-foreground">{t('home.deliveryHotspots')}</h3>
+                <p className="text-sm text-muted-foreground">{t('home.deliveryHotspotsDesc')}</p>
               </div>
               <ArrowRight className="w-5 h-5 text-muted-foreground/40" />
             </CardContent>
