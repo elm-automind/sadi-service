@@ -586,5 +586,32 @@
     "verifying": "Verifying...",
     "verificationError": "Could not verify payment. Please try again.",
     "notYetCompleted": "Payment not yet completed. Please complete the payment first."
+  },
+  "map": {
+    "locateMe": "Locate Me",
+    "getDirections": "Get Directions",
+    "openInGoogleMaps": "Open in Google Maps",
+    "streetView": "Street View",
+    "shareLocation": "Share Location",
+    "copyCoordinates": "Copy Coordinates",
+    "share": "Share",
+    "linkCopied": "Link Copied",
+    "linkCopiedDesc": "Location link copied to clipboard",
+    "coordinatesCopied": "Coordinates Copied",
+    "maximizeMap": "Maximize Map",
+    "selectLocation": "Select Location",
+    "tapToPin": "Tap on the map to pin your precise delivery location.",
+    "confirmLocation": "Confirm Location",
+    "fetchingAddress": "Fetching address...",
+    "tapToSetLocation": "Tap to set location",
+    "error": "Error",
+    "geolocationNotSupported": "Geolocation is not supported by your browser",
+    "locationUpdated": "Location Updated",
+    "coordinatesUpdated": "Coordinates updated",
+    "centeredOnLocation": "Map centered on your current location",
+    "locationError": "Location Error",
+    "enablePermissions": "Could not fetch your location. Please enable permissions.",
+    "errorLoading": "Error loading map",
+    "checkLocation": "Check out this delivery location"
   }
 }

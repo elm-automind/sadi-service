@@ -586,5 +586,32 @@
     "verifying": "جاري التحقق...",
     "verificationError": "تعذر التحقق من الدفع. يرجى المحاولة مرة أخرى.",
     "notYetCompleted": "لم يتم إتمام الدفع بعد. يرجى إكمال الدفع أولاً."
+  },
+  "map": {
+    "locateMe": "حدد موقعي",
+    "getDirections": "الاتجاهات",
+    "openInGoogleMaps": "فتح في خرائط جوجل",
+    "streetView": "التجوّل الافتراضي",
+    "shareLocation": "مشاركة الموقع",
+    "copyCoordinates": "نسخ الإحداثيات",
+    "share": "مشاركة",
+    "linkCopied": "تم نسخ الرابط",
+    "linkCopiedDesc": "تم نسخ رابط الموقع إلى الحافظة",
+    "coordinatesCopied": "تم نسخ الإحداثيات",
+    "maximizeMap": "تكبير الخريطة",
+    "selectLocation": "اختر الموقع",
+    "tapToPin": "اضغط على الخريطة لتحديد موقع التسليم بدقة.",
+    "confirmLocation": "تأكيد الموقع",
+    "fetchingAddress": "جاري جلب العنوان...",
+    "tapToSetLocation": "اضغط لتحديد الموقع",
+    "error": "خطأ",
+    "geolocationNotSupported": "تحديد الموقع غير مدعوم في متصفحك",
+    "locationUpdated": "تم تحديث الموقع",
+    "coordinatesUpdated": "تم تحديث الإحداثيات",
+    "centeredOnLocation": "تم توسيط الخريطة على موقعك الحالي",
+    "locationError": "خطأ في الموقع",
+    "enablePermissions": "تعذر الحصول على موقعك. يرجى تفعيل الصلاحيات.",
+    "errorLoading": "خطأ في تحميل الخريطة",
+    "checkLocation": "تحقق من موقع التسليم هذا"
   }
 }

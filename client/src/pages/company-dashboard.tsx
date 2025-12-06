@@ -7,7 +7,8 @@ import { z } from "zod";
 import { useTranslation } from "react-i18next";
 import { 
   Building2, LogOut, Package, Users, TrendingUp, 
-  MapPin, CreditCard, Edit2, Check, Loader2, Plus, Trash2, UserCog, Upload, Star, AlertTriangle, CheckCircle2
+  MapPin, CreditCard, Edit2, Check, Loader2, Plus, Trash2, UserCog, Upload, Star, AlertTriangle, CheckCircle2,
+  Navigation, ExternalLink
 } from "lucide-react";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { SarSymbol } from "@/components/sar-symbol";
@@ -1024,17 +1025,33 @@ export default function CompanyDashboard() {
                         >
                           {selectedCreditMarker === addr.addressDigitalId && (
                             <InfoWindow onCloseClick={() => setSelectedCreditMarker(null)}>
-                              <div className="p-1">
+                              <div className="p-1 min-w-[180px]">
                                 <p className="font-semibold text-sm">{addr.addressDigitalId}</p>
                                 <p className="text-xs text-gray-500 mb-2">{addr.textAddress || "Address"}</p>
                                 <div className="flex items-center gap-2 mb-1">
                                   <span className="text-xs">Credit Score:</span>
                                   <span className={`font-bold ${getCreditScoreColor(addr.creditScore)}`}>{addr.creditScore}</span>
                                 </div>
-                                <div className="text-xs">
+                                <div className="text-xs mb-3">
                                   <span className="text-green-600">{addr.successfulDeliveries} delivered</span>
                                   {" / "}
                                   <span className="text-red-600">{addr.failedDeliveries} failed</span>
+                                </div>
+                                <div className="flex gap-1 border-t pt-2">
+                                  <button 
+                                    className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                                    onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${addr.lat},${addr.lng}`, '_blank')}
+                                  >
+                                    <Navigation className="w-3 h-3" />
+                                    {t("map.getDirections")}
+                                  </button>
+                                  <button 
+                                    className="flex items-center justify-center p-1.5 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+                                    onClick={() => window.open(`https://www.google.com/maps?q=${addr.lat},${addr.lng}`, '_blank')}
+                                    title={t("map.openInGoogleMaps")}
+                                  >
+                                    <ExternalLink className="w-3.5 h-3.5" />
+                                  </button>
                                 </div>
                               </div>
                             </InfoWindow>
@@ -1202,6 +1219,22 @@ export default function CompanyDashboard() {
                                         <span className="text-gray-500">{new Date(point.lastEventAt).toLocaleDateString()}</span>
                                       </div>
                                     )}
+                                  </div>
+                                  <div className="flex gap-1 border-t mt-3 pt-2">
+                                    <button 
+                                      className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                                      onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${point.lat},${point.lng}`, '_blank')}
+                                    >
+                                      <Navigation className="w-3 h-3" />
+                                      {t("map.getDirections")}
+                                    </button>
+                                    <button 
+                                      className="flex items-center justify-center p-1.5 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+                                      onClick={() => window.open(`https://www.google.com/maps?q=${point.lat},${point.lng}`, '_blank')}
+                                      title={t("map.openInGoogleMaps")}
+                                    >
+                                      <ExternalLink className="w-3.5 h-3.5" />
+                                    </button>
                                   </div>
                                 </div>
                               </InfoWindow>
