@@ -27,16 +27,16 @@ localPort = 40375
 externalPort = 3002
 
 [[ports]]
-localPort = 40399
-externalPort = 5000
-
-[[ports]]
 localPort = 40625
 externalPort = 4200
 
 [[ports]]
 localPort = 45539
 externalPort = 3003
+
+[[ports]]
+localPort = 46689
+externalPort = 5000
 
 [env]
 PORT = "5000"
@@ -79,7 +79,7 @@ PAYMENT_API_URL = "https://pg-beta.api.elm.sa/payment/api/product/createpaymentr
 PAYMENT_APP_ID = "8ab5d791"
 PAYMENT_APP_KEY = "77a0e640a57cf7e166acfcb4645ddd8c"
 PAYMENT_CLIENT_KEY = "62E62894-F302-40CC-9F47-760B27BC7FBF"
-VITE_GOOGLE_MAPS_API_KEY = "AIzaSyC0WC4it2D_b4DMebFEoQ28yCzdvyPEaBI"
+VITE_GOOGLE_MAPS_API_KEY = "AIzaSyC2wsA9Unfje_Iiyui89VJgQE9USQXfEpw"
 
 [userenv.production]
 APP_BASE_URL = "https://marri.automind-squad.bp.elmhakathon.com"
