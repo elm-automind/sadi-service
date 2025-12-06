@@ -206,6 +206,12 @@ export default function DriverFeedback() {
         title: t('feedback.feedbackSubmitted'),
         description: t('feedback.thankYouFeedback'),
       });
+      // Redirect back to static link after successful feedback
+      if (lookupData?.address?.digitalId) {
+        setTimeout(() => {
+          setLocation(`/view/${lookupData.address.digitalId}`);
+        }, 2000);
+      }
     },
     onError: (error: Error) => {
       toast({
@@ -239,6 +245,12 @@ export default function DriverFeedback() {
         title: t('feedback.feedbackSubmitted'),
         description: t('feedback.thankYouFeedback'),
       });
+      // Redirect back to static link after successful feedback
+      if (lookupData?.address?.digitalId) {
+        setTimeout(() => {
+          setLocation(`/view/${lookupData.address.digitalId}`);
+        }, 2000);
+      }
     },
     onError: (error: Error) => {
       toast({

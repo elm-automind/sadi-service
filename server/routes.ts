@@ -1318,7 +1318,16 @@ export async function registerRoutes(httpServer: Server, app: Express) {
         lookup,
         address: address ? {
           label: address.label,
-          textAddress: address.textAddress
+          textAddress: address.textAddress,
+          digitalId: address.digitalId,
+          lat: address.lat,
+          lng: address.lng,
+          photoBuilding: address.photoBuilding,
+          photoGate: address.photoGate,
+          photoDoor: address.photoDoor,
+          preferredTime: address.preferredTime,
+          fallbackOption: address.fallbackOption,
+          specialNote: address.specialNote
         } : null
       });
     } catch (error) {
