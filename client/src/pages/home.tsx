@@ -174,22 +174,22 @@ export default function Home() {
                   <Star className="w-5 h-5 fill-current" />
                   <Star className="w-5 h-5 fill-current" />
                 </div>
-                <p className="text-sm text-muted-foreground">5.0 {isRTL ? 'تقييم' : 'Rating'}</p>
+                <p className="text-sm text-muted-foreground">5.0 {t('home.rating')}</p>
               </div>
               <div className="space-y-2">
                 <p className="text-3xl font-bold text-foreground">99.5%</p>
-                <p className="text-sm text-muted-foreground">{isRTL ? 'نجاح التوصيل' : 'Delivery Success'}</p>
+                <p className="text-sm text-muted-foreground">{t('home.deliverySuccess')}</p>
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-center gap-2">
                   <Clock className="w-5 h-5 text-green-500" />
                   <span className="text-3xl font-bold text-foreground">2x</span>
                 </div>
-                <p className="text-sm text-muted-foreground">{isRTL ? 'توصيل أسرع' : 'Faster Delivery'}</p>
+                <p className="text-sm text-muted-foreground">{t('home.fasterDelivery')}</p>
               </div>
               <div className="space-y-2">
                 <p className="text-3xl font-bold text-foreground">50K+</p>
-                <p className="text-sm text-muted-foreground">{isRTL ? 'عناوين مسجلة' : 'Registered Addresses'}</p>
+                <p className="text-sm text-muted-foreground">{t('home.registeredAddresses')}</p>
               </div>
             </div>
           </div>
@@ -201,10 +201,10 @@ export default function Home() {
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              {isRTL ? 'لماذا تختار مَرّي؟' : 'Why Choose Marri?'}
+              {t('home.whyChooseMarri')}
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              {isRTL ? 'منصة ذكية تُحوّل كيفية إدارة التوصيلات' : 'An intelligent platform transforming how deliveries are managed'}
+              {t('home.platformDescription')}
             </p>
           </div>
           
@@ -247,10 +247,10 @@ export default function Home() {
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              {isRTL ? 'كيف يعمل' : 'How It Works'}
+              {t('home.howItWorks')}
             </h2>
             <p className="text-lg text-muted-foreground">
-              {isRTL ? 'ثلاث خطوات بسيطة للبدء' : 'Three simple steps to get started'}
+              {t('home.threeSteps')}
             </p>
           </div>
           
@@ -260,10 +260,10 @@ export default function Home() {
                 1
               </div>
               <h3 className="text-lg font-semibold text-foreground">
-                {isRTL ? 'سجّل عنوانك' : 'Register Your Address'}
+                {t('home.registerAddress')}
               </h3>
               <p className="text-muted-foreground text-sm">
-                {isRTL ? 'أضف عنوانك مع الصور والإحداثيات للتوصيل الدقيق' : 'Add your address with photos and coordinates for precise delivery'}
+                {t('home.registerAddressDesc')}
               </p>
             </div>
             
@@ -272,10 +272,10 @@ export default function Home() {
                 2
               </div>
               <h3 className="text-lg font-semibold text-foreground">
-                {isRTL ? 'احصل على معرّفك الرقمي' : 'Get Your Digital ID'}
+                {t('home.getDigitalId')}
               </h3>
               <p className="text-muted-foreground text-sm">
-                {isRTL ? 'احصل على رمز QR فريد لمشاركته مع خدمات التوصيل' : 'Receive a unique QR code to share with delivery services'}
+                {t('home.getDigitalIdDesc')}
               </p>
             </div>
             
@@ -284,10 +284,10 @@ export default function Home() {
                 3
               </div>
               <h3 className="text-lg font-semibold text-foreground">
-                {isRTL ? 'استلم بثقة' : 'Receive With Confidence'}
+                {t('home.receiveConfidence')}
               </h3>
               <p className="text-muted-foreground text-sm">
-                {isRTL ? 'يجد السائقون عنوانك بسهولة وتقدم ملاحظاتك' : 'Drivers find your address easily and you provide feedback'}
+                {t('home.receiveConfidenceDesc')}
               </p>
             </div>
           </div>
@@ -299,10 +299,10 @@ export default function Home() {
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              {isRTL ? 'للجميع' : 'For Everyone'}
+              {t('home.forEveryone')}
             </h2>
             <p className="text-lg text-muted-foreground">
-              {isRTL ? 'سواء كنت فردًا أو شركة توصيل' : 'Whether you\'re an individual or a delivery company'}
+              {t('home.forEveryoneDesc')}
             </p>
           </div>
           
@@ -316,10 +316,10 @@ export default function Home() {
                     </div>
                     <div>
                       <h3 className="text-xl font-semibold text-foreground">
-                        {isRTL ? 'للأفراد' : 'For Individuals'}
+                        {t('home.forIndividuals')}
                       </h3>
                       <p className="text-sm text-muted-foreground">
-                        {isRTL ? 'عناوين توصيل شخصية' : 'Personal delivery addresses'}
+                        {t('home.personalAddresses')}
                       </p>
                     </div>
                   </div>
@@ -327,19 +327,19 @@ export default function Home() {
                 <div className="p-6 space-y-3">
                   <div className="flex items-center gap-3">
                     <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                    <span className="text-sm text-muted-foreground">{isRTL ? 'سجّل عناوين متعددة' : 'Register multiple addresses'}</span>
+                    <span className="text-sm text-muted-foreground">{t('home.registerMultiple')}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                    <span className="text-sm text-muted-foreground">{isRTL ? 'أضف جهات اتصال بديلة' : 'Add fallback contacts'}</span>
+                    <span className="text-sm text-muted-foreground">{t('home.addFallback')}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                    <span className="text-sm text-muted-foreground">{isRTL ? 'حدد تفضيلات التوصيل' : 'Set delivery preferences'}</span>
+                    <span className="text-sm text-muted-foreground">{t('home.setPreferences')}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                    <span className="text-sm text-muted-foreground">{isRTL ? 'شارك عبر رمز QR' : 'Share via QR code'}</span>
+                    <span className="text-sm text-muted-foreground">{t('home.shareQr')}</span>
                   </div>
                 </div>
               </CardContent>
@@ -354,10 +354,10 @@ export default function Home() {
                     </div>
                     <div>
                       <h3 className="text-xl font-semibold text-foreground">
-                        {isRTL ? 'للشركات' : 'For Companies'}
+                        {t('home.forCompanies')}
                       </h3>
                       <p className="text-sm text-muted-foreground">
-                        {isRTL ? 'شركات الخدمات اللوجستية والتوصيل' : 'Logistics & delivery companies'}
+                        {t('home.logisticsCompanies')}
                       </p>
                     </div>
                   </div>
@@ -365,19 +365,19 @@ export default function Home() {
                 <div className="p-6 space-y-3">
                   <div className="flex items-center gap-3">
                     <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                    <span className="text-sm text-muted-foreground">{isRTL ? 'لوحة تحكم الشركة' : 'Company dashboard'}</span>
+                    <span className="text-sm text-muted-foreground">{t('home.companyDashboard')}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                    <span className="text-sm text-muted-foreground">{isRTL ? 'إدارة السائقين' : 'Driver management'}</span>
+                    <span className="text-sm text-muted-foreground">{t('home.driverManagement')}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                    <span className="text-sm text-muted-foreground">{isRTL ? 'تحليلات التوصيل' : 'Delivery analytics'}</span>
+                    <span className="text-sm text-muted-foreground">{t('home.deliveryAnalytics')}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                    <span className="text-sm text-muted-foreground">{isRTL ? 'خطط اشتراك مرنة' : 'Flexible subscription plans'}</span>
+                    <span className="text-sm text-muted-foreground">{t('home.flexiblePlans')}</span>
                   </div>
                 </div>
               </CardContent>
@@ -391,7 +391,7 @@ export default function Home() {
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              {isRTL ? 'مدعوم بالتقنية' : 'Powered by Technology'}
+              {t('home.poweredByTech')}
             </h2>
           </div>
           
@@ -400,25 +400,25 @@ export default function Home() {
               <div className="w-12 h-12 mx-auto rounded-xl bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/40 dark:to-blue-800/40 flex items-center justify-center">
                 <Globe className="w-6 h-6 text-blue-600 dark:text-blue-400" />
               </div>
-              <p className="text-sm font-medium text-foreground">{isRTL ? 'تحديد المواقع' : 'GPS Location'}</p>
+              <p className="text-sm font-medium text-foreground">{t('home.gpsLocation')}</p>
             </div>
             <div className="text-center space-y-3 p-4">
               <div className="w-12 h-12 mx-auto rounded-xl bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900/40 dark:to-green-800/40 flex items-center justify-center">
                 <Smartphone className="w-6 h-6 text-green-600 dark:text-green-400" />
               </div>
-              <p className="text-sm font-medium text-foreground">{isRTL ? 'رموز QR' : 'QR Codes'}</p>
+              <p className="text-sm font-medium text-foreground">{t('home.qrCodes')}</p>
             </div>
             <div className="text-center space-y-3 p-4">
               <div className="w-12 h-12 mx-auto rounded-xl bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900/40 dark:to-purple-800/40 flex items-center justify-center">
                 <BarChart3 className="w-6 h-6 text-purple-600 dark:text-purple-400" />
               </div>
-              <p className="text-sm font-medium text-foreground">{isRTL ? 'التحليلات' : 'Analytics'}</p>
+              <p className="text-sm font-medium text-foreground">{t('home.analytics')}</p>
             </div>
             <div className="text-center space-y-3 p-4">
               <div className="w-12 h-12 mx-auto rounded-xl bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900/40 dark:to-orange-800/40 flex items-center justify-center">
                 <Shield className="w-6 h-6 text-orange-600 dark:text-orange-400" />
               </div>
-              <p className="text-sm font-medium text-foreground">{isRTL ? 'آمن' : 'Secure'}</p>
+              <p className="text-sm font-medium text-foreground">{t('home.secure')}</p>
             </div>
           </div>
         </div>
@@ -429,7 +429,7 @@ export default function Home() {
         <div className="max-w-3xl mx-auto text-center">
           <div className="glass-card rounded-3xl p-10 shadow-xl bg-gradient-to-br from-blue-500/5 to-indigo-500/5">
             <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              {isRTL ? 'ابدأ اليوم' : 'Get Started Today'}
+              {t('home.getStartedToday')}
             </h2>
             <p className="text-lg text-muted-foreground mb-8">
               {t('home.joinNetwork')}
@@ -455,7 +455,7 @@ export default function Home() {
             <img src={marriLogo} alt="Marri" className="w-8 h-8 rounded-lg" />
           </div>
           <p className="text-sm text-muted-foreground">
-            &copy; 2025 {isRTL ? 'مَرّي' : 'Marri'}. {t('home.copyright')}
+            &copy; 2025 {t('home.brandName')}. {t('home.copyright')}
           </p>
         </div>
       </footer>
