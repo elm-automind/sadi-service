@@ -6,6 +6,7 @@ import { Resend } from "resend";
 import { storage } from "./storage";
 import { generateInvoice } from "./billing";
 import { createPaymentRequest, inquirePaymentRequest } from "./payment";
+import { validateAllImages } from "./image-validation";
 import { 
   insertUserSchema, insertAddressSchema, insertFallbackContactSchema, 
   companyRegistrationSchema, companyAddressFormSchema, subscriptionFormSchema, driverFormSchema, bulkDriverSchema,
@@ -314,6 +315,24 @@ export async function registerRoutes(httpServer: Server, app: Express) {
       const existingAddresses = await storage.getAddressesByUserId(req.session.userId!);
       const isFirstAddress = existingAddresses.length === 0;
 
+      // Validate images using AI before creating address
+      const { photoBuilding, photoGate, photoDoor } = req.body;
+      if (photoBuilding || photoGate || photoDoor) {
+        const imageValidation = await validateAllImages({
+          building: photoBuilding,
+          gate: photoGate,
+          door: photoDoor,
+        });
+
+        if (!imageValidation.isValid) {
+          return res.status(400).json({ 
+            message: "Image validation failed", 
+            errors: imageValidation.errors,
+            details: imageValidation.details
+          });
+        }
+      }
+
       const addressData = insertAddressSchema.parse({
         ...req.body,
         userId: req.session.userId,
@@ -327,6 +346,7 @@ export async function registerRoutes(httpServer: Server, app: Express) {
       if (error instanceof z.ZodError) {
         res.status(400).json({ message: "Validation Error", errors: error.errors });
       } else {
+        console.error("Create address error:", error);
         res.status(500).json({ message: "Internal Server Error" });
       }
     }
@@ -361,13 +381,36 @@ export async function registerRoutes(httpServer: Server, app: Express) {
   });
 
   app.patch("/api/addresses/:id", requireAuth, async (req, res) => {
-    const addressId = parseInt(req.params.id);
-    const updates = req.body;
-    
-    const updated = await storage.updateAddress(addressId, updates);
-    if (!updated) return res.status(404).json({ message: "Address not found" });
-    
-    res.json(updated);
+    try {
+      const addressId = parseInt(req.params.id);
+      const updates = req.body;
+
+      // Validate images using AI if any are being updated
+      const { photoBuilding, photoGate, photoDoor } = updates;
+      if (photoBuilding || photoGate || photoDoor) {
+        const imageValidation = await validateAllImages({
+          building: photoBuilding,
+          gate: photoGate,
+          door: photoDoor,
+        });
+
+        if (!imageValidation.isValid) {
+          return res.status(400).json({ 
+            message: "Image validation failed", 
+            errors: imageValidation.errors,
+            details: imageValidation.details
+          });
+        }
+      }
+      
+      const updated = await storage.updateAddress(addressId, updates);
+      if (!updated) return res.status(404).json({ message: "Address not found" });
+      
+      res.json(updated);
+    } catch (error) {
+      console.error("Update address error:", error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
   });
 
   app.delete("/api/addresses/:id", requireAuth, async (req, res) => {

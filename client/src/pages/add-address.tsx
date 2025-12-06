@@ -222,11 +222,27 @@ export default function AddAddress() {
       setLocation(`/view/${data.digitalId}`);
     },
     onError: (error: any) => {
-      toast({
-        variant: "destructive",
-        title: t('errors.somethingWentWrong'),
-        description: error.message || t('errors.somethingWentWrong')
-      });
+      // Check for image validation errors
+      if (error.errors && Array.isArray(error.errors)) {
+        const errorMessages = error.errors.map((e: any) => {
+          if (e.field === 'photoBuilding') return t('imageValidation.buildingInvalid');
+          if (e.field === 'photoGate') return t('imageValidation.gateInvalid');
+          if (e.field === 'photoDoor') return t('imageValidation.doorInvalid');
+          return e.message;
+        }).join('. ');
+        
+        toast({
+          variant: "destructive",
+          title: t('imageValidation.validationFailed'),
+          description: errorMessages || t('imageValidation.pleaseUploadGenuine')
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: t('errors.somethingWentWrong'),
+          description: error.message || t('errors.somethingWentWrong')
+        });
+      }
     }
   });
 

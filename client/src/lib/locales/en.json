@@ -638,6 +638,15 @@
     "evening": "Evening",
     "selectTimePeriod": "Please select a time period"
   },
+  "imageValidation": {
+    "validationFailed": "Image Validation Failed",
+    "buildingInvalid": "The building photo does not appear to be a valid building image",
+    "gateInvalid": "The gate photo does not appear to be a valid gate image",
+    "doorInvalid": "The door photo does not appear to be a valid door image",
+    "pleaseUploadGenuine": "Please upload genuine photos of your address",
+    "validating": "Validating images...",
+    "validated": "Images validated successfully"
+  },
   "voice": {
     "permissionDenied": "Microphone Access Denied",
     "permissionDeniedDesc": "Please allow microphone access in your browser settings to use voice input.",

@@ -638,6 +638,15 @@
     "evening": "مساءً",
     "selectTimePeriod": "يرجى اختيار فترة زمنية"
   },
+  "imageValidation": {
+    "validationFailed": "فشل التحقق من الصورة",
+    "buildingInvalid": "صورة المبنى لا تبدو صورة مبنى صالحة",
+    "gateInvalid": "صورة البوابة لا تبدو صورة بوابة صالحة",
+    "doorInvalid": "صورة الباب لا تبدو صورة باب صالحة",
+    "pleaseUploadGenuine": "يرجى رفع صور حقيقية لعنوانك",
+    "validating": "جاري التحقق من الصور...",
+    "validated": "تم التحقق من الصور بنجاح"
+  },
   "voice": {
     "permissionDenied": "تم رفض الوصول للميكروفون",
     "permissionDeniedDesc": "يرجى السماح بالوصول للميكروفون في إعدادات المتصفح لاستخدام الإدخال الصوتي.",
