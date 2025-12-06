@@ -8,7 +8,6 @@ import {
   UserPlus, Phone, Navigation, Calendar, Trash2, Star, Truck, Package
 } from "lucide-react";
 import { LanguageSwitcher } from "@/components/language-switcher";
-import marriLogo from "@assets/image_1764984639532.png";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
