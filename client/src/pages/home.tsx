@@ -2,12 +2,72 @@ import { Link } from "wouter";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowRight, Brain, Zap, Target, Shield, MapPin, LogIn, Sparkles } from "lucide-react";
+import { ArrowRight, Brain, Zap, Target, Shield, MapPin, LogIn, Sparkles, CheckCircle, X } from "lucide-react";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { useEffect, useState } from "react";
 
 export default function Home() {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === 'ar';
+  const [isPaymentRedirect, setIsPaymentRedirect] = useState(false);
+
+  useEffect(() => {
+    // Check if this is a payment gateway redirect (has ?data= parameter)
+    const urlParams = new URLSearchParams(window.location.search);
+    const dataParam = urlParams.get('data');
+    
+    if (dataParam) {
+      // This is a payment redirect - show success page
+      setIsPaymentRedirect(true);
+      
+      // Signal to other windows/tabs that payment is complete
+      localStorage.setItem("paymentCompleted", Date.now().toString());
+      sessionStorage.setItem("paymentCompleted", Date.now().toString());
+    }
+  }, []);
+
+  const handleCloseWindow = () => {
+    window.close();
+  };
+
+  // Show payment success page if this is a payment redirect
+  if (isPaymentRedirect) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-green-50 to-background dark:from-green-950/20 dark:to-background flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
+          <CardContent className="pt-8 pb-6 text-center">
+            <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+              <CheckCircle className="w-12 h-12 text-green-600 dark:text-green-400" />
+            </div>
+            
+            <h1 className="text-2xl font-bold text-foreground mb-2">
+              {t('payment.success')}
+            </h1>
+            
+            <p className="text-muted-foreground mb-6">
+              {t('payment.successMessage')}
+            </p>
+            
+            <div className="bg-muted/50 rounded-lg p-4 mb-6">
+              <p className="text-sm text-muted-foreground">
+                {t('payment.canCloseWindow')}
+              </p>
+            </div>
+            
+            <Button 
+              onClick={handleCloseWindow}
+              size="lg"
+              className="w-full"
+              data-testid="button-close-window"
+            >
+              <X className="w-4 h-4 mr-2" />
+              {t('payment.closeWindow')}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-primary/5 flex flex-col items-center justify-center p-4 relative overflow-hidden">

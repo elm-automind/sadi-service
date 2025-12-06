@@ -595,7 +595,9 @@
     "completeInNewWindow": "يرجى إكمال الدفع في النافذة الجديدة. ستُحدث هذه الصفحة تلقائياً بمجرد تأكيد الدفع.",
     "autoDetectWhenComplete": "سنكتشف تلقائياً عند اكتمال الدفع.",
     "windowClosedAccidentally": "أُغلقت النافذة بالخطأ؟",
-    "reopenPaymentWindow": "إعادة فتح نافذة الدفع"
+    "reopenPaymentWindow": "إعادة فتح نافذة الدفع",
+    "canCloseWindow": "يمكنك إغلاق هذه النافذة الآن بأمان. ستُحدث لوحة التحكم تلقائياً.",
+    "closeWindow": "إغلاق النافذة"
   },
   "map": {
     "locateMe": "حدد موقعي",

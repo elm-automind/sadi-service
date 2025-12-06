@@ -595,7 +595,9 @@
     "completeInNewWindow": "Please complete your payment in the new window. This page will automatically update once your payment is confirmed.",
     "autoDetectWhenComplete": "We'll automatically detect when your payment is complete.",
     "windowClosedAccidentally": "Window closed accidentally?",
-    "reopenPaymentWindow": "Reopen Payment Window"
+    "reopenPaymentWindow": "Reopen Payment Window",
+    "canCloseWindow": "You can safely close this window now. Your dashboard will update automatically.",
+    "closeWindow": "Close Window"
   },
   "map": {
     "locateMe": "Locate Me",

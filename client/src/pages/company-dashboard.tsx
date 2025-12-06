@@ -240,6 +240,37 @@ export default function CompanyDashboard() {
       }
       queryClient.invalidateQueries({ queryKey: ["/api/company/subscription"] });
     }
+
+    // Listen for payment completion from popup window via localStorage
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === "paymentCompleted" && event.newValue) {
+        // Payment completed in another window!
+        setShowPaymentSuccess(true);
+        localStorage.removeItem("paymentCompleted");
+        sessionStorage.removeItem("paymentInProgress");
+        queryClient.invalidateQueries({ queryKey: ["/api/company/subscription"] });
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    
+    // Also check on window focus in case user returns to this tab
+    const handleFocus = () => {
+      const completed = localStorage.getItem("paymentCompleted");
+      if (completed) {
+        setShowPaymentSuccess(true);
+        localStorage.removeItem("paymentCompleted");
+        sessionStorage.removeItem("paymentInProgress");
+        queryClient.invalidateQueries({ queryKey: ["/api/company/subscription"] });
+      }
+    };
+
+    window.addEventListener("focus", handleFocus);
+    
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("focus", handleFocus);
+    };
   }, [queryClient]);
 
   const { data: user, isLoading } = useQuery<User>({
