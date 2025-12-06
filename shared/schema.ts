@@ -163,7 +163,7 @@ export const shipmentLookups = pgTable("shipment_lookups", {
 
 export const driverFeedback = pgTable("driver_feedback", {
   id: serial("id").primaryKey(),
-  shipmentLookupId: integer("shipment_lookup_id").notNull().references(() => shipmentLookups.id).unique(),
+  shipmentLookupId: integer("shipment_lookup_id").notNull().references(() => shipmentLookups.id),
   driverId: text("driver_id").notNull(),
   companyName: text("company_name").notNull(),
   addressDigitalId: text("address_digital_id").notNull(),
@@ -171,6 +171,8 @@ export const driverFeedback = pgTable("driver_feedback", {
   locationScore: integer("location_score").notNull(),
   customerBehavior: text("customer_behavior").notNull(),
   additionalNotes: text("additional_notes"),
+  attemptId: integer("attempt_id"),
+  feedbackStage: text("feedback_stage").default("primary_delivery"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -185,6 +187,25 @@ export const failureReasonEnum = [
   "other"
 ] as const;
 export type FailureReason = typeof failureReasonEnum[number];
+
+export const attemptStatusEnum = ["requested", "in_progress", "completed", "failed"] as const;
+export type AttemptStatus = typeof attemptStatusEnum[number];
+
+export const feedbackStageEnum = ["primary_delivery", "primary_failure", "alternate_delivery"] as const;
+export type FeedbackStage = typeof feedbackStageEnum[number];
+
+export const alternateDeliveryAttempts = pgTable("alternate_delivery_attempts", {
+  id: serial("id").primaryKey(),
+  shipmentLookupId: integer("shipment_lookup_id").notNull().references(() => shipmentLookups.id),
+  fallbackContactId: integer("fallback_contact_id").notNull().references(() => fallbackContacts.id),
+  status: text("status").notNull().default("requested"),
+  primaryFailureReason: text("primary_failure_reason").notNull(),
+  primaryFailureDetails: text("primary_failure_details"),
+  primaryFeedbackId: integer("primary_feedback_id"),
+  alternateFeedbackId: integer("alternate_feedback_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+});
 
 export const deliveryOutcomes = pgTable("delivery_outcomes", {
   id: serial("id").primaryKey(),
@@ -364,6 +385,8 @@ export const insertDriverFeedbackSchema = createInsertSchema(driverFeedback).pic
   locationScore: true,
   customerBehavior: true,
   additionalNotes: true,
+  attemptId: true,
+  feedbackStage: true,
 });
 
 export const driverFeedbackFormSchema = z.object({
@@ -383,6 +406,29 @@ export const insertDeliveryOutcomeSchema = createInsertSchema(deliveryOutcomes).
   failureReason: true,
   failureDetails: true,
   attemptCount: true,
+});
+
+export const insertAlternateDeliveryAttemptSchema = createInsertSchema(alternateDeliveryAttempts).pick({
+  shipmentLookupId: true,
+  fallbackContactId: true,
+  status: true,
+  primaryFailureReason: true,
+  primaryFailureDetails: true,
+  primaryFeedbackId: true,
+});
+
+export const requestAlternateFormSchema = z.object({
+  failureReason: z.enum(failureReasonEnum, { required_error: "Please select a failure reason" }),
+  failureDetails: z.string().optional(),
+  fallbackContactId: z.number().optional(),
+});
+
+export const alternateFeedbackFormSchema = z.object({
+  deliveryStatus: z.enum(["delivered", "failed"], { required_error: "Please select delivery status" }),
+  locationScore: z.number().min(1, "Location score is required").max(5, "Score must be between 1-5"),
+  customerBehavior: z.string().min(1, "Customer behavior feedback is required"),
+  failureReason: z.string().optional(),
+  additionalNotes: z.string().optional(),
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -413,3 +459,7 @@ export type DriverFeedback = typeof driverFeedback.$inferSelect;
 export type InsertDeliveryOutcome = z.infer<typeof insertDeliveryOutcomeSchema>;
 export type DeliveryOutcome = typeof deliveryOutcomes.$inferSelect;
 export type DriverFeedbackForm = z.infer<typeof driverFeedbackFormSchema>;
+export type InsertAlternateDeliveryAttempt = z.infer<typeof insertAlternateDeliveryAttemptSchema>;
+export type AlternateDeliveryAttempt = typeof alternateDeliveryAttempts.$inferSelect;
+export type RequestAlternateForm = z.infer<typeof requestAlternateFormSchema>;
+export type AlternateFeedbackForm = z.infer<typeof alternateFeedbackFormSchema>;

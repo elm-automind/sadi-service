@@ -9,7 +9,7 @@ import { createPaymentRequest, inquirePaymentRequest } from "./payment";
 import { 
   insertUserSchema, insertAddressSchema, insertFallbackContactSchema, 
   companyRegistrationSchema, companyAddressFormSchema, subscriptionFormSchema, driverFormSchema, bulkDriverSchema,
-  shipmentLookupFormSchema, driverFeedbackFormSchema
+  shipmentLookupFormSchema, driverFeedbackFormSchema, requestAlternateFormSchema, failureReasonEnum
 } from "@shared/schema";
 import { calculateDistanceKm } from "@shared/utils";
 import { z } from "zod";
@@ -1363,6 +1363,241 @@ export async function registerRoutes(httpServer: Server, app: Express) {
         console.error("Submit driver feedback error:", error);
         res.status(500).json({ message: "Internal Server Error" });
       }
+    }
+  });
+
+  // Request alternate drop location - driver reports primary address failure with full feedback
+  app.post("/api/driver/request-alternate", async (req, res) => {
+    try {
+      const { lookupId, failureReason, locationScore, customerBehavior, additionalNotes, fallbackContactId } = req.body;
+      
+      if (!lookupId) {
+        return res.status(400).json({ message: "Lookup ID is required" });
+      }
+
+      // Validate failure reason
+      if (!failureReason || !failureReasonEnum.includes(failureReason)) {
+        return res.status(400).json({ message: "Valid failure reason is required" });
+      }
+
+      // Validate required feedback fields
+      if (!locationScore || locationScore < 1 || locationScore > 5) {
+        return res.status(400).json({ message: "Location score (1-5) is required" });
+      }
+      if (!customerBehavior) {
+        return res.status(400).json({ message: "Customer behavior feedback is required" });
+      }
+
+      // Verify the lookup exists and is pending
+      const lookup = await storage.getShipmentLookupById(lookupId);
+      if (!lookup) {
+        return res.status(404).json({ message: "Lookup not found" });
+      }
+
+      if (lookup.status !== "pending_feedback") {
+        return res.status(400).json({ message: "This delivery has already been completed" });
+      }
+
+      // Check for existing active attempt
+      const existingAttempt = await storage.getActiveAttemptByLookupId(lookupId);
+      if (existingAttempt) {
+        return res.status(400).json({ message: "An alternate delivery attempt is already in progress" });
+      }
+
+      // Get the primary address to find alternate drop locations
+      const address = await storage.getAddressById(lookup.addressId);
+      if (!address) {
+        return res.status(404).json({ message: "Address not found" });
+      }
+
+      // Get alternate drop locations for this address
+      const alternateLocations = await storage.getFallbackContactsByAddressId(address.id);
+      if (alternateLocations.length === 0) {
+        return res.status(400).json({ message: "No alternate drop locations configured for this address" });
+      }
+
+      // If no specific fallback specified, use the default one
+      let selectedFallbackId = fallbackContactId;
+      if (!selectedFallbackId) {
+        const defaultFallback = alternateLocations.find(f => f.isDefault) || alternateLocations[0];
+        selectedFallbackId = defaultFallback.id;
+      }
+
+      // Verify the fallback contact exists
+      const fallbackContact = await storage.getFallbackContactById(selectedFallbackId);
+      if (!fallbackContact || fallbackContact.addressId !== address.id) {
+        return res.status(400).json({ message: "Invalid alternate drop location selected" });
+      }
+
+      // Create primary feedback record (capturing full feedback for primary delivery failure)
+      const primaryFeedback = await storage.createDriverFeedback({
+        shipmentLookupId: lookupId,
+        driverId: lookup.driverId,
+        companyName: lookup.companyName,
+        addressDigitalId: lookup.addressDigitalId,
+        deliveryStatus: "failed",
+        locationScore,
+        customerBehavior,
+        additionalNotes: additionalNotes || null,
+        feedbackStage: "primary_delivery",
+      });
+
+      // Create alternate delivery attempt record with primary feedback linkage
+      const attempt = await storage.createAlternateDeliveryAttempt({
+        shipmentLookupId: lookupId,
+        fallbackContactId: selectedFallbackId,
+        status: "in_progress",
+        primaryFailureReason: failureReason,
+        primaryFailureDetails: additionalNotes || null,
+        primaryFeedbackId: primaryFeedback.id,
+      });
+
+      res.json({
+        success: true,
+        attempt,
+        primaryFeedback,
+        alternateLocation: {
+          id: fallbackContact.id,
+          name: fallbackContact.name,
+          phone: fallbackContact.phone,
+          relationship: fallbackContact.relationship,
+          textAddress: fallbackContact.textAddress,
+          lat: fallbackContact.lat,
+          lng: fallbackContact.lng,
+          photoBuilding: fallbackContact.photoBuilding,
+          photoGate: fallbackContact.photoGate,
+          photoDoor: fallbackContact.photoDoor,
+          specialNote: fallbackContact.specialNote,
+          distanceKm: fallbackContact.distanceKm,
+        }
+      });
+    } catch (error) {
+      console.error("Request alternate location error:", error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  });
+
+  // Get alternate drop locations for a lookup
+  app.get("/api/driver/lookup/:lookupId/alternates", async (req, res) => {
+    try {
+      const lookupId = parseInt(req.params.lookupId);
+      
+      const lookup = await storage.getShipmentLookupById(lookupId);
+      if (!lookup) {
+        return res.status(404).json({ message: "Lookup not found" });
+      }
+
+      const address = await storage.getAddressById(lookup.addressId);
+      if (!address) {
+        return res.status(404).json({ message: "Address not found" });
+      }
+
+      const alternateLocations = await storage.getFallbackContactsByAddressId(address.id);
+      
+      // Check for active attempt
+      const activeAttempt = await storage.getActiveAttemptByLookupId(lookupId);
+
+      res.json({
+        alternateLocations: alternateLocations.map(loc => ({
+          id: loc.id,
+          name: loc.name,
+          phone: loc.phone,
+          relationship: loc.relationship,
+          textAddress: loc.textAddress,
+          lat: loc.lat,
+          lng: loc.lng,
+          photoBuilding: loc.photoBuilding,
+          photoGate: loc.photoGate,
+          photoDoor: loc.photoDoor,
+          specialNote: loc.specialNote,
+          distanceKm: loc.distanceKm,
+          isDefault: loc.isDefault,
+        })),
+        activeAttempt: activeAttempt || null
+      });
+    } catch (error) {
+      console.error("Get alternate locations error:", error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  });
+
+  // Complete alternate delivery attempt with feedback
+  app.post("/api/driver/complete-alternate", async (req, res) => {
+    try {
+      const { attemptId, deliveryStatus, locationScore, customerBehavior, failureReason, additionalNotes } = req.body;
+      
+      if (!attemptId) {
+        return res.status(400).json({ message: "Attempt ID is required" });
+      }
+
+      // Get the attempt
+      const attempt = await storage.getAlternateDeliveryAttemptById(attemptId);
+      if (!attempt) {
+        return res.status(404).json({ message: "Attempt not found" });
+      }
+
+      if (attempt.status !== "in_progress") {
+        return res.status(400).json({ message: "This attempt has already been completed" });
+      }
+
+      // Get the shipment lookup
+      const lookup = await storage.getShipmentLookupById(attempt.shipmentLookupId);
+      if (!lookup) {
+        return res.status(404).json({ message: "Lookup not found" });
+      }
+
+      // Get the fallback contact for its digital ID
+      const fallbackContact = await storage.getFallbackContactById(attempt.fallbackContactId);
+      if (!fallbackContact) {
+        return res.status(404).json({ message: "Alternate location not found" });
+      }
+
+      // Create feedback for the alternate delivery with attempt linkage
+      const alternateFeedback = await storage.createDriverFeedback({
+        shipmentLookupId: lookup.id,
+        driverId: lookup.driverId,
+        companyName: lookup.companyName,
+        addressDigitalId: lookup.addressDigitalId,
+        deliveryStatus,
+        locationScore,
+        customerBehavior,
+        additionalNotes: additionalNotes || null,
+        attemptId: attempt.id,
+        feedbackStage: "alternate_delivery",
+      });
+
+      // Update the attempt status
+      const finalStatus = deliveryStatus === "delivered" ? "completed" : "failed";
+      await storage.updateAlternateDeliveryAttempt(attemptId, {
+        status: finalStatus,
+        alternateFeedbackId: alternateFeedback.id,
+        completedAt: new Date(),
+      });
+
+      // Update the shipment lookup status
+      await storage.updateShipmentLookupStatus(lookup.id, "feedback_completed");
+      await storage.updateShipmentLookupDeliveryStatus(lookup.id, deliveryStatus);
+
+      // Create delivery outcome record
+      await storage.createDeliveryOutcome({
+        shipmentLookupId: lookup.id,
+        driverId: lookup.driverId,
+        companyName: lookup.companyName,
+        addressDigitalId: lookup.addressDigitalId,
+        deliveryStatus,
+        failureReason: deliveryStatus === "failed" ? failureReason : null,
+        failureDetails: additionalNotes || null,
+        attemptCount: 2, // This is the second attempt (alternate location)
+      });
+
+      res.json({
+        success: true,
+        feedback: alternateFeedback,
+        attemptStatus: finalStatus
+      });
+    } catch (error) {
+      console.error("Complete alternate delivery error:", error);
+      res.status(500).json({ message: "Internal Server Error" });
     }
   });
 

@@ -9,9 +9,10 @@ import {
   type ShipmentLookup, type InsertShipmentLookup,
   type DriverFeedback, type InsertDriverFeedback,
   type DeliveryOutcome, type InsertDeliveryOutcome,
+  type AlternateDeliveryAttempt, type InsertAlternateDeliveryAttempt,
   users, addresses, fallbackContacts, passwordResetOtps, companyProfiles,
   companyAddresses, pricingPlans, companySubscriptions, companyDrivers,
-  shipmentLookups, driverFeedback, deliveryOutcomes
+  shipmentLookups, driverFeedback, deliveryOutcomes, alternateDeliveryAttempts
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, gt, lt, asc, desc } from "drizzle-orm";
@@ -85,6 +86,12 @@ export interface IStorage {
   createDeliveryOutcome(outcome: InsertDeliveryOutcome): Promise<DeliveryOutcome>;
   getDeliveryOutcomesByAddressDigitalId(addressDigitalId: string): Promise<DeliveryOutcome[]>;
   getDeliveryOutcomesByDriverId(driverId: string): Promise<DeliveryOutcome[]>;
+
+  createAlternateDeliveryAttempt(attempt: InsertAlternateDeliveryAttempt): Promise<AlternateDeliveryAttempt>;
+  getAlternateDeliveryAttemptById(id: number): Promise<AlternateDeliveryAttempt | undefined>;
+  getAlternateDeliveryAttemptByLookupId(shipmentLookupId: number): Promise<AlternateDeliveryAttempt | undefined>;
+  updateAlternateDeliveryAttempt(id: number, updates: Partial<AlternateDeliveryAttempt>): Promise<AlternateDeliveryAttempt | undefined>;
+  getActiveAttemptByLookupId(shipmentLookupId: number): Promise<AlternateDeliveryAttempt | undefined>;
   
   getDeliveryStatsByCompany(companyName: string): Promise<{
     totalDeliveries: number;
@@ -869,6 +876,46 @@ export class DatabaseStorage implements IStorage {
         uniqueAddresses: points.length,
       },
     };
+  }
+
+  async createAlternateDeliveryAttempt(attempt: InsertAlternateDeliveryAttempt): Promise<AlternateDeliveryAttempt> {
+    const [result] = await db
+      .insert(alternateDeliveryAttempts)
+      .values(attempt)
+      .returning();
+    return result;
+  }
+
+  async getAlternateDeliveryAttemptById(id: number): Promise<AlternateDeliveryAttempt | undefined> {
+    const [result] = await db.select().from(alternateDeliveryAttempts).where(eq(alternateDeliveryAttempts.id, id));
+    return result || undefined;
+  }
+
+  async getAlternateDeliveryAttemptByLookupId(shipmentLookupId: number): Promise<AlternateDeliveryAttempt | undefined> {
+    const [result] = await db.select().from(alternateDeliveryAttempts).where(eq(alternateDeliveryAttempts.shipmentLookupId, shipmentLookupId));
+    return result || undefined;
+  }
+
+  async updateAlternateDeliveryAttempt(id: number, updates: Partial<AlternateDeliveryAttempt>): Promise<AlternateDeliveryAttempt | undefined> {
+    const [result] = await db
+      .update(alternateDeliveryAttempts)
+      .set(updates)
+      .where(eq(alternateDeliveryAttempts.id, id))
+      .returning();
+    return result || undefined;
+  }
+
+  async getActiveAttemptByLookupId(shipmentLookupId: number): Promise<AlternateDeliveryAttempt | undefined> {
+    const [result] = await db
+      .select()
+      .from(alternateDeliveryAttempts)
+      .where(
+        and(
+          eq(alternateDeliveryAttempts.shipmentLookupId, shipmentLookupId),
+          eq(alternateDeliveryAttempts.status, "in_progress")
+        )
+      );
+    return result || undefined;
   }
 }
 
