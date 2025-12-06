@@ -406,7 +406,10 @@
     "proceedToAlternate": "Please proceed to the alternate drop location",
     "submitAndFetchAlternate": "Submit Feedback & Fetch Alternate",
     "willFetchAlternate": "Will fetch alternate location after submitting feedback",
-    "completeDeliverySubmitFeedback": "Complete Delivery & Submit Feedback"
+    "completeDeliverySubmitFeedback": "Complete Delivery & Submit Feedback",
+    "primaryAddress": "Delivery Address",
+    "primaryAddressDesc": "Details of the delivery destination",
+    "contactPerson": "Contact Person"
   },
   "address": {
     "myAddresses": "My Addresses",

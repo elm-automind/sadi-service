@@ -9,6 +9,7 @@ import { Phone, MapPin, Clock, FileText, QrCode, Home, Building2, DoorOpen, Imag
 import { AddressMap } from "@/components/address-map";
 import { PageNavigation } from "@/components/page-navigation";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { PhotoGallery } from "@/components/photo-gallery";
 
 export default function ViewAddress() {
   const { t } = useTranslation();
@@ -144,40 +145,13 @@ export default function ViewAddress() {
           <Separator />
 
           {/* Photos Section */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 text-sm font-semibold text-primary uppercase tracking-wider">
-              <Image className="w-4 h-4" />
-              {t('viewAddress.photos')}
-            </div>
-            <div className="grid grid-cols-3 gap-2 md:gap-3">
-              {[
-                { label: t('viewAddress.buildingView'), icon: Building2, src: address.photoBuilding },
-                { label: t('viewAddress.mainGate'), icon: DoorOpen, src: address.photoGate },
-                { label: t('viewAddress.flatDoor'), icon: Home, src: address.photoDoor }
-              ].map((img, i) => (
-                <div key={i} className="space-y-1">
-                  <p className="text-[10px] md:text-xs font-medium text-muted-foreground flex items-center gap-1 truncate">
-                    <img.icon className="w-3 h-3 shrink-0" /> 
-                    <span className="truncate">{img.label}</span>
-                  </p>
-                  <div className="aspect-square bg-muted rounded-lg flex items-center justify-center border border-border overflow-hidden">
-                    {img.src ? (
-                      <img 
-                        src={img.src} 
-                        alt={img.label}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="text-center text-muted-foreground p-2">
-                        <Image className="w-6 h-6 mx-auto opacity-30" />
-                        <p className="text-[8px] md:text-[10px] mt-1">{t('viewAddress.noPhoto')}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <PhotoGallery 
+            photos={{
+              building: address.photoBuilding,
+              gate: address.photoGate,
+              door: address.photoDoor
+            }}
+          />
 
           <Separator />
 

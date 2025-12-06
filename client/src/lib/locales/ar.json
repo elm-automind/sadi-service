@@ -406,7 +406,10 @@
     "proceedToAlternate": "يرجى التوجه إلى موقع التسليم البديل",
     "submitAndFetchAlternate": "إرسال التقييم وجلب البديل",
     "willFetchAlternate": "سيتم جلب الموقع البديل بعد إرسال التقييم",
-    "completeDeliverySubmitFeedback": "إكمال التوصيل وإرسال التقييم"
+    "completeDeliverySubmitFeedback": "إكمال التوصيل وإرسال التقييم",
+    "primaryAddress": "عنوان التوصيل",
+    "primaryAddressDesc": "تفاصيل موقع التوصيل",
+    "contactPerson": "جهة الاتصال"
   },
   "address": {
     "myAddresses": "عناويني",

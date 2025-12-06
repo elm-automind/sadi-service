@@ -13,10 +13,12 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { MessageSquare, Star, MapPin, Package, CheckCircle2, AlertCircle, CheckCircle, Truck, MapPinOff, ArrowRight, Phone, User, Home, Navigation } from "lucide-react";
+import { MessageSquare, Star, MapPin, Package, CheckCircle2, AlertCircle, CheckCircle, Truck, MapPinOff, ArrowRight, Phone, User, Home, Navigation, Clock, FileText, Image } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { AddressMap } from "@/components/address-map";
+import { PhotoGallery } from "@/components/photo-gallery";
+import { Separator } from "@/components/ui/separator";
 
 const feedbackSchema = z.object({
   deliveryStatus: z.enum(["delivered", "failed"], { required_error: "Please select delivery status" }),
@@ -397,8 +399,102 @@ export default function DriverFeedback() {
           </CardContent>
         </Card>
 
+        {/* Primary Address View */}
+        {!showingAlternate && lookupData.address && (
+          <Card className="border-0 shadow-lg bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-primary" />
+                {t('feedback.primaryAddress')}
+              </CardTitle>
+              <CardDescription>{t('feedback.primaryAddressDesc')}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Location Section */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm font-semibold text-primary uppercase tracking-wider">
+                  <MapPin className="w-4 h-4" />
+                  {t('viewAddress.location')}
+                </div>
+                {(lookupData.address.lat && lookupData.address.lng) && (
+                  <div className="rounded-lg overflow-hidden border border-border h-40">
+                    <AddressMap 
+                      readOnly 
+                      initialLat={lookupData.address.lat} 
+                      initialLng={lookupData.address.lng} 
+                    />
+                  </div>
+                )}
+                <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg border border-border/50">
+                  <MapPin className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+                  <div>
+                    <p className="font-medium text-foreground text-sm">{lookupData.address.textAddress}</p>
+                    {lookupData.address.lat && lookupData.address.lng && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {t('viewAddress.coordinates')}: {lookupData.address.lat.toFixed(6)}, {lookupData.address.lng.toFixed(6)}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Photos Section */}
+              <PhotoGallery 
+                photos={{
+                  building: lookupData.address.photoBuilding,
+                  gate: lookupData.address.photoGate,
+                  door: lookupData.address.photoDoor
+                }}
+              />
+
+              <Separator />
+
+              {/* Instructions Section */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm font-semibold text-primary uppercase tracking-wider">
+                  <FileText className="w-4 h-4" />
+                  {t('viewAddress.instructions')}
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="p-3 bg-muted/50 rounded-lg border border-border/50">
+                    <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground mb-1">
+                      <Clock className="w-3.5 h-3.5" /> {t('viewAddress.preferredTime')}
+                    </div>
+                    <p className="font-medium text-foreground text-sm capitalize">
+                      {lookupData.address.preferredTime || t('viewAddress.notSpecified')}
+                    </p>
+                  </div>
+                  <div className="p-3 bg-muted/50 rounded-lg border border-border/50">
+                    <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground mb-1">
+                      <Home className="w-3.5 h-3.5" /> {t('viewAddress.ifNotHome')}
+                    </div>
+                    <p className="font-medium text-foreground text-sm capitalize">
+                      {lookupData.address.fallbackOption === "door" ? t('viewAddress.leaveAtDoor') :
+                       lookupData.address.fallbackOption === "neighbor" ? t('viewAddress.leaveWithNeighbor') :
+                       lookupData.address.fallbackOption === "call" ? t('viewAddress.callReschedule') :
+                       lookupData.address.fallbackOption === "security" ? t('viewAddress.leaveWithSecurity') :
+                       lookupData.address.fallbackOption || t('viewAddress.notSpecified')}
+                    </p>
+                  </div>
+                </div>
+                
+                {lookupData.address.specialNote && (
+                  <div className="p-3 bg-yellow-50 dark:bg-yellow-900/10 rounded-lg border border-yellow-200 dark:border-yellow-900/30">
+                    <div className="flex items-center gap-2 text-xs font-medium text-yellow-700 dark:text-yellow-400 mb-1">
+                      <FileText className="w-3.5 h-3.5" /> {t('viewAddress.specialNotes')}
+                    </div>
+                    <p className="text-foreground text-sm">{lookupData.address.specialNote}</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {showingAlternate && alternateLocation && (
-          <Card className="border-0 shadow-lg bg-orange-50/80 dark:bg-orange-950/20 backdrop-blur-sm">
+          <Card className="border-0 shadow-lg bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center gap-2">
                 <Navigation className="w-5 h-5 text-orange-600" />
@@ -407,82 +503,99 @@ export default function DriverFeedback() {
               <CardDescription>{t('feedback.deliverToAlternate')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid gap-3">
-                <div className="flex items-center gap-2">
-                  <User className="w-4 h-4 text-muted-foreground" />
-                  <span className="font-medium">{alternateLocation.name}</span>
-                  <span className="text-sm text-muted-foreground">({alternateLocation.relationship})</span>
+              {/* Contact Section */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm font-semibold text-orange-600 uppercase tracking-wider">
+                  <User className="w-4 h-4" />
+                  {t('feedback.contactPerson')}
                 </div>
-                <div className="flex items-center gap-2">
-                  <Phone className="w-4 h-4 text-muted-foreground" />
-                  <a href={`tel:${alternateLocation.phone}`} className="text-primary hover:underline">
-                    {alternateLocation.phone}
-                  </a>
+                <div className="p-3 bg-orange-50/50 dark:bg-orange-950/20 rounded-lg border border-orange-200/50 dark:border-orange-800/50">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center text-orange-600 font-bold">
+                      {alternateLocation.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-foreground">{alternateLocation.name}</p>
+                      <p className="text-xs text-muted-foreground">{alternateLocation.relationship}</p>
+                    </div>
+                    <a 
+                      href={`tel:${alternateLocation.phone}`} 
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300 rounded-lg text-sm font-medium"
+                    >
+                      <Phone className="w-3.5 h-3.5" />
+                      {alternateLocation.phone}
+                    </a>
+                  </div>
                 </div>
+              </div>
+
+              <Separator />
+
+              {/* Location Section */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm font-semibold text-orange-600 uppercase tracking-wider">
+                  <MapPin className="w-4 h-4" />
+                  {t('viewAddress.location')}
+                </div>
+                {(alternateLocation.lat && alternateLocation.lng) && (
+                  <div className="rounded-lg overflow-hidden border border-border h-40">
+                    <AddressMap 
+                      readOnly 
+                      initialLat={alternateLocation.lat} 
+                      initialLng={alternateLocation.lng} 
+                    />
+                  </div>
+                )}
                 {alternateLocation.textAddress && (
-                  <div className="flex items-start gap-2">
-                    <Home className="w-4 h-4 text-muted-foreground mt-1" />
-                    <span className="text-sm">{alternateLocation.textAddress}</span>
-                  </div>
-                )}
-                {alternateLocation.distanceKm && (
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm">{alternateLocation.distanceKm.toFixed(1)} km {t('feedback.fromPrimary')}</span>
-                  </div>
-                )}
-                {alternateLocation.specialNote && (
-                  <div className="p-3 bg-yellow-50 dark:bg-yellow-950/30 rounded-lg border border-yellow-200 dark:border-yellow-800">
-                    <p className="text-sm text-yellow-800 dark:text-yellow-200">{alternateLocation.specialNote}</p>
+                  <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg border border-border/50">
+                    <MapPin className="w-5 h-5 text-orange-600 mt-0.5 shrink-0" />
+                    <div>
+                      <p className="font-medium text-foreground text-sm">{alternateLocation.textAddress}</p>
+                      {alternateLocation.distanceKm && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {alternateLocation.distanceKm.toFixed(1)} km {t('feedback.fromPrimary')}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
 
-              {(alternateLocation.lat && alternateLocation.lng) && (
-                <div className="rounded-lg overflow-hidden border border-border h-40">
-                  <AddressMap 
-                    readOnly 
-                    initialLat={alternateLocation.lat} 
-                    initialLng={alternateLocation.lng} 
-                  />
-                </div>
-              )}
+              <Separator />
 
-              {(alternateLocation.photoBuilding || alternateLocation.photoGate || alternateLocation.photoDoor) && (
-                <div className="grid grid-cols-3 gap-2">
-                  {alternateLocation.photoBuilding && (
-                    <img 
-                      src={alternateLocation.photoBuilding} 
-                      alt={t('address.building')} 
-                      className="rounded-lg w-full h-20 object-cover"
-                    />
-                  )}
-                  {alternateLocation.photoGate && (
-                    <img 
-                      src={alternateLocation.photoGate} 
-                      alt={t('address.gate')} 
-                      className="rounded-lg w-full h-20 object-cover"
-                    />
-                  )}
-                  {alternateLocation.photoDoor && (
-                    <img 
-                      src={alternateLocation.photoDoor} 
-                      alt={t('address.door')} 
-                      className="rounded-lg w-full h-20 object-cover"
-                    />
-                  )}
-                </div>
+              {/* Photos Section */}
+              <PhotoGallery 
+                photos={{
+                  building: alternateLocation.photoBuilding,
+                  gate: alternateLocation.photoGate,
+                  door: alternateLocation.photoDoor
+                }}
+              />
+
+              {alternateLocation.specialNote && (
+                <>
+                  <Separator />
+                  <div className="p-3 bg-yellow-50 dark:bg-yellow-900/10 rounded-lg border border-yellow-200 dark:border-yellow-900/30">
+                    <div className="flex items-center gap-2 text-xs font-medium text-yellow-700 dark:text-yellow-400 mb-1">
+                      <FileText className="w-3.5 h-3.5" /> {t('viewAddress.specialNotes')}
+                    </div>
+                    <p className="text-foreground text-sm">{alternateLocation.specialNote}</p>
+                  </div>
+                </>
               )}
 
               {!showAlternateFeedbackForm && (
-                <Button
-                  onClick={() => setShowAlternateFeedbackForm(true)}
-                  className="w-full bg-orange-600 hover:bg-orange-700"
-                  data-testid="button-complete-alternate-delivery"
-                >
-                  <CheckCircle2 className="w-4 h-4 me-2" />
-                  {t('feedback.completeDeliverySubmitFeedback')}
-                </Button>
+                <>
+                  <Separator />
+                  <Button
+                    onClick={() => setShowAlternateFeedbackForm(true)}
+                    className="w-full bg-orange-600 hover:bg-orange-700"
+                    data-testid="button-complete-alternate-delivery"
+                  >
+                    <CheckCircle2 className="w-4 h-4 me-2" />
+                    {t('feedback.completeDeliverySubmitFeedback')}
+                  </Button>
+                </>
               )}
             </CardContent>
           </Card>
