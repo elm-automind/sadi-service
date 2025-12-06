@@ -2,9 +2,10 @@ import { Link } from "wouter";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowRight, Brain, Zap, Target, Shield, MapPin, LogIn, Sparkles, CheckCircle, X, Truck, Package, Navigation, Clock, Star } from "lucide-react";
+import { ArrowRight, Zap, Target, Shield, MapPin, LogIn, Sparkles, CheckCircle, X, Truck, Package, Navigation, Clock, Star } from "lucide-react";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useEffect, useState } from "react";
+import marriLogo from "@assets/image_1764984639532.png";
 
 export default function Home() {
   const { t, i18n } = useTranslation();
@@ -107,12 +108,43 @@ export default function Home() {
       <div className="max-w-xl w-full space-y-10 text-center relative z-10">
         {/* Logo and Brand */}
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-          {/* Logo with glow effect */}
-          <div className="relative mx-auto w-24 h-24">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl blur-xl opacity-40" />
-            <div className="relative w-24 h-24 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-blue-500/30 pulse-glow">
-              <Brain className="w-12 h-12 text-white" />
+          {/* 3D Logo with intelligent effects */}
+          <div className="relative mx-auto w-32 h-32 group">
+            {/* Outer glow ring - pulsing */}
+            <div className="absolute inset-[-8px] bg-gradient-to-br from-blue-400/30 via-indigo-500/30 to-cyan-400/30 rounded-3xl blur-xl opacity-60 pulse-glow" />
+            
+            {/* Secondary glow layer for depth */}
+            <div className="absolute inset-[-4px] bg-gradient-to-br from-blue-500/20 to-indigo-600/20 rounded-2xl blur-md" />
+            
+            {/* 3D base shadow */}
+            <div className="absolute inset-0 translate-y-2 bg-slate-900/30 rounded-2xl blur-lg" />
+            
+            {/* Main logo container with 3D transform */}
+            <div 
+              className="relative w-32 h-32 rounded-2xl overflow-hidden shadow-2xl shadow-blue-500/40 transition-all duration-500 group-hover:scale-105 group-hover:shadow-blue-500/60"
+              style={{
+                transform: 'perspective(1000px) rotateX(2deg)',
+                transformStyle: 'preserve-3d'
+              }}
+            >
+              {/* Gradient overlay for depth */}
+              <div className="absolute inset-0 bg-gradient-to-t from-transparent via-transparent to-white/10 z-10 pointer-events-none" />
+              
+              {/* Shine effect */}
+              <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent z-10 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              
+              {/* Logo image */}
+              <img 
+                src={marriLogo} 
+                alt="Marri Logo" 
+                className="w-full h-full object-cover"
+              />
             </div>
+            
+            {/* Floating particles for intelligence effect */}
+            <div className="absolute -top-2 -right-2 w-3 h-3 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full shadow-lg shadow-amber-500/50 float-animation" style={{ animationDelay: '0s' }} />
+            <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-full shadow-lg shadow-cyan-500/50 float-animation" style={{ animationDelay: '1s' }} />
+            <div className="absolute top-1/2 -right-3 w-2 h-2 bg-gradient-to-br from-purple-400 to-indigo-500 rounded-full shadow-lg shadow-purple-500/50 float-animation" style={{ animationDelay: '2s' }} />
           </div>
           
           <div className="space-y-3">
