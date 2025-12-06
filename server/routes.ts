@@ -532,6 +532,24 @@ export async function registerRoutes(httpServer: Server, app: Express) {
     res.json(contact);
   });
 
+  // Public endpoint for viewing fallback contact (for drivers accessing via static links)
+  app.get("/api/public/fallback-contact/:id", async (req, res) => {
+    try {
+      const contactId = parseInt(req.params.id);
+      if (isNaN(contactId)) {
+        return res.status(400).json({ message: "Invalid contact ID" });
+      }
+      const contact = await storage.getFallbackContactById(contactId);
+      if (!contact) {
+        return res.status(404).json({ message: "Fallback contact not found" });
+      }
+      res.json(contact);
+    } catch (error) {
+      console.error("Public fallback contact fetch error:", error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  });
+
   app.put("/api/fallback-contact/:id", requireAuth, async (req: any, res) => {
     try {
       const contactId = parseInt(req.params.id);

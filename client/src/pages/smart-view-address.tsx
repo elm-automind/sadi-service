@@ -1,30 +1,21 @@
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import ViewAddress from "./view-address";
 import AddressCapture from "./address-capture";
-
-function isInternalNavigation(): boolean {
-  const referrer = document.referrer;
-  
-  if (!referrer) {
-    return false;
-  }
-  
-  try {
-    const referrerUrl = new URL(referrer);
-    const currentUrl = new URL(window.location.href);
-    
-    return referrerUrl.hostname === currentUrl.hostname;
-  } catch {
-    return false;
-  }
-}
 
 export default function SmartViewAddress() {
   const [isInternal, setIsInternal] = useState<boolean | null>(null);
 
+  const { data: user, isLoading: userLoading } = useQuery<any>({
+    queryKey: ["/api/user"],
+    retry: false,
+  });
+
   useEffect(() => {
-    setIsInternal(isInternalNavigation());
-  }, []);
+    if (!userLoading) {
+      setIsInternal(!!user);
+    }
+  }, [user, userLoading]);
 
   if (isInternal === null) {
     return (
