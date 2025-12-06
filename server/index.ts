@@ -26,6 +26,11 @@ app.use(
 
 app.use(express.urlencoded({ extended: false, limit: '15mb' }));
 
+// Trust proxy for production (Replit runs behind a proxy)
+if (process.env.NODE_ENV === "production") {
+  app.set("trust proxy", 1);
+}
+
 // Session Setup with auto-logout after 20 minutes of inactivity
 const SessionStore = MemoryStore(session);
 const sessionSecret = process.env.SESSION_SECRET || "dev-session-secret-change-in-production";
@@ -42,6 +47,7 @@ app.use(
     }),
     cookie: { 
       secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       maxAge: SESSION_TIMEOUT,
       httpOnly: true,
     },
