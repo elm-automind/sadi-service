@@ -51,9 +51,9 @@ export default function Payment() {
 
     // Listen for payment completion messages from iframe
     const handleMessage = (event: MessageEvent) => {
-      if (event.data?.type === "PAYMENT_SUCCESS") {
-        setPaymentStatus("success");
+      if (event.data?.type === "PAYMENT_SUCCESS" || event.data?.type === "PAYMENT_COMPLETE") {
         clearPaymentData();
+        navigate("/company-dashboard?payment=success");
       } else if (event.data?.type === "PAYMENT_FAILED") {
         setPaymentStatus("failed");
       }

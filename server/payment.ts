@@ -56,7 +56,7 @@ export async function createPaymentRequest(
   const appBaseUrl = process.env.APP_BASE_URL || 
     (process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : "") ||
     (process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS}` : "");
-  const redirectUrl = appBaseUrl ? `${appBaseUrl}/company-dashboard?payment=success` : "";
+  const redirectUrl = appBaseUrl ? `${appBaseUrl}/payment-callback?status=success` : "";
 
   const payload: PaymentRequestPayload = {
     InvoiceNumber: sadadNumber,

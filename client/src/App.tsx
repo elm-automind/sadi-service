@@ -26,6 +26,7 @@ import DriverLookup from "@/pages/driver-lookup";
 import DriverFeedback from "@/pages/driver-feedback";
 import AddressCapture from "@/pages/address-capture";
 import Payment from "@/pages/payment";
+import PaymentCallback from "@/pages/payment-callback";
 
 function Router() {
   return (
@@ -49,6 +50,7 @@ function Router() {
       <Route path="/driver" component={DriverLookup} />
       <Route path="/driver-feedback/:id" component={DriverFeedback} />
       <Route path="/payment" component={Payment} />
+      <Route path="/payment-callback" component={PaymentCallback} />
       <Route component={NotFound} />
     </Switch>
   );
