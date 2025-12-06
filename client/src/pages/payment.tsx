@@ -22,39 +22,60 @@ export default function Payment() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<"pending" | "success" | "failed">("pending");
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const [iframeLoadCount, setIframeLoadCount] = useState(0);
+  const pollingRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Handle iframe load - detect when payment gateway redirects to our app
-  const handleIframeLoad = useCallback(() => {
-    setIframeLoadCount(prev => prev + 1);
-    
-    // Skip the first load (initial payment gateway page)
-    if (iframeLoadCount === 0) return;
-    
+  // Clear payment data helper
+  const clearPaymentData = useCallback(() => {
+    sessionStorage.removeItem("paymentUrl");
+    sessionStorage.removeItem("paymentRequestId");
+    sessionStorage.removeItem("paymentDetails");
+  }, []);
+
+  // Poll for payment completion
+  const checkPaymentStatus = useCallback(async () => {
+    const requestId = sessionStorage.getItem("paymentRequestId");
+    if (!requestId) return;
+
     try {
-      const iframe = iframeRef.current;
-      if (!iframe) return;
-      
-      // Try to access the iframe's location - this only works if it's same-origin
-      // When the payment gateway redirects to our domain, we can access it
-      const iframeLocation = iframe.contentWindow?.location;
-      const iframeHref = iframeLocation?.href;
-      
-      if (iframeHref) {
-        // Check if the iframe is now on our domain (successful redirect)
-        const currentOrigin = window.location.origin;
-        if (iframeHref.startsWith(currentOrigin)) {
-          // Payment gateway redirected to our app - payment is complete
-          clearPaymentData();
-          sessionStorage.setItem("paymentSuccess", "true");
-          navigate("/company-dashboard?payment=success");
+      const response = await fetch("/api/company/verify-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ paymentRequestId: requestId }),
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.isPaid) {
+        // Payment complete - stop polling and redirect
+        if (pollingRef.current) {
+          clearInterval(pollingRef.current);
+          pollingRef.current = null;
         }
+        clearPaymentData();
+        sessionStorage.setItem("paymentSuccess", "true");
+        navigate("/company-dashboard?payment=success");
       }
-    } catch (e) {
-      // Cross-origin error - iframe is still on payment gateway domain
-      // This is expected, ignore
+    } catch (error) {
+      // Silently ignore polling errors
+      console.log("Payment status check:", error);
     }
-  }, [iframeLoadCount, navigate]);
+  }, [navigate, clearPaymentData]);
+
+  // Start polling when payment URL is available
+  useEffect(() => {
+    if (paymentUrl && paymentRequestId && !pollingRef.current) {
+      // Start polling every 3 seconds
+      pollingRef.current = setInterval(checkPaymentStatus, 3000);
+    }
+
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
+    };
+  }, [paymentUrl, paymentRequestId, checkPaymentStatus]);
 
   useEffect(() => {
     // Get payment data from sessionStorage
@@ -95,13 +116,7 @@ export default function Payment() {
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [navigate]);
-
-  const clearPaymentData = () => {
-    sessionStorage.removeItem("paymentUrl");
-    sessionStorage.removeItem("paymentRequestId");
-    sessionStorage.removeItem("paymentDetails");
-  };
+  }, [navigate, clearPaymentData]);
 
   const handleBack = () => {
     clearPaymentData();
@@ -242,7 +257,6 @@ export default function Payment() {
                 style={{ minHeight: "600px", height: "calc(100vh - 300px)" }}
                 title="Payment Gateway"
                 sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation"
-                onLoad={handleIframeLoad}
                 data-testid="iframe-payment"
               />
             ) : (
