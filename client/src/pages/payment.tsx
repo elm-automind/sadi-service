@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, CreditCard, Loader2, CheckCircle, XCircle } from "lucide-react";
@@ -21,6 +21,40 @@ export default function Payment() {
   const [isLoading, setIsLoading] = useState(true);
   const [isVerifying, setIsVerifying] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<"pending" | "success" | "failed">("pending");
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [iframeLoadCount, setIframeLoadCount] = useState(0);
+
+  // Handle iframe load - detect when payment gateway redirects to our app
+  const handleIframeLoad = useCallback(() => {
+    setIframeLoadCount(prev => prev + 1);
+    
+    // Skip the first load (initial payment gateway page)
+    if (iframeLoadCount === 0) return;
+    
+    try {
+      const iframe = iframeRef.current;
+      if (!iframe) return;
+      
+      // Try to access the iframe's location - this only works if it's same-origin
+      // When the payment gateway redirects to our domain, we can access it
+      const iframeLocation = iframe.contentWindow?.location;
+      const iframeHref = iframeLocation?.href;
+      
+      if (iframeHref) {
+        // Check if the iframe is now on our domain (successful redirect)
+        const currentOrigin = window.location.origin;
+        if (iframeHref.startsWith(currentOrigin)) {
+          // Payment gateway redirected to our app - payment is complete
+          clearPaymentData();
+          sessionStorage.setItem("paymentSuccess", "true");
+          navigate("/company-dashboard?payment=success");
+        }
+      }
+    } catch (e) {
+      // Cross-origin error - iframe is still on payment gateway domain
+      // This is expected, ignore
+    }
+  }, [iframeLoadCount, navigate]);
 
   useEffect(() => {
     // Get payment data from sessionStorage
@@ -202,11 +236,13 @@ export default function Payment() {
           <CardContent className="p-0">
             {paymentUrl ? (
               <iframe
+                ref={iframeRef}
                 src={paymentUrl}
                 className="w-full border-0"
                 style={{ minHeight: "600px", height: "calc(100vh - 300px)" }}
                 title="Payment Gateway"
                 sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation"
+                onLoad={handleIframeLoad}
                 data-testid="iframe-payment"
               />
             ) : (
@@ -218,31 +254,7 @@ export default function Payment() {
           </CardContent>
         </Card>
 
-        {/* Manual confirmation button */}
-        <Card className="mt-4">
-          <CardContent className="py-4">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="text-center sm:text-left">
-                <p className="text-sm font-medium text-foreground">{t('payment.completedPayment')}</p>
-                <p className="text-xs text-muted-foreground">{t('payment.completedPaymentDesc')}</p>
-              </div>
-              <Button 
-                onClick={handleVerifyPayment} 
-                variant="default"
-                className="w-full sm:w-auto"
-                disabled={isVerifying}
-                data-testid="button-confirm-payment"
-              >
-                {isVerifying ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                )}
-                {isVerifying ? t('payment.verifying') : t('payment.confirmPayment')}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Manual confirmation button - hidden, auto-redirect used instead */}
         
         <p className="text-center text-sm text-muted-foreground mt-4">
           {t('payment.securityNote')}
