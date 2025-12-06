@@ -219,7 +219,8 @@ export default function Payment() {
           </CardContent>
         </Card>
 
-        {/* Manual confirmation button */}
+        {/* Manual confirmation button - hidden but implementation preserved */}
+        {false && (
         <Card className="mt-4">
           <CardContent className="py-4">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -244,6 +245,7 @@ export default function Payment() {
             </div>
           </CardContent>
         </Card>
+        )}
         
         <p className="text-center text-sm text-muted-foreground mt-4">
           {t('payment.securityNote')}
