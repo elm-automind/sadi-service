@@ -6,6 +6,13 @@ This is a full-stack web application for managing delivery registrations and add
 
 ## Recent Changes (December 2024)
 
+- **Demo Data Seeding**: Created seed endpoint for generating comprehensive demo data for company dashboards
+  - POST /api/admin/seed-demo-data creates 2 company accounts with full delivery data
+  - FastDeliver Logistics: admin@fastdeliver-demo.com / demo123
+  - QuickShip Courier: admin@quickship-demo.com / demo123
+  - 20 addresses across 5 Riyadh clusters (Al Olaya, Al Malaz, Industrial, Al Nakheel, Al Yasmin)
+  - 100+ delivery records with varied success rates by area type
+  - Realistic credit scores: Industrial areas ~61, Residential ~74-77, Premium ~87-93
 - **Static Link Driver Actions**: Drivers accessing addresses via static links (/view/:digitalId) now see a "Driver Actions" section when there's a pending delivery, with buttons to report delivery issues and access alternate drop locations
 - **Two-Stage Delivery Feedback Workflow**: Complete implementation of primary delivery feedback followed by alternate location request with full database linkage
 - Added new API endpoint: GET /api/address/:digitalId/pending-lookup for checking pending deliveries from static links

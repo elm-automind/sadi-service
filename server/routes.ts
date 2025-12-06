@@ -1704,6 +1704,280 @@ export async function registerRoutes(httpServer: Server, app: Express) {
     }
   });
 
+  // --- Seed Test Data for Company Dashboard Demo ---
+  app.post("/api/admin/seed-demo-data", async (req, res) => {
+    try {
+      // Define two company accounts to create with test data
+      const companyConfigs = [
+        {
+          companyName: "FastDeliver Logistics",
+          unifiedNumber: "7001234567",
+          companyType: "Logistics",
+          email: "admin@fastdeliver-demo.com",
+          phone: "0501234567",
+          password: "demo123",
+        },
+        {
+          companyName: "QuickShip Courier",
+          unifiedNumber: "7009876543",
+          companyType: "Courier",
+          email: "admin@quickship-demo.com",
+          phone: "0509876543",
+          password: "demo123",
+        },
+      ];
+
+      // Create company accounts if they don't exist
+      for (const config of companyConfigs) {
+        let existingCompanyUser = await storage.getUserByEmail(config.email);
+        
+        if (!existingCompanyUser) {
+          // Create company user
+          const hashedPassword = await bcrypt.hash(config.password, SALT_ROUNDS);
+          existingCompanyUser = await storage.createUser({
+            accountType: "company",
+            email: config.email,
+            phone: config.phone,
+            name: config.companyName,
+            password: hashedPassword,
+          });
+
+          // Create company profile
+          const companyProfile = await storage.createCompanyProfile({
+            userId: existingCompanyUser.id,
+            companyName: config.companyName,
+            unifiedNumber: config.unifiedNumber,
+            companyType: config.companyType,
+          });
+
+          // Create company address
+          await storage.createCompanyAddress({
+            companyProfileId: companyProfile.id,
+            street: "King Fahd Road",
+            district: "Al Olaya",
+            city: "Riyadh",
+          });
+
+          // Get a pricing plan and create subscription
+          const plans = await storage.getPricingPlans();
+          if (plans.length > 0) {
+            const plan = plans.find(p => p.slug === "professional") || plans[0];
+            await storage.createCompanySubscription({
+              companyProfileId: companyProfile.id,
+              pricingPlanId: plan.id,
+              billingCycle: "monthly",
+              status: "active",
+              paymentStatus: "paid",
+            });
+          }
+
+          // Add some drivers
+          const driverNames = ["Ahmed Hassan", "Mohammed Ali", "Khalid Omar"];
+          for (let i = 0; i < driverNames.length; i++) {
+            await storage.createCompanyDriver({
+              companyProfileId: companyProfile.id,
+              driverId: `DRV-${config.companyName.substring(0, 2).toUpperCase()}-00${i + 1}`,
+              name: driverNames[i],
+              phone: `055${String(1000000 + i).padStart(7, '0')}`,
+              status: "active",
+            });
+          }
+        }
+      }
+
+      const companies = companyConfigs.map(c => c.companyName);
+      
+      // Riyadh area clusters with realistic coordinates
+      const riyadhClusters = {
+        // Al Olaya - Business District (high traffic, good success rate)
+        alOlaya: [
+          { lat: 24.6900, lng: 46.6850, name: "Al Olaya Tower" },
+          { lat: 24.6920, lng: 46.6880, name: "Kingdom Centre Area" },
+          { lat: 24.6880, lng: 46.6820, name: "Al Faisaliyah" },
+          { lat: 24.6940, lng: 46.6900, name: "Olaya Street" },
+          { lat: 24.6860, lng: 46.6840, name: "Tahlia Street" },
+        ],
+        // Al Malaz - Residential (mixed success)
+        alMalaz: [
+          { lat: 24.6600, lng: 46.7200, name: "Al Malaz Stadium" },
+          { lat: 24.6580, lng: 46.7180, name: "Malaz Park" },
+          { lat: 24.6620, lng: 46.7220, name: "King Fahd Library" },
+          { lat: 24.6560, lng: 46.7160, name: "Malaz Residential" },
+        ],
+        // Industrial Area - South (high failure rate)
+        industrial: [
+          { lat: 24.5800, lng: 46.7500, name: "Industrial City" },
+          { lat: 24.5780, lng: 46.7480, name: "Warehouse District" },
+          { lat: 24.5820, lng: 46.7520, name: "Factory Zone" },
+          { lat: 24.5760, lng: 46.7460, name: "Logistics Hub" },
+        ],
+        // Al Nakheel - North (excellent delivery area)
+        alNakheel: [
+          { lat: 24.7800, lng: 46.6300, name: "Al Nakheel Mall" },
+          { lat: 24.7820, lng: 46.6320, name: "Nakheel Villas" },
+          { lat: 24.7780, lng: 46.6280, name: "Palm Gardens" },
+          { lat: 24.7840, lng: 46.6340, name: "North Ring Road" },
+        ],
+        // Al Yasmin - West (good area)
+        alYasmin: [
+          { lat: 24.8200, lng: 46.6000, name: "Al Yasmin District" },
+          { lat: 24.8180, lng: 46.5980, name: "Yasmin Gardens" },
+          { lat: 24.8220, lng: 46.6020, name: "Western Boulevard" },
+        ],
+      };
+
+      // Create test users with addresses
+      const testAddresses: { digitalId: string; lat: number; lng: number; textAddress: string }[] = [];
+      let userCounter = 1;
+
+      for (const [clusterName, locations] of Object.entries(riyadhClusters)) {
+        for (const loc of locations) {
+          const email = `test.user${userCounter}@marri-demo.com`;
+          const phone = `05${String(50000000 + userCounter).padStart(8, '0')}`;
+          
+          // Check if user already exists
+          let existingUser = await storage.getUserByEmail(email);
+          
+          if (!existingUser) {
+            // Create user
+            const hashedPassword = await bcrypt.hash("demo123", SALT_ROUNDS);
+            existingUser = await storage.createUser({
+              accountType: "individual",
+              email,
+              phone,
+              name: `Demo User ${userCounter}`,
+              password: hashedPassword,
+            });
+
+            // Create address for this user
+            const digitalId = generateDigitalId();
+            await storage.createAddress({
+              userId: existingUser.id,
+              digitalId,
+              label: loc.name,
+              textAddress: `${loc.name}, ${clusterName.replace(/([A-Z])/g, ' $1').trim()}, Riyadh, Saudi Arabia`,
+              lat: loc.lat + (Math.random() - 0.5) * 0.005, // Add slight randomness
+              lng: loc.lng + (Math.random() - 0.5) * 0.005,
+              preferredTime: ["morning", "afternoon", "evening"][Math.floor(Math.random() * 3)],
+              fallbackOption: ["door", "neighbor", "security"][Math.floor(Math.random() * 3)],
+              isPrimary: true,
+            });
+
+            testAddresses.push({
+              digitalId,
+              lat: loc.lat,
+              lng: loc.lng,
+              textAddress: `${loc.name}, Riyadh`,
+            });
+          } else {
+            // Get existing address
+            const addresses = await storage.getAddressesByUserId(existingUser.id);
+            if (addresses.length > 0) {
+              testAddresses.push({
+                digitalId: addresses[0].digitalId,
+                lat: addresses[0].lat || loc.lat,
+                lng: addresses[0].lng || loc.lng,
+                textAddress: addresses[0].textAddress,
+              });
+            }
+          }
+          userCounter++;
+        }
+      }
+
+      // Generate delivery data for each company
+      for (const companyName of companies) {
+        const driverIds = [`DRV-${companyName.substring(0, 2).toUpperCase()}-001`, 
+                          `DRV-${companyName.substring(0, 2).toUpperCase()}-002`,
+                          `DRV-${companyName.substring(0, 2).toUpperCase()}-003`];
+
+        // Generate shipment lookups and feedback for test addresses
+        for (const addr of testAddresses) {
+          // Get the address from DB
+          const address = await storage.getAddressByDigitalId(addr.digitalId);
+          if (!address) continue;
+
+          // Determine success rate based on cluster
+          let successRate = 0.85; // default
+          let avgScore = 4.2;
+          
+          if (addr.textAddress.includes("Industrial") || addr.textAddress.includes("Warehouse")) {
+            successRate = 0.45; // Low success in industrial areas
+            avgScore = 2.8;
+          } else if (addr.textAddress.includes("Nakheel") || addr.textAddress.includes("Yasmin")) {
+            successRate = 0.95; // High success in upscale areas
+            avgScore = 4.8;
+          } else if (addr.textAddress.includes("Olaya") || addr.textAddress.includes("Kingdom")) {
+            successRate = 0.88; // Good success in business district
+            avgScore = 4.3;
+          }
+
+          // Generate 3-8 deliveries per address
+          const deliveryCount = Math.floor(Math.random() * 6) + 3;
+          
+          for (let i = 0; i < deliveryCount; i++) {
+            const shipmentNumber = `SHP-${Date.now()}-${Math.random().toString(36).substring(7).toUpperCase()}`;
+            const driverId = driverIds[Math.floor(Math.random() * driverIds.length)];
+            const isSuccessful = Math.random() < successRate;
+            const locationScore = isSuccessful 
+              ? Math.min(5, Math.max(3, Math.round(avgScore + (Math.random() - 0.5) * 2)))
+              : Math.min(3, Math.max(1, Math.round(avgScore - 1 + (Math.random() - 0.5) * 2)));
+
+            // Create shipment lookup
+            const lookup = await storage.createShipmentLookup({
+              shipmentNumber,
+              driverId,
+              companyName,
+              addressId: address.id,
+              addressDigitalId: addr.digitalId,
+              status: "feedback_completed",
+              deliveryStatus: isSuccessful ? "delivered" : "failed",
+            });
+
+            // Create driver feedback
+            const customerBehaviors = isSuccessful 
+              ? ["Cooperative and friendly", "Quick response at door", "Clear instructions provided", "Easy to find"]
+              : ["Did not answer", "Wrong address given", "No access to building", "Customer unavailable"];
+
+            await storage.createDriverFeedback({
+              shipmentLookupId: lookup.id,
+              driverId,
+              companyName,
+              addressDigitalId: addr.digitalId,
+              deliveryStatus: isSuccessful ? "delivered" : "failed",
+              locationScore,
+              customerBehavior: customerBehaviors[Math.floor(Math.random() * customerBehaviors.length)],
+              additionalNotes: isSuccessful ? null : "Multiple attempts made",
+              feedbackStage: "primary_delivery",
+            });
+
+            // Create delivery outcome
+            const failureReasons = ["customer_unavailable", "access_denied", "wrong_address", "address_not_found"];
+            await storage.createDeliveryOutcome({
+              shipmentLookupId: lookup.id,
+              driverId,
+              companyName,
+              addressDigitalId: addr.digitalId,
+              deliveryStatus: isSuccessful ? "delivered" : "failed",
+              failureReason: isSuccessful ? null : failureReasons[Math.floor(Math.random() * failureReasons.length)],
+              attemptCount: isSuccessful ? 1 : Math.floor(Math.random() * 2) + 1,
+            });
+          }
+        }
+      }
+
+      res.json({ 
+        success: true, 
+        message: `Demo data created for companies: ${companies.join(", ")}`,
+        addressCount: testAddresses.length,
+        companies
+      });
+    } catch (error) {
+      console.error("Seed demo data error:", error);
+      res.status(500).json({ message: "Failed to seed demo data", error: String(error) });
+    }
+  });
+
   return httpServer;
 }
 
