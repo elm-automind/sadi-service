@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowRight, MapPin, LogIn, Sparkles, CheckCircle, X, Truck, Package, Navigation, Clock, Star, QrCode, UserCheck, Map } from "lucide-react";
+import { ArrowRight, MapPin, LogIn, Sparkles, CheckCircle, X, Truck, Package, Navigation, Clock, Star, QrCode, Award, Map } from "lucide-react";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useEffect, useState } from "react";
 import marriLogo from "@assets/image_1764984639532.png";
@@ -172,7 +172,7 @@ export default function Home() {
           <Card className="glass-card premium-card border-0 shadow-lg">
             <CardContent className="p-5 flex items-center gap-5 rtl-no-flip">
               <div className="p-3.5 icon-container-green rounded-xl text-white">
-                <UserCheck className="w-6 h-6" />
+                <Award className="w-6 h-6" />
               </div>
               <div className="text-start flex-1">
                 <h3 className="font-semibold text-lg text-foreground">{t('home.driverVerification')}</h3>
