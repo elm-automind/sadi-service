@@ -224,6 +224,24 @@ export default function CompanyDashboard() {
   const [editingDriver, setEditingDriver] = useState<CompanyDriver | null>(null);
   const [isAnnual, setIsAnnual] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
+  const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
+
+  useEffect(() => {
+    const paymentSuccess = sessionStorage.getItem("paymentSuccess");
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlPaymentSuccess = urlParams.get("payment") === "success";
+    
+    if (paymentSuccess === "true" || urlPaymentSuccess) {
+      setShowPaymentSuccess(true);
+      sessionStorage.removeItem("paymentSuccess");
+      if (urlPaymentSuccess) {
+        const url = new URL(window.location.href);
+        url.searchParams.delete("payment");
+        window.history.replaceState({}, "", url.pathname);
+      }
+      queryClient.invalidateQueries({ queryKey: ["/api/company/subscription"] });
+    }
+  }, [queryClient]);
 
   const { data: user, isLoading } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -778,10 +796,28 @@ export default function CompanyDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-muted/30 p-4 md:p-8">
-      <div className="max-w-6xl mx-auto space-y-6">
-        
-        <div className="flex items-center justify-between">
+    <div className="min-h-screen bg-muted/30">
+      {showPaymentSuccess && (
+        <div className="bg-green-600 text-white px-4 py-3 flex items-center justify-between gap-4" data-testid="banner-payment-success">
+          <div className="flex items-center gap-3 flex-1 justify-center">
+            <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+            <span className="font-medium">{t('payment.success')}</span>
+            <span className="text-green-100">{t('payment.successMessage')}</span>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowPaymentSuccess(false)}
+            className="text-white hover:bg-green-700 hover:text-white flex-shrink-0"
+            data-testid="button-close-success-banner"
+          >
+            {t('common.close')}
+          </Button>
+        </div>
+      )}
+      <div className="p-4 md:p-8">
+        <div className="max-w-6xl mx-auto space-y-6">
+          <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 font-bold text-2xl border-2 border-blue-200">
               <Building2 className="w-7 h-7" />
@@ -1658,6 +1694,7 @@ DRV003, Khalid Omar, 0551234567"
             </div>
           </CardContent>
         </Card>
+      </div>
       </div>
     </div>
   );
