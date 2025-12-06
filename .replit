@@ -75,7 +75,7 @@ PAYMENT_API_URL = "https://pg-beta.api.elm.sa/payment/api/product/createpaymentr
 PAYMENT_APP_ID = "8ab5d791"
 PAYMENT_APP_KEY = "77a0e640a57cf7e166acfcb4645ddd8c"
 PAYMENT_CLIENT_KEY = "62E62894-F302-40CC-9F47-760B27BC7FBF"
-VITE_GOOGLE_MAPS_API_KEY = "AIzaSyA5WecwnETKbG7eCl4exrKAYW_8OkqrzNg"
+VITE_GOOGLE_MAPS_API_KEY = "AIzaSyC2wsA9Unfje_Iiyui89VJgQE9USQXfEpw"
 
 [userenv.production]
 APP_BASE_URL = "https://marri.automind-squad.bp.elmhakathon.com"
