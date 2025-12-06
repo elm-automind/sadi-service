@@ -5,9 +5,10 @@ import { useTranslation } from "react-i18next";
 import { 
   MapPin, Plus, Clock, Users, LogOut, 
   ChevronRight, QrCode, Eye, Edit,
-  UserPlus, Phone, Navigation, Calendar, Trash2, Star
+  UserPlus, Phone, Navigation, Calendar, Trash2, Star, Truck, Package
 } from "lucide-react";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import marriLogo from "@assets/image_1764984639532.png";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -203,8 +204,8 @@ export default function Dashboard() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-muted/30 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
   }
@@ -214,43 +215,58 @@ export default function Dashboard() {
   const selectedAddress = user.addresses.find(a => a.id === selectedFallbackAddressId);
 
   return (
-    <div className="min-h-screen bg-muted/30 p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 relative overflow-hidden">
+      {/* Background decorations */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[5%] right-[5%] w-[400px] h-[400px] bg-gradient-to-br from-blue-400/10 to-indigo-500/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-[10%] left-[5%] w-[300px] h-[300px] bg-gradient-to-br from-cyan-400/10 to-blue-500/10 rounded-full blur-3xl" />
+        <div className="absolute top-[30%] left-[3%] text-primary/5 float-animation">
+          <Truck className="w-16 h-16" />
+        </div>
+        <div className="absolute bottom-[20%] right-[3%] text-primary/5 float-animation" style={{ animationDelay: '2s' }}>
+          <Package className="w-12 h-12" />
+        </div>
+      </div>
+      
+      <div className="relative z-10 p-4 md:p-8">
       <div className="max-w-4xl mx-auto space-y-6">
         
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-2xl border-2 border-primary/30">
-              {user.name.charAt(0).toUpperCase()}
+        <Card className="border-0 shadow-lg bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-2xl shadow-lg shadow-blue-500/30">
+                  {user.name.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-foreground">Welcome, {user.name.split(' ')[0]}</h1>
+                  <p className="text-sm text-muted-foreground">{user.email}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 rtl-no-flip">
+                <LanguageSwitcher />
+                <Button variant="outline" size="sm" onClick={handleLogout} className="shadow-sm">
+                  <LogOut className="w-4 h-4 me-2" /> {t('auth.logout')}
+                </Button>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Welcome, {user.name.split(' ')[0]}</h1>
-              <p className="text-sm text-muted-foreground">{user.email}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 rtl-no-flip">
-            <LanguageSwitcher />
-            <Button variant="ghost" size="sm" onClick={handleLogout}>
-              <LogOut className="w-4 h-4 me-2" /> {t('auth.logout')}
-            </Button>
-          </div>
-        </div>
-
-        <Separator />
+          </CardContent>
+        </Card>
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Link href="/add-address">
-            <Card className="cursor-pointer hover:shadow-lg hover:border-primary/50 transition-all group">
+            <Card className="cursor-pointer border-0 shadow-lg bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm hover:shadow-xl hover:scale-[1.02] transition-all duration-300 group">
               <CardContent className="p-6 flex items-center gap-4">
-                <div className="p-3 bg-primary/10 rounded-full text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                <div className="p-3.5 rounded-xl icon-container-blue text-white group-hover:scale-110 transition-transform">
                   <Plus className="w-6 h-6" />
                 </div>
                 <div className="flex-1">
                   <h3 className="font-semibold text-foreground">Add New Address</h3>
                   <p className="text-sm text-muted-foreground">Register a new delivery location</p>
                 </div>
-                <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary" />
+                <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
               </CardContent>
             </Card>
           </Link>
@@ -563,6 +579,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
+      </div>
       </div>
 
       {/* Delete Address Confirmation Dialog */}

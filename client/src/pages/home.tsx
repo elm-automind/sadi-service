@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowRight, MapPin, LogIn, Sparkles, CheckCircle, X, Truck, Package, Navigation, Clock, Star, QrCode, Award, Map } from "lucide-react";
+import { ArrowRight, MapPin, LogIn, CheckCircle, X, Truck, Package, Navigation, Clock, Star, QrCode, Award, Map, Shield, Users, Building2, Smartphone, Globe, BarChart3 } from "lucide-react";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useEffect, useState } from "react";
 import marriLogo from "@assets/image_1764984639532.png";
@@ -66,21 +66,18 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex flex-col items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 overflow-x-hidden">
       {/* Animated Background Elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* Large gradient orbs */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[5%] right-[10%] w-[500px] h-[500px] bg-gradient-to-br from-blue-400/20 to-indigo-500/20 rounded-full blur-3xl float-animation" />
         <div className="absolute bottom-[10%] left-[5%] w-[400px] h-[400px] bg-gradient-to-br from-cyan-400/15 to-blue-500/15 rounded-full blur-3xl" style={{ animationDelay: '2s' }} />
         <div className="absolute top-[40%] right-[25%] w-[250px] h-[250px] bg-gradient-to-br from-purple-400/10 to-pink-400/10 rounded-full blur-3xl float-animation" style={{ animationDelay: '4s' }} />
         
-        {/* Decorative dots pattern */}
         <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.02]" style={{
           backgroundImage: 'radial-gradient(circle, currentColor 1px, transparent 1px)',
           backgroundSize: '40px 40px'
         }} />
         
-        {/* Floating delivery icons */}
         <div className="absolute top-[15%] left-[15%] text-primary/10 float-animation">
           <Truck className="w-16 h-16" />
         </div>
@@ -96,155 +93,373 @@ export default function Home() {
       </div>
       
       {/* Header */}
-      <div className="absolute top-4 right-4 flex items-center gap-2 rtl-no-flip z-10">
-        <LanguageSwitcher />
-        <Link href="/login">
-          <Button variant="outline" className="gap-2 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-border/50 shadow-sm" data-testid="link-login">
-            <LogIn className="w-4 h-4" /> {t('auth.login')}
-          </Button>
-        </Link>
-      </div>
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-border/50">
+        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <img src={marriLogo} alt="Marri" className="w-10 h-10 rounded-lg" />
+            <span className="font-bold text-xl text-foreground hidden sm:block">Marri</span>
+          </div>
+          <div className="flex items-center gap-2 rtl-no-flip">
+            <LanguageSwitcher />
+            <Link href="/login">
+              <Button variant="outline" className="gap-2 shadow-sm" data-testid="link-login">
+                <LogIn className="w-4 h-4" /> {t('auth.login')}
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </header>
 
-      <div className="max-w-xl w-full space-y-10 text-center relative z-10">
-        {/* Logo and Brand */}
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-          {/* 3D Logo with intelligent effects */}
-          <div className="relative mx-auto w-32 h-32 group">
-            {/* Outer glow ring - pulsing */}
+      {/* Hero Section */}
+      <section className="pt-28 pb-16 px-4 relative z-10">
+        <div className="max-w-4xl mx-auto text-center space-y-8">
+          {/* 3D Logo */}
+          <div className="relative mx-auto w-36 h-36 group animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="absolute inset-[-8px] bg-gradient-to-br from-blue-400/30 via-indigo-500/30 to-cyan-400/30 rounded-3xl blur-xl opacity-60 pulse-glow" />
-            
-            {/* Secondary glow layer for depth */}
             <div className="absolute inset-[-4px] bg-gradient-to-br from-blue-500/20 to-indigo-600/20 rounded-2xl blur-md" />
-            
-            {/* 3D base shadow */}
             <div className="absolute inset-0 translate-y-2 bg-slate-900/30 rounded-2xl blur-lg" />
-            
-            {/* Main logo container with 3D transform */}
             <div 
-              className="relative w-32 h-32 rounded-2xl overflow-hidden shadow-2xl shadow-blue-500/40 transition-all duration-500 group-hover:scale-105 group-hover:shadow-blue-500/60"
-              style={{
-                transform: 'perspective(1000px) rotateX(2deg)',
-                transformStyle: 'preserve-3d'
-              }}
+              className="relative w-36 h-36 rounded-2xl overflow-hidden shadow-2xl shadow-blue-500/40 transition-all duration-500 group-hover:scale-105 group-hover:shadow-blue-500/60"
+              style={{ transform: 'perspective(1000px) rotateX(2deg)', transformStyle: 'preserve-3d' }}
             >
-              {/* Gradient overlay for depth */}
               <div className="absolute inset-0 bg-gradient-to-t from-transparent via-transparent to-white/10 z-10 pointer-events-none" />
-              
-              {/* Shine effect */}
               <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent z-10 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              
-              {/* Logo image */}
-              <img 
-                src={marriLogo} 
-                alt="Marri Logo" 
-                className="w-full h-full object-cover"
-              />
+              <img src={marriLogo} alt="Marri Logo" className="w-full h-full object-cover" />
             </div>
-            
-            {/* Floating particles for intelligence effect */}
-            <div className="absolute -top-2 -right-2 w-3 h-3 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full shadow-lg shadow-amber-500/50 float-animation" style={{ animationDelay: '0s' }} />
+            <div className="absolute -top-2 -right-2 w-3 h-3 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full shadow-lg shadow-amber-500/50 float-animation" />
             <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-full shadow-lg shadow-cyan-500/50 float-animation" style={{ animationDelay: '1s' }} />
             <div className="absolute top-1/2 -right-3 w-2 h-2 bg-gradient-to-br from-purple-400 to-indigo-500 rounded-full shadow-lg shadow-purple-500/50 float-animation" style={{ animationDelay: '2s' }} />
           </div>
           
-          <div className="space-y-3 mt-2">
-            <p className="text-muted-foreground text-base max-w-md mx-auto leading-relaxed">
+          <div className="space-y-4 animate-in fade-in slide-in-from-bottom-6 duration-700 delay-100">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight">
+              <span className="bg-gradient-to-r from-slate-800 via-blue-800 to-indigo-800 dark:from-white dark:via-blue-200 dark:to-indigo-200 bg-clip-text text-transparent">
+                {t('home.tagline')}
+              </span>
+            </h1>
+            <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
               {t('home.description')}
             </p>
           </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200">
+            <Link href="/register-type">
+              <Button 
+                size="lg" 
+                className="text-lg h-14 px-8 bg-gradient-to-r from-blue-600 via-blue-600 to-indigo-600 hover:from-blue-700 hover:via-blue-700 hover:to-indigo-700 shadow-xl shadow-blue-500/25 hover:shadow-2xl hover:shadow-blue-500/30 transition-all duration-300 group border-0" 
+                data-testid="button-start-registration"
+              >
+                {t('home.getStarted')}
+                <ArrowRight className="ms-2 w-5 h-5 group-hover:translate-x-1 transition-transform rtl:rotate-180" />
+              </Button>
+            </Link>
+            <Link href="/login">
+              <Button variant="outline" size="lg" className="text-lg h-14 px-8 shadow-sm" data-testid="button-login-hero">
+                {t('auth.login')}
+              </Button>
+            </Link>
+          </div>
         </div>
+      </section>
 
-        {/* Feature Cards - Actual Platform Features */}
-        <div className="grid grid-cols-1 gap-4 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100">
-          <Card className="glass-card premium-card border-0 shadow-lg">
-            <CardContent className="p-5 flex items-center gap-5 rtl-no-flip">
-              <div className="p-3.5 icon-container-blue rounded-xl text-white">
-                <QrCode className="w-6 h-6" />
+      {/* Stats Section */}
+      <section className="py-12 px-4 relative z-10">
+        <div className="max-w-4xl mx-auto">
+          <div className="glass-card rounded-2xl p-8 shadow-lg">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+              <div className="space-y-2">
+                <div className="flex items-center justify-center gap-1 text-amber-500">
+                  <Star className="w-5 h-5 fill-current" />
+                  <Star className="w-5 h-5 fill-current" />
+                  <Star className="w-5 h-5 fill-current" />
+                  <Star className="w-5 h-5 fill-current" />
+                  <Star className="w-5 h-5 fill-current" />
+                </div>
+                <p className="text-sm text-muted-foreground">5.0 {isRTL ? 'تقييم' : 'Rating'}</p>
               </div>
-              <div className="text-start flex-1">
-                <h3 className="font-semibold text-lg text-foreground">{t('home.digitalAddressId')}</h3>
-                <p className="text-sm text-muted-foreground">{t('home.digitalAddressIdDesc')}</p>
+              <div className="space-y-2">
+                <p className="text-3xl font-bold text-foreground">99.5%</p>
+                <p className="text-sm text-muted-foreground">{isRTL ? 'نجاح التوصيل' : 'Delivery Success'}</p>
               </div>
-              <ArrowRight className="w-5 h-5 text-muted-foreground/40" />
-            </CardContent>
-          </Card>
-          
-          <Card className="glass-card premium-card border-0 shadow-lg">
-            <CardContent className="p-5 flex items-center gap-5 rtl-no-flip">
-              <div className="p-3.5 icon-container-green rounded-xl text-white">
-                <Award className="w-6 h-6" />
+              <div className="space-y-2">
+                <div className="flex items-center justify-center gap-2">
+                  <Clock className="w-5 h-5 text-green-500" />
+                  <span className="text-3xl font-bold text-foreground">2x</span>
+                </div>
+                <p className="text-sm text-muted-foreground">{isRTL ? 'توصيل أسرع' : 'Faster Delivery'}</p>
               </div>
-              <div className="text-start flex-1">
-                <h3 className="font-semibold text-lg text-foreground">{t('home.driverVerification')}</h3>
-                <p className="text-sm text-muted-foreground">{t('home.driverVerificationDesc')}</p>
+              <div className="space-y-2">
+                <p className="text-3xl font-bold text-foreground">50K+</p>
+                <p className="text-sm text-muted-foreground">{isRTL ? 'عناوين مسجلة' : 'Registered Addresses'}</p>
               </div>
-              <ArrowRight className="w-5 h-5 text-muted-foreground/40" />
-            </CardContent>
-          </Card>
-
-          <Card className="glass-card premium-card border-0 shadow-lg">
-            <CardContent className="p-5 flex items-center gap-5 rtl-no-flip">
-              <div className="p-3.5 icon-container-purple rounded-xl text-white">
-                <Map className="w-6 h-6" />
-              </div>
-              <div className="text-start flex-1">
-                <h3 className="font-semibold text-lg text-foreground">{t('home.deliveryHotspots')}</h3>
-                <p className="text-sm text-muted-foreground">{t('home.deliveryHotspotsDesc')}</p>
-              </div>
-              <ArrowRight className="w-5 h-5 text-muted-foreground/40" />
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Stats Row */}
-        <div className="flex items-center justify-center gap-8 text-center animate-in fade-in slide-in-from-bottom-8 duration-700 delay-150">
-          <div>
-            <div className="flex items-center justify-center gap-1 text-amber-500 mb-1">
-              <Star className="w-4 h-4 fill-current" />
-              <Star className="w-4 h-4 fill-current" />
-              <Star className="w-4 h-4 fill-current" />
-              <Star className="w-4 h-4 fill-current" />
-              <Star className="w-4 h-4 fill-current" />
             </div>
-            <p className="text-xs text-muted-foreground">5.0 Rating</p>
-          </div>
-          <div className="h-8 w-px bg-border" />
-          <div>
-            <p className="text-2xl font-bold text-foreground">99.5%</p>
-            <p className="text-xs text-muted-foreground">Delivery Success</p>
-          </div>
-          <div className="h-8 w-px bg-border" />
-          <div>
-            <div className="flex items-center justify-center gap-1 mb-1">
-              <Clock className="w-4 h-4 text-green-500" />
-              <span className="text-lg font-bold text-foreground">2x</span>
-            </div>
-            <p className="text-xs text-muted-foreground">Faster Delivery</p>
           </div>
         </div>
+      </section>
 
-        {/* CTA Button */}
-        <div className="pt-2 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200">
-          <Link href="/register-type">
-            <Button 
-              size="lg" 
-              className="w-full text-lg h-14 bg-gradient-to-r from-blue-600 via-blue-600 to-indigo-600 hover:from-blue-700 hover:via-blue-700 hover:to-indigo-700 shadow-xl shadow-blue-500/25 hover:shadow-2xl hover:shadow-blue-500/30 transition-all duration-300 group border-0" 
-              data-testid="button-start-registration"
-            >
-              {t('home.getStarted')}
-              <ArrowRight className="ms-2 w-5 h-5 group-hover:translate-x-1 transition-transform rtl:rotate-180" />
-            </Button>
-          </Link>
+      {/* Features Section */}
+      <section className="py-16 px-4 relative z-10">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
+              {isRTL ? 'لماذا تختار مَرّي؟' : 'Why Choose Marri?'}
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              {isRTL ? 'منصة ذكية تُحوّل كيفية إدارة التوصيلات' : 'An intelligent platform transforming how deliveries are managed'}
+            </p>
+          </div>
           
-          <p className="text-sm text-muted-foreground mt-4 flex items-center justify-center gap-2">
-            <CheckCircle className="w-4 h-4 text-green-500" />
-            {t('home.joinNetwork')}
+          <div className="grid md:grid-cols-3 gap-6">
+            <Card className="glass-card premium-card border-0 shadow-lg group">
+              <CardContent className="p-6 text-center space-y-4">
+                <div className="w-16 h-16 mx-auto rounded-2xl icon-container-blue flex items-center justify-center text-white group-hover:scale-110 transition-transform duration-300">
+                  <QrCode className="w-8 h-8" />
+                </div>
+                <h3 className="text-xl font-semibold text-foreground">{t('home.digitalAddressId')}</h3>
+                <p className="text-muted-foreground">{t('home.digitalAddressIdDesc')}</p>
+              </CardContent>
+            </Card>
+            
+            <Card className="glass-card premium-card border-0 shadow-lg group">
+              <CardContent className="p-6 text-center space-y-4">
+                <div className="w-16 h-16 mx-auto rounded-2xl icon-container-green flex items-center justify-center text-white group-hover:scale-110 transition-transform duration-300">
+                  <Award className="w-8 h-8" />
+                </div>
+                <h3 className="text-xl font-semibold text-foreground">{t('home.driverVerification')}</h3>
+                <p className="text-muted-foreground">{t('home.driverVerificationDesc')}</p>
+              </CardContent>
+            </Card>
+
+            <Card className="glass-card premium-card border-0 shadow-lg group">
+              <CardContent className="p-6 text-center space-y-4">
+                <div className="w-16 h-16 mx-auto rounded-2xl icon-container-purple flex items-center justify-center text-white group-hover:scale-110 transition-transform duration-300">
+                  <Map className="w-8 h-8" />
+                </div>
+                <h3 className="text-xl font-semibold text-foreground">{t('home.deliveryHotspots')}</h3>
+                <p className="text-muted-foreground">{t('home.deliveryHotspotsDesc')}</p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works Section */}
+      <section className="py-16 px-4 bg-gradient-to-b from-transparent via-blue-50/50 to-transparent dark:via-blue-950/20 relative z-10">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
+              {isRTL ? 'كيف يعمل' : 'How It Works'}
+            </h2>
+            <p className="text-lg text-muted-foreground">
+              {isRTL ? 'ثلاث خطوات بسيطة للبدء' : 'Three simple steps to get started'}
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="text-center space-y-4">
+              <div className="w-14 h-14 mx-auto rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg shadow-blue-500/30">
+                1
+              </div>
+              <h3 className="text-lg font-semibold text-foreground">
+                {isRTL ? 'سجّل عنوانك' : 'Register Your Address'}
+              </h3>
+              <p className="text-muted-foreground text-sm">
+                {isRTL ? 'أضف عنوانك مع الصور والإحداثيات للتوصيل الدقيق' : 'Add your address with photos and coordinates for precise delivery'}
+              </p>
+            </div>
+            
+            <div className="text-center space-y-4">
+              <div className="w-14 h-14 mx-auto rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg shadow-green-500/30">
+                2
+              </div>
+              <h3 className="text-lg font-semibold text-foreground">
+                {isRTL ? 'احصل على معرّفك الرقمي' : 'Get Your Digital ID'}
+              </h3>
+              <p className="text-muted-foreground text-sm">
+                {isRTL ? 'احصل على رمز QR فريد لمشاركته مع خدمات التوصيل' : 'Receive a unique QR code to share with delivery services'}
+              </p>
+            </div>
+            
+            <div className="text-center space-y-4">
+              <div className="w-14 h-14 mx-auto rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg shadow-purple-500/30">
+                3
+              </div>
+              <h3 className="text-lg font-semibold text-foreground">
+                {isRTL ? 'استلم بثقة' : 'Receive With Confidence'}
+              </h3>
+              <p className="text-muted-foreground text-sm">
+                {isRTL ? 'يجد السائقون عنوانك بسهولة وتقدم ملاحظاتك' : 'Drivers find your address easily and you provide feedback'}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* For Everyone Section */}
+      <section className="py-16 px-4 relative z-10">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
+              {isRTL ? 'للجميع' : 'For Everyone'}
+            </h2>
+            <p className="text-lg text-muted-foreground">
+              {isRTL ? 'سواء كنت فردًا أو شركة توصيل' : 'Whether you\'re an individual or a delivery company'}
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 gap-8">
+            <Card className="glass-card premium-card border-0 shadow-lg overflow-hidden">
+              <CardContent className="p-0">
+                <div className="p-6 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border-b border-border/50">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-xl icon-container-blue flex items-center justify-center text-white">
+                      <Users className="w-7 h-7" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-semibold text-foreground">
+                        {isRTL ? 'للأفراد' : 'For Individuals'}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        {isRTL ? 'عناوين توصيل شخصية' : 'Personal delivery addresses'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-6 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                    <span className="text-sm text-muted-foreground">{isRTL ? 'سجّل عناوين متعددة' : 'Register multiple addresses'}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                    <span className="text-sm text-muted-foreground">{isRTL ? 'أضف جهات اتصال بديلة' : 'Add fallback contacts'}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                    <span className="text-sm text-muted-foreground">{isRTL ? 'حدد تفضيلات التوصيل' : 'Set delivery preferences'}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                    <span className="text-sm text-muted-foreground">{isRTL ? 'شارك عبر رمز QR' : 'Share via QR code'}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="glass-card premium-card border-0 shadow-lg overflow-hidden">
+              <CardContent className="p-0">
+                <div className="p-6 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-b border-border/50">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-xl icon-container-purple flex items-center justify-center text-white">
+                      <Building2 className="w-7 h-7" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-semibold text-foreground">
+                        {isRTL ? 'للشركات' : 'For Companies'}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        {isRTL ? 'شركات الخدمات اللوجستية والتوصيل' : 'Logistics & delivery companies'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-6 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                    <span className="text-sm text-muted-foreground">{isRTL ? 'لوحة تحكم الشركة' : 'Company dashboard'}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                    <span className="text-sm text-muted-foreground">{isRTL ? 'إدارة السائقين' : 'Driver management'}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                    <span className="text-sm text-muted-foreground">{isRTL ? 'تحليلات التوصيل' : 'Delivery analytics'}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                    <span className="text-sm text-muted-foreground">{isRTL ? 'خطط اشتراك مرنة' : 'Flexible subscription plans'}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Technology Section */}
+      <section className="py-16 px-4 bg-gradient-to-b from-transparent via-slate-100/50 to-transparent dark:via-slate-800/20 relative z-10">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
+              {isRTL ? 'مدعوم بالتقنية' : 'Powered by Technology'}
+            </h2>
+          </div>
+          
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div className="text-center space-y-3 p-4">
+              <div className="w-12 h-12 mx-auto rounded-xl bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/40 dark:to-blue-800/40 flex items-center justify-center">
+                <Globe className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              </div>
+              <p className="text-sm font-medium text-foreground">{isRTL ? 'تحديد المواقع' : 'GPS Location'}</p>
+            </div>
+            <div className="text-center space-y-3 p-4">
+              <div className="w-12 h-12 mx-auto rounded-xl bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900/40 dark:to-green-800/40 flex items-center justify-center">
+                <Smartphone className="w-6 h-6 text-green-600 dark:text-green-400" />
+              </div>
+              <p className="text-sm font-medium text-foreground">{isRTL ? 'رموز QR' : 'QR Codes'}</p>
+            </div>
+            <div className="text-center space-y-3 p-4">
+              <div className="w-12 h-12 mx-auto rounded-xl bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900/40 dark:to-purple-800/40 flex items-center justify-center">
+                <BarChart3 className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+              </div>
+              <p className="text-sm font-medium text-foreground">{isRTL ? 'التحليلات' : 'Analytics'}</p>
+            </div>
+            <div className="text-center space-y-3 p-4">
+              <div className="w-12 h-12 mx-auto rounded-xl bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900/40 dark:to-orange-800/40 flex items-center justify-center">
+                <Shield className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+              </div>
+              <p className="text-sm font-medium text-foreground">{isRTL ? 'آمن' : 'Secure'}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 px-4 relative z-10">
+        <div className="max-w-3xl mx-auto text-center">
+          <div className="glass-card rounded-3xl p-10 shadow-xl bg-gradient-to-br from-blue-500/5 to-indigo-500/5">
+            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
+              {isRTL ? 'ابدأ اليوم' : 'Get Started Today'}
+            </h2>
+            <p className="text-lg text-muted-foreground mb-8">
+              {t('home.joinNetwork')}
+            </p>
+            <Link href="/register-type">
+              <Button 
+                size="lg" 
+                className="text-lg h-14 px-10 bg-gradient-to-r from-blue-600 via-blue-600 to-indigo-600 hover:from-blue-700 hover:via-blue-700 hover:to-indigo-700 shadow-xl shadow-blue-500/25 hover:shadow-2xl hover:shadow-blue-500/30 transition-all duration-300 group border-0" 
+                data-testid="button-cta-bottom"
+              >
+                {t('home.getStarted')}
+                <ArrowRight className="ms-2 w-5 h-5 group-hover:translate-x-1 transition-transform rtl:rotate-180" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+      
+      {/* Footer */}
+      <footer className="py-8 px-4 border-t border-border/50 relative z-10">
+        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <img src={marriLogo} alt="Marri" className="w-8 h-8 rounded-lg" />
+            <span className="font-semibold text-foreground">Marri</span>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            &copy; 2025 {isRTL ? 'مَرّي' : 'Marri'}. {t('home.copyright')}
           </p>
         </div>
-      </div>
-      
-      <footer className="absolute bottom-6 text-center text-sm text-muted-foreground">
-        <span className="opacity-60">&copy; 2025 {isRTL ? 'مَرّي' : 'Marri'}. {t('home.copyright')}</span>
       </footer>
     </div>
   );
