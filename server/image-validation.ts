@@ -26,32 +26,35 @@ export async function validateImage(
       door: "an apartment door, front door, entrance door, or door to a residential unit",
     };
 
-    const prompt = `You are an image validation assistant for a delivery address system. Analyze this image and determine if it's a genuine photograph of ${typeDescriptions[expectedType]}.
+    const prompt = `You are an image validation assistant for a delivery address system. Your job is to verify that uploaded images match their expected category EXACTLY.
 
-Respond in JSON format with these fields:
-- isValid: boolean (true if the image is a genuine photo of the expected type)
-- imageType: string (one of "building", "gate", "door", or "unknown")
-- confidence: number (0.0 to 1.0, how confident you are)
-- reason: string (brief explanation of your decision)
+CRITICAL: You MUST determine what type of subject is shown in this image and verify it matches the expected type.
 
-Criteria for INVALID images:
-- Not a photograph (drawings, sketches, diagrams, icons)
-- Screenshot of a map or other application
-- Random unrelated images (people, food, animals, etc.)
-- Digitally generated or AI-generated fake images
-- Extremely blurry or unrecognizable images
-- Images with text overlays that obscure the subject
-- Stock photos with watermarks
+Image Categories:
+- "building": A building EXTERIOR view from OUTSIDE showing the facade, apartment complex exterior, house exterior, commercial building exterior. NOT a door, NOT a gate, NOT an interior.
+- "gate": A gate, entrance gate, security gate, parking gate, main gate, or barrier that controls access to a property. NOT a door, NOT a building exterior.
+- "door": An apartment door, front door, entrance door to a unit/apartment. This is the DOOR ITSELF (the panel that opens/closes), NOT a building exterior, NOT a gate.
 
-Criteria for VALID images:
-- Clear photograph of the expected subject
-- Can be slightly blurry but still recognizable
-- Taken from various angles
-- Can include people or vehicles if the main subject is still visible
+EXPECTED IMAGE TYPE: "${expectedType}" (${typeDescriptions[expectedType]})
 
-Expected image type: ${expectedType}
+Analyze this image and respond in JSON format:
+{
+  "isValid": boolean (TRUE only if the image shows EXACTLY a ${expectedType}),
+  "imageType": string ("building", "gate", "door", or "unknown" - what the image ACTUALLY shows),
+  "confidence": number (0.0 to 1.0),
+  "reason": string (explain your decision)
+}
 
-Analyze the image and respond with JSON only.`;
+VALIDATION RULES:
+1. If expected type is "building" but image shows a door or gate -> isValid: FALSE
+2. If expected type is "gate" but image shows a door or building -> isValid: FALSE  
+3. If expected type is "door" but image shows a building exterior or gate -> isValid: FALSE
+4. Image must be a real photograph, not a drawing, screenshot, or AI-generated
+5. Image must be clear enough to identify the subject
+
+BE STRICT: A door photo uploaded as "building" is INVALID. A building photo uploaded as "door" is INVALID.
+
+Respond with JSON only.`;
 
     const imageUrl = base64Image.startsWith("data:") 
       ? base64Image 
@@ -106,11 +109,25 @@ Analyze the image and respond with JSON only.`;
 
     const result = JSON.parse(content);
     
+    const detectedType = result.imageType || "unknown";
+    const confidence = typeof result.confidence === "number" ? result.confidence : 0.5;
+    
+    // Double-check: if the detected type doesn't match expected, mark as invalid
+    const typeMatches = detectedType === expectedType;
+    const isValid = result.isValid === true && typeMatches;
+    
+    let reason = result.reason || "Unknown validation result";
+    if (!typeMatches && result.isValid === true) {
+      reason = `Wrong image type: expected ${expectedType} but detected ${detectedType}`;
+    }
+    
+    console.log(`Image validation for ${expectedType}: detected=${detectedType}, isValid=${isValid}, confidence=${confidence}`);
+    
     return {
-      isValid: result.isValid === true,
-      imageType: result.imageType || "unknown",
-      confidence: typeof result.confidence === "number" ? result.confidence : 0.5,
-      reason: result.reason || "Unknown validation result",
+      isValid,
+      imageType: detectedType,
+      confidence,
+      reason,
     };
   } catch (error) {
     console.error("Image validation error:", error);
