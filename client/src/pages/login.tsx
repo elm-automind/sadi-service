@@ -102,12 +102,12 @@ export default function Login() {
         <CardContent>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="identifier">{t('auth.email')} / {t('auth.iqamaId')}</Label>
+              <Label htmlFor="identifier">{t('auth.email')}</Label>
               <div className="relative">
                 <User className="absolute start-3 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input 
                   id="identifier" 
-                  placeholder={`${t('auth.email')} / ${t('auth.iqamaId')}`}
+                  placeholder={t('auth.emailPlaceholder')}
                   className="ps-9 bg-slate-50/50 dark:bg-slate-800/50 border-border/50"
                   data-testid="input-identifier"
                   {...form.register("identifier")} 

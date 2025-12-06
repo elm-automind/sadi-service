@@ -157,6 +157,7 @@
     "logout": "Logout",
     "register": "Register",
     "email": "Email",
+    "emailPlaceholder": "name@example.com",
     "emailAddress": "Email Address",
     "password": "Password",
     "confirmPassword": "Confirm Password",

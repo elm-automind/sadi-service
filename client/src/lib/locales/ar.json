@@ -157,6 +157,7 @@
     "logout": "تسجيل الخروج",
     "register": "إنشاء حساب",
     "email": "البريد الإلكتروني",
+    "emailPlaceholder": "name@example.com",
     "emailAddress": "البريد الإلكتروني",
     "password": "كلمة المرور",
     "confirmPassword": "تأكيد كلمة المرور",
