@@ -7,7 +7,7 @@ import * as z from "zod";
 import { useDropzone } from "react-dropzone";
 import { 
   MapPin, Camera, CheckCircle2, 
-  Upload, X
+  Upload, X, Truck, Package
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -234,20 +234,41 @@ export default function AddAddress() {
     addressMutation.mutate(data);
   };
 
-  if (isLoading) return <div className="flex justify-center p-8">{t('common.loading')}</div>;
+  if (isLoading) return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex justify-center items-center p-8">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-muted/30 p-3 md:p-8 flex justify-center items-start pt-6 md:pt-20 relative">
-      <PageNavigation className="absolute top-4 start-4" />
-      <div className="absolute top-4 end-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-3 md:p-8 flex justify-center items-start pt-6 md:pt-20 relative overflow-hidden">
+      {/* Background decorations */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[5%] right-[5%] w-[400px] h-[400px] bg-gradient-to-br from-blue-400/10 to-indigo-500/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-[10%] left-[5%] w-[300px] h-[300px] bg-gradient-to-br from-cyan-400/10 to-blue-500/10 rounded-full blur-3xl" />
+        <div className="absolute top-[20%] left-[3%] text-primary/5 float-animation">
+          <Truck className="w-14 h-14" />
+        </div>
+        <div className="absolute bottom-[30%] right-[3%] text-primary/5 float-animation" style={{ animationDelay: '2s' }}>
+          <Package className="w-10 h-10" />
+        </div>
+      </div>
+      
+      <PageNavigation className="absolute top-4 start-4 z-10" />
+      <div className="absolute top-4 end-4 z-10">
         <LanguageSwitcher />
       </div>
 
-      <Card className="w-full max-w-3xl shadow-xl border-border/60 bg-card/95 backdrop-blur-sm">
+      <Card className="w-full max-w-3xl shadow-xl border-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm relative z-10">
         <CardHeader className="border-b border-border/40 pb-4 md:pb-6">
-          <div>
-            <CardTitle className="text-xl md:text-2xl font-bold text-primary">{t('address.addNewAddress')}</CardTitle>
-            <CardDescription className="text-xs md:text-sm">{t('address.registerNewLocation')}</CardDescription>
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-xl icon-container-blue text-white shadow-lg shadow-blue-500/20">
+              <MapPin className="w-6 h-6" />
+            </div>
+            <div>
+              <CardTitle className="text-xl md:text-2xl font-bold bg-gradient-to-r from-slate-800 to-blue-800 dark:from-white dark:to-blue-200 bg-clip-text text-transparent">{t('address.addNewAddress')}</CardTitle>
+              <CardDescription className="text-xs md:text-sm">{t('address.registerNewLocation')}</CardDescription>
+            </div>
           </div>
         </CardHeader>
 

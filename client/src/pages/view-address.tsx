@@ -5,7 +5,7 @@ import QRCode from "react-qr-code";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Phone, MapPin, Clock, FileText, QrCode, Home, Building2, DoorOpen, Image } from "lucide-react";
+import { Phone, MapPin, Clock, FileText, QrCode, Home, Building2, DoorOpen, Image, Truck, Package } from "lucide-react";
 import { AddressMap } from "@/components/address-map";
 import { PageNavigation } from "@/components/page-navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -24,9 +24,9 @@ export default function ViewAddress() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-muted/30 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex items-center justify-center p-4">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-muted-foreground">{t('common.loading')}</p>
         </div>
       </div>
@@ -35,15 +35,21 @@ export default function ViewAddress() {
 
   if (error || !data) {
     return (
-      <div className="min-h-screen bg-muted/30 flex items-center justify-center p-4 relative">
-        <PageNavigation className="absolute top-4 start-4" />
-        <div className="absolute top-4 end-4">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex items-center justify-center p-4 relative overflow-hidden">
+        {/* Background decorations */}
+        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-[5%] right-[10%] w-[350px] h-[350px] bg-gradient-to-br from-blue-400/10 to-indigo-500/10 rounded-full blur-3xl" />
+          <div className="absolute bottom-[15%] left-[5%] w-[250px] h-[250px] bg-gradient-to-br from-cyan-400/10 to-blue-500/10 rounded-full blur-3xl" />
+        </div>
+        
+        <PageNavigation className="absolute top-4 start-4 z-10" />
+        <div className="absolute top-4 end-4 z-10">
           <LanguageSwitcher />
         </div>
         
-        <Card className="w-full max-w-md p-8 text-center">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <MapPin className="w-8 h-8 text-red-500" />
+        <Card className="w-full max-w-md p-8 text-center border-0 shadow-xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm relative z-10">
+          <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-red-500/30">
+            <MapPin className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-xl font-bold text-foreground mb-2">{t('viewAddress.addressNotFound')}</h1>
           <p className="text-muted-foreground text-sm mb-6">
@@ -63,13 +69,25 @@ export default function ViewAddress() {
   const currentUrl = typeof window !== "undefined" ? window.location.href : "";
 
   return (
-    <div className="min-h-screen bg-muted/30 p-4 flex items-center justify-center py-8 relative">
-      <PageNavigation className="absolute top-4 start-4" />
-      <div className="absolute top-4 end-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-4 flex items-center justify-center py-8 relative overflow-hidden">
+      {/* Background decorations */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[5%] right-[5%] w-[400px] h-[400px] bg-gradient-to-br from-blue-400/10 to-indigo-500/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-[10%] left-[5%] w-[300px] h-[300px] bg-gradient-to-br from-cyan-400/10 to-blue-500/10 rounded-full blur-3xl" />
+        <div className="absolute top-[15%] left-[5%] text-primary/5 float-animation">
+          <Truck className="w-14 h-14" />
+        </div>
+        <div className="absolute bottom-[25%] right-[5%] text-primary/5 float-animation" style={{ animationDelay: '2s' }}>
+          <Package className="w-10 h-10" />
+        </div>
+      </div>
+      
+      <PageNavigation className="absolute top-4 start-4 z-10" />
+      <div className="absolute top-4 end-4 z-10">
         <LanguageSwitcher />
       </div>
       
-      <Card className="w-full max-w-2xl shadow-xl border-border/60 overflow-hidden">
+      <Card className="w-full max-w-2xl shadow-xl border-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm overflow-hidden relative z-10">
         <div className="bg-gradient-to-r from-primary/10 to-blue-50 dark:from-primary/5 dark:to-blue-900/10 p-6 border-b border-border/40">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-4">

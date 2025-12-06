@@ -189,16 +189,31 @@ export default function DriverLookup() {
   };
 
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="absolute top-4 end-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-4 relative overflow-hidden">
+      {/* Background decorations */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[5%] right-[5%] w-[400px] h-[400px] bg-gradient-to-br from-blue-400/10 to-indigo-500/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-[10%] left-[5%] w-[300px] h-[300px] bg-gradient-to-br from-cyan-400/10 to-blue-500/10 rounded-full blur-3xl" />
+        <div className="absolute top-[20%] left-[5%] text-primary/5 float-animation">
+          <Truck className="w-16 h-16" />
+        </div>
+        <div className="absolute bottom-[30%] right-[5%] text-primary/5 float-animation" style={{ animationDelay: '2s' }}>
+          <Package className="w-12 h-12" />
+        </div>
+        <div className="absolute top-[60%] right-[10%] text-primary/5 float-animation" style={{ animationDelay: '1s' }}>
+          <MapPin className="w-10 h-10" />
+        </div>
+      </div>
+      
+      <div className="absolute top-4 end-4 z-10">
         <LanguageSwitcher />
       </div>
-      <div className="max-w-2xl mx-auto space-y-6">
-        <div className="text-center space-y-2">
-          <div className="mx-auto w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
-            <Truck className="w-7 h-7" />
+      <div className="max-w-2xl mx-auto space-y-6 relative z-10 pt-4">
+        <div className="text-center space-y-3">
+          <div className="mx-auto w-16 h-16 rounded-xl icon-container-blue text-white flex items-center justify-center shadow-lg shadow-blue-500/30">
+            <Truck className="w-8 h-8" />
           </div>
-          <h1 className="text-2xl font-bold">{t('driver.driverLookup')}</h1>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-800 to-blue-800 dark:from-white dark:to-blue-200 bg-clip-text text-transparent">{t('driver.driverLookup')}</h1>
           <p className="text-muted-foreground">{t('driver.enterShipmentDetails')}</p>
         </div>
 
@@ -215,10 +230,10 @@ export default function DriverLookup() {
         )}
 
         {!addressResult && (
-          <Card>
+          <Card className="border-0 shadow-lg bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 rtl-no-flip">
-                <Package className="w-5 h-5" />
+                <Package className="w-5 h-5 text-blue-600" />
                 {t('driver.shipmentNumber')}
               </CardTitle>
               <CardDescription>{t('driver.enterShipmentDetails')}</CardDescription>
@@ -283,10 +298,12 @@ export default function DriverLookup() {
 
         {addressResult && (
           <div className="space-y-4">
-            <Card className="border-green-200 bg-green-50/50 dark:bg-green-900/10">
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-green-50/90 to-emerald-50/90 dark:from-green-950/50 dark:to-emerald-950/50 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-green-700 dark:text-green-400 rtl-no-flip">
-                  <MapPin className="w-5 h-5" />
+                  <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/50">
+                    <MapPin className="w-5 h-5" />
+                  </div>
                   {t('address.deliveryPreferences', 'Delivery Address')}
                 </CardTitle>
               </CardHeader>

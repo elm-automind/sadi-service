@@ -12,7 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
-import { MessageSquare, Star, MapPin, Package, CheckCircle2, AlertCircle, CheckCircle } from "lucide-react";
+import { MessageSquare, Star, MapPin, Package, CheckCircle2, AlertCircle, CheckCircle, Truck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { LanguageSwitcher } from "@/components/language-switcher";
 
@@ -129,7 +129,7 @@ export default function DriverFeedback() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex items-center justify-center">
         <Spinner className="w-8 h-8" />
       </div>
     );
@@ -137,14 +137,22 @@ export default function DriverFeedback() {
 
   if (error || !lookupData) {
     return (
-      <div className="min-h-screen bg-background p-4 relative">
-        <div className="absolute top-4 end-4">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-4 relative overflow-hidden">
+        {/* Background decorations */}
+        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-[10%] right-[10%] w-[350px] h-[350px] bg-gradient-to-br from-blue-400/10 to-indigo-500/10 rounded-full blur-3xl" />
+          <div className="absolute bottom-[15%] left-[10%] w-[250px] h-[250px] bg-gradient-to-br from-cyan-400/10 to-blue-500/10 rounded-full blur-3xl" />
+        </div>
+        
+        <div className="absolute top-4 end-4 z-10">
           <LanguageSwitcher />
         </div>
-        <div className="max-w-md mx-auto mt-20">
-          <Card className="border-red-200">
+        <div className="max-w-md mx-auto mt-20 relative z-10">
+          <Card className="border-0 shadow-xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm">
             <CardContent className="pt-6 text-center">
-              <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+              <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-red-500/30">
+                <AlertCircle className="w-8 h-8 text-white" />
+              </div>
               <h2 className="text-lg font-semibold mb-2">{t('errors.notFound')}</h2>
               <p className="text-muted-foreground mb-4">
                 {error?.message || t('errors.somethingWentWrong')}
@@ -158,15 +166,21 @@ export default function DriverFeedback() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-background p-4 relative">
-        <div className="absolute top-4 end-4">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-4 relative overflow-hidden">
+        {/* Background decorations */}
+        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-[10%] right-[10%] w-[350px] h-[350px] bg-gradient-to-br from-green-400/10 to-emerald-500/10 rounded-full blur-3xl" />
+          <div className="absolute bottom-[15%] left-[10%] w-[250px] h-[250px] bg-gradient-to-br from-cyan-400/10 to-blue-500/10 rounded-full blur-3xl" />
+        </div>
+        
+        <div className="absolute top-4 end-4 z-10">
           <LanguageSwitcher />
         </div>
-        <div className="max-w-md mx-auto mt-20">
-          <Card className="border-green-200 bg-green-50/50 dark:bg-green-950/20">
+        <div className="max-w-md mx-auto mt-20 relative z-10">
+          <Card className="border-0 shadow-xl bg-gradient-to-br from-green-50/90 to-emerald-50/90 dark:from-green-950/50 dark:to-emerald-950/50 backdrop-blur-sm">
             <CardContent className="pt-8 pb-8 text-center">
-              <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
-                <CheckCircle className="w-10 h-10 text-green-600" />
+              <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center mx-auto mb-6 shadow-lg shadow-green-500/30">
+                <CheckCircle className="w-10 h-10 text-white" />
               </div>
               <h2 className="text-2xl font-bold text-green-800 dark:text-green-200 mb-3">{t('feedback.thankYouFeedback')}</h2>
               <p className="text-green-700 dark:text-green-300 mb-2">
@@ -180,23 +194,37 @@ export default function DriverFeedback() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-4 relative">
-      <div className="absolute top-4 end-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-4 relative overflow-hidden">
+      {/* Background decorations */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[5%] right-[5%] w-[400px] h-[400px] bg-gradient-to-br from-blue-400/10 to-indigo-500/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-[10%] left-[5%] w-[300px] h-[300px] bg-gradient-to-br from-cyan-400/10 to-blue-500/10 rounded-full blur-3xl" />
+        <div className="absolute top-[20%] left-[5%] text-primary/5 float-animation">
+          <Truck className="w-14 h-14" />
+        </div>
+        <div className="absolute bottom-[30%] right-[5%] text-primary/5 float-animation" style={{ animationDelay: '2s' }}>
+          <Package className="w-10 h-10" />
+        </div>
+      </div>
+      
+      <div className="absolute top-4 end-4 z-10">
         <LanguageSwitcher />
       </div>
-      <div className="max-w-lg mx-auto space-y-6">
-        <div className="text-center space-y-2">
-          <div className="mx-auto w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
-            <MessageSquare className="w-7 h-7" />
+      <div className="max-w-lg mx-auto space-y-6 relative z-10 pt-4">
+        <div className="text-center space-y-3">
+          <div className="mx-auto w-16 h-16 rounded-xl icon-container-orange text-white flex items-center justify-center shadow-lg shadow-orange-500/30">
+            <MessageSquare className="w-8 h-8" />
           </div>
-          <h1 className="text-2xl font-bold">{t('feedback.deliveryFeedback')}</h1>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-800 to-blue-800 dark:from-white dark:to-blue-200 bg-clip-text text-transparent">{t('feedback.deliveryFeedback')}</h1>
           <p className="text-muted-foreground">{t('feedback.locationScoreDesc')}</p>
         </div>
 
-        <Card className="bg-muted/30">
+        <Card className="border-0 shadow-lg bg-blue-50/80 dark:bg-blue-950/30 backdrop-blur-sm">
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
-              <Package className="w-5 h-5 text-muted-foreground" />
+              <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/50">
+                <Package className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              </div>
               <div>
                 <p className="font-medium">{t('driver.shipmentNumber')}: {lookupData.lookup.shipmentNumber}</p>
                 {lookupData.address && (
@@ -210,7 +238,7 @@ export default function DriverFeedback() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-0 shadow-lg bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm">
           <CardHeader>
             <CardTitle>{t('feedback.deliveryFeedback')}</CardTitle>
             <CardDescription>{t('feedback.locationScoreDesc')}</CardDescription>

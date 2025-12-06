@@ -8,7 +8,7 @@ import { useTranslation } from "react-i18next";
 import { 
   MapPin, Camera, CheckCircle2, ChevronRight, ChevronLeft, 
   Upload, Users, Phone, User as UserIcon, AlertTriangle,
-  Calendar, Clock, DollarSign, Info, X
+  Calendar, Clock, DollarSign, Info, X, Truck, Package
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -348,16 +348,28 @@ export default function FallbackContact() {
     return tomorrow.toISOString().split('T')[0];
   };
 
-  if (isLoading) return <div className="p-8 text-center">Loading...</div>;
+  if (isLoading) return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex justify-center items-center p-8">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+    </div>
+  );
   if (!user) return null;
 
   if (user.addresses.length === 0) {
     return (
-      <div className="min-h-screen bg-muted/30 p-4 flex items-center justify-center relative">
-        <PageNavigation className="absolute top-4 left-4" />
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-4 flex items-center justify-center relative overflow-hidden">
+        {/* Background decorations */}
+        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-[10%] right-[10%] w-[350px] h-[350px] bg-gradient-to-br from-blue-400/10 to-indigo-500/10 rounded-full blur-3xl" />
+          <div className="absolute bottom-[15%] left-[10%] w-[250px] h-[250px] bg-gradient-to-br from-cyan-400/10 to-blue-500/10 rounded-full blur-3xl" />
+        </div>
         
-        <Card className="w-full max-w-md p-8 text-center">
-          <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+        <PageNavigation className="absolute top-4 left-4 z-10" />
+        
+        <Card className="w-full max-w-md p-8 text-center border-0 shadow-xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm relative z-10">
+          <div className="w-16 h-16 rounded-xl icon-container-purple text-white flex items-center justify-center mx-auto mb-4 shadow-lg shadow-purple-500/30">
+            <Users className="w-8 h-8" />
+          </div>
           <h2 className="text-xl font-bold mb-2">Add an Address First</h2>
           <p className="text-muted-foreground mb-4">You need to register at least one address before adding a fallback contact.</p>
           <Link href="/add-address">
@@ -369,24 +381,36 @@ export default function FallbackContact() {
   }
 
   return (
-    <div className="min-h-screen bg-muted/30 p-3 md:p-8 flex justify-center items-start pt-6 md:pt-12 relative">
-      <PageNavigation className="absolute top-4 left-4" />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-3 md:p-8 flex justify-center items-start pt-6 md:pt-12 relative overflow-hidden">
+      {/* Background decorations */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[5%] right-[5%] w-[400px] h-[400px] bg-gradient-to-br from-purple-400/10 to-indigo-500/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-[10%] left-[5%] w-[300px] h-[300px] bg-gradient-to-br from-cyan-400/10 to-blue-500/10 rounded-full blur-3xl" />
+        <div className="absolute top-[20%] left-[3%] text-primary/5 float-animation">
+          <Truck className="w-14 h-14" />
+        </div>
+        <div className="absolute bottom-[30%] right-[3%] text-primary/5 float-animation" style={{ animationDelay: '2s' }}>
+          <Package className="w-10 h-10" />
+        </div>
+      </div>
+      
+      <PageNavigation className="absolute top-4 left-4 z-10" />
 
-      <Card className="w-full max-w-2xl shadow-xl border-border/60 bg-card/95 backdrop-blur-sm">
+      <Card className="w-full max-w-2xl shadow-xl border-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm relative z-10">
         <CardHeader className="border-b border-border/40 pb-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-purple-100 dark:bg-purple-900/20 rounded-full text-purple-600">
+            <div className="p-3 rounded-xl icon-container-purple text-white shadow-lg shadow-purple-500/20">
               <Users className="w-6 h-6" />
             </div>
             <div>
-              <CardTitle className="text-xl font-bold text-primary">Add Fallback Contact</CardTitle>
+              <CardTitle className="text-xl font-bold bg-gradient-to-r from-slate-800 to-purple-800 dark:from-white dark:to-purple-200 bg-clip-text text-transparent">Add Fallback Contact</CardTitle>
               <CardDescription>Provide an alternative person/location for deliveries</CardDescription>
             </div>
           </div>
           
           <div className="w-full h-1.5 bg-muted mt-4 rounded-full overflow-hidden">
             <div 
-              className="h-full bg-purple-500 transition-all duration-500 ease-out" 
+              className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 transition-all duration-500 ease-out" 
               style={{ width: `${(step / 2) * 100}%` }}
             />
           </div>
